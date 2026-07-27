@@ -15,7 +15,9 @@ use App\Models\User;
 use App\Services\TransactionReportExporter;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -489,5 +491,42 @@ class WarungController extends Controller
         User::create($data + ['tenant_id' => $this->tenantId(), 'password' => Hash::make($data['password']), 'is_active' => true]);
 
         return back()->with('success', 'Pengguna baru berhasil ditambahkan.');
+    }
+
+    public function runMaintenance(Request $request)
+    {
+        $data = $request->validate([
+            'command' => ['required', Rule::in(['migrate', 'optimize_clear', 'storage_link'])],
+        ]);
+
+        $commands = [
+            'migrate' => ['command' => 'migrate', 'parameters' => ['--force' => true], 'label' => 'Migrasi database'],
+            'optimize_clear' => ['command' => 'optimize:clear', 'parameters' => [], 'label' => 'Bersihkan cache'],
+            'storage_link' => ['command' => 'storage:link', 'parameters' => [], 'label' => 'Hubungkan storage'],
+        ];
+        $selected = $commands[$data['command']];
+
+        if ($data['command'] === 'storage_link' && File::exists(public_path('storage'))) {
+            return back()
+                ->with('success', 'Storage publik sudah terhubung.')
+                ->with('maintenance_output', 'Tautan public/storage sudah tersedia. Tidak ada perubahan yang diperlukan.');
+        }
+
+        try {
+            $exitCode = Artisan::call($selected['command'], $selected['parameters']);
+            $output = trim(Artisan::output()) ?: 'Perintah selesai tanpa keluaran tambahan.';
+
+            if ($exitCode !== 0) {
+                return back()->withErrors(['maintenance' => $selected['label'].' gagal dijalankan.'])->with('maintenance_output', $output);
+            }
+
+            return back()
+                ->with('success', $selected['label'].' berhasil dijalankan.')
+                ->with('maintenance_output', $output);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return back()->withErrors(['maintenance' => $selected['label'].' gagal dijalankan. Periksa log aplikasi.']);
+        }
     }
 }

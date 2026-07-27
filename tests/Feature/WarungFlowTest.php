@@ -12,6 +12,7 @@ use App\Models\Tenant;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
@@ -226,5 +227,28 @@ class WarungFlowTest extends TestCase
             ->assertSeeText('Minggu ini')
             ->assertSeeText('Bulan ini')
             ->assertSeeText('Tahun ini');
+    }
+
+    public function test_only_administrator_roles_can_run_whitelisted_maintenance_commands(): void
+    {
+        ['tenant' => $tenant, 'store' => $store, 'user' => $admin] = $this->setupWarung('admin');
+        $cashier = User::create(['tenant_id' => $tenant->id, 'store_id' => $store->id, 'name' => 'Kasir', 'email' => 'cashier-maintenance@test.id', 'role' => 'cashier', 'is_active' => true, 'password' => 'password']);
+
+        Artisan::shouldReceive('call')->once()->with('optimize:clear', [])->andReturn(0);
+        Artisan::shouldReceive('output')->once()->andReturn('Cache berhasil dibersihkan.');
+
+        $this->actingAs($admin)->withSession(['store_id' => $store->id])
+            ->post('/pengaturan/pemeliharaan', ['command' => 'optimize_clear'])
+            ->assertRedirect()
+            ->assertSessionHas('success')
+            ->assertSessionHas('maintenance_output', 'Cache berhasil dibersihkan.');
+
+        $this->actingAs($admin)->withSession(['store_id' => $store->id])
+            ->post('/pengaturan/pemeliharaan', ['command' => 'command_bebas'])
+            ->assertSessionHasErrors('command');
+
+        $this->actingAs($cashier)->withSession(['store_id' => $store->id])
+            ->post('/pengaturan/pemeliharaan', ['command' => 'optimize_clear'])
+            ->assertForbidden();
     }
 }

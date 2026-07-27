@@ -46,5 +46,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/pengaturan/brand', [WarungController::class, 'updateBrand'])->name('settings.brand');
         Route::post('/pengaturan/cabang', [WarungController::class, 'storeBranch'])->name('settings.branch');
         Route::post('/pengaturan/pengguna', [WarungController::class, 'storeUser'])->name('settings.user');
+        Route::post('/pengaturan/pemeliharaan', [WarungController::class, 'runMaintenance'])->name('settings.maintenance');
     });
 });

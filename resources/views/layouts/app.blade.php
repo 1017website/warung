@@ -57,8 +57,11 @@
             <div><div class="top-title">@yield('title', 'Dashboard')</div><div class="top-sub">{{ now()->translatedFormat('l, d F Y') }}</div></div>
             <form class="store-switch" action="{{ route('stores.switch') }}" method="POST">
                 @csrf
-                <label class="hide-mobile"><i class="bi bi-geo-alt"></i> Cabang</label>
-                <select name="store_id" onchange="this.form.submit()">
+                <label class="store-switch-label hide-mobile" for="active-store">
+                    <span class="store-switch-icon"><i class="bi bi-geo-alt"></i></span>
+                    <span>Cabang</span>
+                </label>
+                <select id="active-store" name="store_id" aria-label="Pilih cabang aktif" onchange="this.form.submit()">
                     @foreach($availableStores as $store)
                         <option value="{{ $store->id }}" @selected($activeStore?->id === $store->id)>{{ $store->name }}</option>
                     @endforeach

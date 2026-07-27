@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Pengaturan')
 @section('content')
-<div class="page-head"><div><h1><i class="bi bi-sliders"></i> Pengaturan warung</h1><p>Ubah identitas, cabang, dan akses tim.</p></div></div>
+<div class="page-head"><div><h1><i class="bi bi-sliders"></i> Pengaturan warung</h1><p>Ubah identitas, cabang, akses tim, dan pemeliharaan aplikasi.</p></div></div>
 <div class="grid two-col">
 <section class="card card-pad"><div class="card-title"><div><h2>Identitas merek</h2><p>Nama dan logo tampil pada aplikasi serta struk POS.</p></div></div><form method="POST" action="{{ route('settings.brand') }}" enctype="multipart/form-data" class="form-grid">@csrf
 <div class="field full"><label>Nama warung / perusahaan</label><input name="name" value="{{ $tenant->name }}" required></div><div class="field full"><label>Logo</label><input type="file" name="logo" accept="image/png,image/jpeg,image/webp"><div class="hint">PNG, JPG, atau WebP. Maksimum 2 MB.</div></div><div class="field full"><button class="btn btn-primary">Simpan identitas</button></div></form></section>
@@ -11,5 +11,15 @@
 <section class="card card-pad"><div class="card-title"><div><h2>Tambah pengguna</h2><p>Admin, kasir, atau tim gudang.</p></div></div><form method="POST" action="{{ route('settings.user') }}" class="form-grid">@csrf
 <div class="field"><label>Nama</label><input name="name" required></div><div class="field"><label>Email</label><input type="email" name="email" required></div><div class="field"><label>Role</label><select name="role">@foreach($creatableRoles as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></div><div class="field"><label>Cabang utama</label><select name="store_id">@foreach($stores as $store)<option value="{{ $store->id }}">{{ $store->name }}</option>@endforeach</select></div><div class="field full"><label>Kata sandi awal</label><input type="password" name="password" minlength="8" required></div><div class="field full"><button class="btn btn-primary">Tambah pengguna</button></div></form></section>
 <section class="card card-pad" style="grid-column:1/-1"><div class="card-title"><div><h2>Tim</h2><p>Akun yang dapat mengakses tenant ini.</p></div></div><div class="table-wrap"><table><thead><tr><th>Nama</th><th>Email</th><th>Role</th><th>Cabang utama</th><th>Status</th></tr></thead><tbody>@foreach($users as $user)<tr><td class="cell-main">{{ $user->name }}</td><td>{{ $user->email }}</td><td><span class="badge gray">{{ ucfirst($user->role) }}</span></td><td>{{ $user->store?->name ?? 'Semua cabang' }}</td><td><span class="badge">Aktif</span></td></tr>@endforeach</tbody></table></div></section>
+<section class="card card-pad system-maintenance" style="grid-column:1/-1">
+    <div class="card-title"><div><h2><i class="bi bi-tools"></i> Pemeliharaan sistem</h2><p>Khusus administrator. Jalankan perintah server yang sudah dibatasi oleh aplikasi.</p></div><span class="badge amber"><i class="bi bi-shield-lock"></i>&nbsp; Admin</span></div>
+    <div class="maintenance-warning"><i class="bi bi-exclamation-triangle"></i><span>Jalankan migrasi setelah pembaruan aplikasi. Bersihkan cache bila konfigurasi atau tampilan belum berubah.</span></div>
+    <div class="maintenance-actions">
+        <form method="POST" action="{{ route('settings.maintenance') }}" onsubmit="return confirm('Jalankan migrasi database sekarang?')">@csrf<input type="hidden" name="command" value="migrate"><button class="maintenance-command"><span class="command-icon"><i class="bi bi-database-up"></i></span><span><b>Migrasi database</b><small>php artisan migrate</small></span><i class="bi bi-chevron-right"></i></button></form>
+        <form method="POST" action="{{ route('settings.maintenance') }}">@csrf<input type="hidden" name="command" value="optimize_clear"><button class="maintenance-command"><span class="command-icon"><i class="bi bi-arrow-clockwise"></i></span><span><b>Bersihkan cache</b><small>php artisan optimize:clear</small></span><i class="bi bi-chevron-right"></i></button></form>
+        <form method="POST" action="{{ route('settings.maintenance') }}" onsubmit="return confirm('Hubungkan folder public/storage sekarang?')">@csrf<input type="hidden" name="command" value="storage_link"><button class="maintenance-command"><span class="command-icon"><i class="bi bi-link-45deg"></i></span><span><b>Hubungkan storage</b><small>php artisan storage:link</small></span><i class="bi bi-chevron-right"></i></button></form>
+    </div>
+    @if(session('maintenance_output'))<div class="maintenance-output"><div><i class="bi bi-terminal"></i> Hasil perintah terakhir</div><pre>{{ session('maintenance_output') }}</pre></div>@endif
+</section>
 </div>
 @endsection
