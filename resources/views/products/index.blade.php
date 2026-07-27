@@ -22,8 +22,8 @@
     <div class="field"><label>Barcode</label><input name="barcode" placeholder="Opsional"></div>
     <div class="field"><label>Kategori</label><select name="category_id"><option value="">Umum</option>@foreach($categories as $category)<option value="{{ $category->id }}">{{ $category->name }}</option>@endforeach</select></div>
     <div class="field"><label>Satuan</label><select name="unit"><option>pcs</option><option>botol</option><option>bungkus</option><option>kg</option><option>porsi</option></select></div>
-    <div class="field"><label>Harga beli</label><input type="number" name="purchase_price" min="0" required></div>
-    <div class="field"><label>Harga jual</label><input type="number" name="selling_price" min="0" required></div>
+    <div class="field"><label>Harga beli</label><input type="text" name="purchase_price" data-money-input data-min="0" inputmode="numeric" autocomplete="off" placeholder="0" required></div>
+    <div class="field"><label>Harga jual</label><input type="text" name="selling_price" data-money-input data-min="0" inputmode="numeric" autocomplete="off" placeholder="0" required></div>
     <div class="field"><label>Stok awal</label><input type="number" name="initial_stock" value="0" min="0"></div>
     <div class="field"><label>Stok minimum</label><input type="number" name="minimum_stock" value="5" min="0" required></div>
     <div class="field full"><button class="btn btn-primary"><i class="bi bi-check-circle"></i> Simpan produk</button></div>
@@ -33,12 +33,12 @@
     <div class="field full"><label>Nama produk</label><input id="edit-name" name="name" required></div>
     <div class="field"><label>SKU</label><input id="edit-sku" name="sku" required></div><div class="field"><label>Barcode</label><input id="edit-barcode" name="barcode"></div>
     <div class="field"><label>Kategori</label><select id="edit-category" name="category_id"><option value="">Umum</option>@foreach($categories as $category)<option value="{{ $category->id }}">{{ $category->name }}</option>@endforeach</select></div>
-    <div class="field"><label>Satuan</label><input id="edit-unit" name="unit" required></div><div class="field"><label>Harga beli</label><input id="edit-buy" type="number" name="purchase_price" min="0" required></div>
-    <div class="field"><label>Harga jual</label><input id="edit-sell" type="number" name="selling_price" min="0" required></div><div class="field"><label>Stok minimum</label><input id="edit-minimum" type="number" name="minimum_stock" min="0" required></div>
+    <div class="field"><label>Satuan</label><input id="edit-unit" name="unit" required></div><div class="field"><label>Harga beli</label><input id="edit-buy" type="text" name="purchase_price" data-money-input data-min="0" inputmode="numeric" autocomplete="off" required></div>
+    <div class="field"><label>Harga jual</label><input id="edit-sell" type="text" name="selling_price" data-money-input data-min="0" inputmode="numeric" autocomplete="off" required></div><div class="field"><label>Stok minimum</label><input id="edit-minimum" type="number" name="minimum_stock" min="0" required></div>
     <div class="field full"><button class="btn btn-primary">Simpan perubahan</button></div>
 </form></div></div>
 @endpush
 @push('scripts')<script>
 function filterRows(q){document.querySelectorAll('#product-table tbody tr').forEach(r=>r.style.display=r.innerText.toLowerCase().includes(q.toLowerCase())?'':'none')}
-document.querySelectorAll('.edit-product').forEach(button=>button.addEventListener('click',()=>{const d=button.dataset;document.getElementById('edit-product-form').action='/produk/'+d.id;['name','sku','barcode','unit','buy','sell','minimum','category'].forEach(k=>document.getElementById('edit-'+k).value=d[k]||'');openModal('edit-product-modal')}));
+document.querySelectorAll('.edit-product').forEach(button=>button.addEventListener('click',()=>{const d=button.dataset;document.getElementById('edit-product-form').action='/produk/'+d.id;['name','sku','barcode','unit','buy','sell','minimum','category'].forEach(k=>document.getElementById('edit-'+k).value=d[k]||'');setMoneyInputValue(document.getElementById('edit-buy'),d.buy);setMoneyInputValue(document.getElementById('edit-sell'),d.sell);openModal('edit-product-modal')}));
 </script>@endpush

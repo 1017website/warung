@@ -10,7 +10,7 @@
     <tr>
         <td><div class="cell-main">{{ $member->name }}</div><div class="cell-sub">{{ $member->member_code }}</div></td>
         <td>{{ $member->phone ?: ($member->email ?: '—') }}</td>
-        <td><button type="button" class="btn btn-outline btn-sm member-card-trigger" data-qr="{{ $member->qr_code }}" data-name="{{ $member->name }}" data-code="{{ $member->member_code }}" data-phone="{{ $member->phone }}" data-balance="{{ (float) $member->deposit_balance }}"><i class="bi bi-person-badge"></i> Lihat kartu</button></td>
+        <td><button type="button" class="btn btn-outline btn-sm member-card-trigger" data-qr="{{ $member->qr_code }}" data-name="{{ $member->name }}" data-code="{{ $member->member_code }}" data-phone="{{ $member->phone }}"><i class="bi bi-person-badge"></i> Lihat kartu</button></td>
         <td class="money">Rp {{ number_format($member->deposit_balance,0,',','.') }}</td>
         <td><button type="button" class="btn btn-soft btn-sm topup-trigger" data-url="{{ route('members.topup', $member) }}" data-name="{{ $member->name }}" data-code="{{ $member->member_code }}"><i class="bi bi-plus-circle"></i> Top up</button></td>
     </tr>
@@ -24,7 +24,7 @@
 <div class="modal" id="member-modal"><div class="modal-card"><div class="modal-head"><h2>Tambah member</h2><button class="modal-close" onclick="closeModal('member-modal')">×</button></div><form method="POST" action="{{ route('members.store') }}" class="form-grid">@csrf<div class="field full"><label>Nama lengkap</label><input name="name" required></div><div class="field"><label>No. HP</label><input name="phone"></div><div class="field"><label>Email</label><input type="email" name="email"></div><div class="field full"><button class="btn btn-primary">Buat membership</button></div></form></div></div>
 
 <div class="modal" id="topup-modal"><div class="modal-card" style="max-width:440px"><div class="modal-head"><div><h2>Top up deposit</h2><div id="topup-name" class="hint"></div></div><button class="modal-close" onclick="closeModal('topup-modal')">×</button></div><form id="topup-form" method="POST" class="form-grid">@csrf
-    <div class="field full"><label>Nominal top up</label><div class="input-prefix"><span>Rp</span><input id="topup-amount" type="number" name="amount" min="1000" step="1000" required placeholder="50000" inputmode="numeric"></div></div>
+    <div class="field full"><label>Nominal top up</label><div class="input-prefix"><span>Rp</span><input id="topup-amount" type="text" name="amount" data-money-input data-min="1000" required placeholder="50.000" inputmode="numeric" autocomplete="off"></div></div>
     <div class="field full"><div class="topup-presets"><button type="button" data-amount="25000">Rp25 ribu</button><button type="button" data-amount="50000">Rp50 ribu</button><button type="button" data-amount="100000">Rp100 ribu</button></div></div>
     <div class="field full"><button class="btn btn-primary" id="topup-submit"><i class="bi bi-wallet2"></i> Tambahkan saldo</button></div>
 </form></div></div>
@@ -40,7 +40,6 @@
             <div class="membership-identity"><small>Nama member</small><h3 id="qr-name"></h3><div id="qr-code"></div><div id="qr-phone" class="membership-phone"></div></div>
             <div class="membership-card-qr"><canvas id="member-qr"></canvas></div>
         </div>
-        <footer><span>Saldo deposit</span><b id="qr-balance">Rp 0</b></footer>
     </article>
     <div class="actions no-print membership-actions"><button class="btn btn-outline" onclick="window.print()"><i class="bi bi-printer"></i> Cetak kartu</button></div>
 </div></div>
@@ -58,7 +57,7 @@ document.querySelectorAll('.topup-trigger').forEach(button => button.addEventLis
     setTimeout(()=>document.getElementById('topup-amount').focus(),100);
 }));
 document.querySelectorAll('.topup-presets button').forEach(button => button.addEventListener('click', () => {
-    document.getElementById('topup-amount').value=button.dataset.amount;
+    setMoneyInputValue(document.getElementById('topup-amount'),button.dataset.amount);
 }));
 document.getElementById('topup-form').addEventListener('submit', () => {
     const button=document.getElementById('topup-submit');button.disabled=true;button.innerHTML='<i class="bi bi-arrow-repeat"></i> Memproses…';
@@ -68,7 +67,6 @@ document.querySelectorAll('.member-card-trigger').forEach(button => button.addEv
     document.getElementById('qr-name').textContent=button.dataset.name;
     document.getElementById('qr-code').textContent=button.dataset.code;
     document.getElementById('qr-phone').textContent=button.dataset.phone||'Member setia';
-    document.getElementById('qr-balance').textContent='Rp '+money(button.dataset.balance);
     openModal('qr-modal');
 }));
 let memberStream=null, memberScanning=false;

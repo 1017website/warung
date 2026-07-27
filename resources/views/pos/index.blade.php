@@ -56,12 +56,12 @@
         <div class="cart-items" id="cart-items"><div class="cart-empty">Keranjang masih kosong.<br>Klik produk untuk menambahkan.</div></div>
         <div class="cart-summary">
             <div class="summary-row"><span>Subtotal</span><b id="subtotal">Rp 0</b></div>
-            <div class="summary-row"><span>Diskon</span><div class="input-prefix" style="width:120px"><span>Rp</span><input id="discount" type="number" min="0" value="0" style="min-height:34px"></div></div>
+            <div class="summary-row"><span>Diskon</span><div class="input-prefix" style="width:120px"><span>Rp</span><input id="discount" type="text" data-money-input data-min="0" value="0" inputmode="numeric" autocomplete="off" style="min-height:34px"></div></div>
             <div class="summary-row total"><span>Total</span><span id="total">Rp 0</span></div>
             <div class="payment-grid">
                 <button class="payment active" data-payment="cash"><i class="bi bi-cash"></i><br>Tunai</button><button class="payment" data-payment="qris"><i class="bi bi-qr-code"></i><br>QRIS</button><button class="payment" data-payment="transfer"><i class="bi bi-bank"></i><br>Transfer</button><button class="payment" data-payment="deposit"><i class="bi bi-person-badge"></i><br>Deposit</button>
             </div>
-            <div class="field" id="paid-field"><label>Uang diterima</label><input id="paid-amount" type="number" min="0" placeholder="0"></div>
+            <div class="field" id="paid-field"><label>Uang diterima</label><input id="paid-amount" type="text" data-money-input data-min="0" inputmode="numeric" autocomplete="off" placeholder="0"></div>
             <button class="btn btn-primary pay-btn" id="checkout-btn" style="margin-top:12px"><i class="bi bi-printer"></i> Bayar & cetak struk</button>
         </div>
     </aside>
@@ -94,7 +94,7 @@ function filterProducts(){
 }
 function addItem(id){const p=byId(id), item=cart.get(id)||{...p,qty:0};if(item.qty<p.stock){item.qty++;cart.set(id,item);renderCart();}}
 function changeQty(id,delta){const item=cart.get(id);item.qty+=delta;if(item.qty<=0)cart.delete(id);else item.qty=Math.min(item.qty,item.stock);renderCart();}
-function totals(){const subtotal=[...cart.values()].reduce((s,i)=>s+i.price*i.qty,0), discount=Math.min(Number(document.getElementById('discount').value||0),subtotal);return{subtotal,discount,total:subtotal-discount};}
+function totals(){const subtotal=[...cart.values()].reduce((s,i)=>s+i.price*i.qty,0), discount=Math.min(moneyValue(document.getElementById('discount')),subtotal);return{subtotal,discount,total:subtotal-discount};}
 function renderCart(){
     const box=document.getElementById('cart-items');
     box.innerHTML=cart.size?[...cart.values()].map(i=>`<div class="cart-line"><div><div class="cart-line-name">${i.name}</div><div class="cart-line-price">Rp ${money(i.price)} / item</div><div class="qty"><button onclick="changeQty(${i.id},-1)">−</button><span>${i.qty}</span><button onclick="changeQty(${i.id},1)">+</button></div></div><b class="money">Rp ${money(i.price*i.qty)}</b></div>`).join(''):'<div class="cart-empty">Keranjang masih kosong.<br>Klik produk untuk menambahkan.</div>';
@@ -109,9 +109,9 @@ document.getElementById('checkout-btn').addEventListener('click', async () => {
     const btn=document.getElementById('checkout-btn'), t=totals(); if(payment==='deposit'&&!document.getElementById('member-id').value)return alert('Pilih atau scan member untuk pembayaran deposit.');
     btn.disabled=true;btn.innerHTML='<i class="bi bi-arrow-repeat"></i> Memproses…';
     try{
-        const response=await fetch('{{ route('pos.checkout') }}',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content},body:JSON.stringify({items:[...cart.values()].map(i=>({id:i.id,qty:i.qty})),member_id:document.getElementById('member-id').value||null,discount:t.discount,payment_method:payment,paid_amount:document.getElementById('paid-amount').value||0,service_type:serviceType,table_number:serviceType==='dine_in'?tableNumber:null,online_platform:serviceType==='online'?onlinePlatform:null})});
+        const response=await fetch('{{ route('pos.checkout') }}',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content},body:JSON.stringify({items:[...cart.values()].map(i=>({id:i.id,qty:i.qty})),member_id:document.getElementById('member-id').value||null,discount:t.discount,payment_method:payment,paid_amount:moneyValue(document.getElementById('paid-amount')),service_type:serviceType,table_number:serviceType==='dine_in'?tableNumber:null,online_platform:serviceType==='online'?onlinePlatform:null})});
         const data=await response.json();if(!response.ok)throw new Error(data.message||Object.values(data.errors||{})[0]?.[0]||'Transaksi gagal.');
-        cart.clear();renderCart();document.getElementById('discount').value=0;document.getElementById('paid-amount').value='';window.open(data.print_url,'_blank','width=420,height=720');alert('Transaksi '+data.invoice+' berhasil.');
+        cart.clear();renderCart();setMoneyInputValue(document.getElementById('discount'),0);setMoneyInputValue(document.getElementById('paid-amount'),'');window.open(data.print_url,'_blank','width=420,height=720');alert('Transaksi '+data.invoice+' berhasil.');
         setTimeout(()=>location.reload(),700);
     }catch(e){alert(e.message)}finally{btn.disabled=false;btn.innerHTML='<i class="bi bi-printer"></i> Bayar & cetak struk'}
 });

@@ -9,6 +9,6 @@
 @push('modals')
 <div class="modal" id="expense-modal"><div class="modal-card"><div class="modal-head"><h2>Catat pengeluaran</h2><button class="modal-close" onclick="closeModal('expense-modal')">×</button></div><form method="POST" action="{{ route('expenses.store') }}" class="form-grid">@csrf
 <div class="field"><label>Kategori</label><select name="category"><option>Operasional</option><option>Utilitas</option><option>Transportasi</option><option>Gaji</option><option>Lainnya</option></select></div><div class="field"><label>Tanggal</label><input type="date" name="expense_date" value="{{ now()->toDateString() }}" required></div>
-<div class="field full"><label>Keterangan</label><input name="description" required placeholder="Contoh: Belanja gas dapur"></div><div class="field full"><label>Nominal</label><input type="number" name="amount" min="1" required></div>
+<div class="field full"><label>Keterangan</label><input name="description" required placeholder="Contoh: Belanja gas dapur"></div><div class="field full"><label>Nominal</label><input type="text" name="amount" data-money-input data-min="1" inputmode="numeric" autocomplete="off" placeholder="0" required></div>
 <div class="field full"><button class="btn btn-primary">Simpan pengeluaran</button></div></form></div></div>
 @endpush

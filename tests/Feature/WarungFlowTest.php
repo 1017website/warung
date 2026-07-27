@@ -196,6 +196,27 @@ class WarungFlowTest extends TestCase
         $this->assertDatabaseHas('deposit_transactions', ['member_id' => $member->id, 'type' => 'credit', 'amount' => 50000, 'balance_after' => 60000]);
     }
 
+    public function test_member_card_hides_balance_and_money_fields_use_auto_separator(): void
+    {
+        ['tenant' => $tenant, 'store' => $store, 'user' => $user] = $this->setupWarung();
+        Member::create(['tenant_id' => $tenant->id, 'member_code' => 'M-3', 'qr_code' => 'qr-card', 'name' => 'Rina', 'deposit_balance' => 75000]);
+
+        $this->actingAs($user)
+            ->withSession(['store_id' => $store->id])
+            ->get('/member')
+            ->assertOk()
+            ->assertSee('data-money-input', false)
+            ->assertDontSee('id="qr-balance"', false);
+
+        foreach (['/kasir', '/produk', '/pembelian', '/pengeluaran'] as $url) {
+            $this->actingAs($user)
+                ->withSession(['store_id' => $store->id])
+                ->get($url)
+                ->assertOk()
+                ->assertSee('data-money-input', false);
+        }
+    }
+
     public function test_inventory_adjustment_uses_separate_stock_tables(): void
     {
         ['tenant' => $tenant, 'store' => $store, 'user' => $user] = $this->setupWarung();

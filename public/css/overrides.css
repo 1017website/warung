@@ -49,3 +49,7 @@
     line-height: 1.35;
     margin-top: 2px;
 }
+
+.membership-card {
+    grid-template-rows: auto 1fr;
+}

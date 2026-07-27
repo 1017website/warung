@@ -9,7 +9,7 @@
 @push('modals')
 <div class="modal" id="purchase-modal"><div class="modal-card"><div class="modal-head"><div><h2>Catat pembelian</h2><div class="hint">Stok otomatis bertambah setelah disimpan.</div></div><button class="modal-close" onclick="closeModal('purchase-modal')">×</button></div><form method="POST" action="{{ route('purchases.store') }}" class="form-grid">@csrf
 <div class="field full"><label>Supplier</label><input name="supplier_name" required placeholder="Nama pemasok"></div><div class="field full"><label>Produk</label><select name="product_id" required>@foreach($products as $product)<option value="{{ $product->id }}">{{ $product->name }}</option>@endforeach</select></div>
-<div class="field"><label>Jumlah</label><input type="number" name="quantity" min="1" required></div><div class="field"><label>Harga beli / unit</label><input type="number" name="unit_cost" min="0" required></div>
+<div class="field"><label>Jumlah</label><input type="number" name="quantity" min="1" required></div><div class="field"><label>Harga beli / unit</label><input type="text" name="unit_cost" data-money-input data-min="0" inputmode="numeric" autocomplete="off" placeholder="0" required></div>
 <div class="field"><label>Tanggal pembelian</label><input type="date" name="purchased_at" value="{{ now()->toDateString() }}" required></div><div class="field"><label>Catatan</label><input name="notes" placeholder="Opsional"></div>
 <div class="field full"><button class="btn btn-primary">Terima & tambah stok</button></div></form></div></div>
 @endpush
