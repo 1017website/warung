@@ -1,0 +1,4 @@
+/*
+ * Tambahkan JavaScript global baru di file ini.
+ * File dibaca langsung oleh browser sehingga tidak memerlukan npm run build.
+ */
