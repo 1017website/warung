@@ -38,8 +38,9 @@ a { color: inherit; text-decoration: none; }
 .brand { display: flex; align-items: center; gap: 11px; padding: 0 10px 24px; }
 .brand-mark { width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; background: #e6ebf5; color: #465d8b; font-weight: 900; overflow: hidden; flex: none; }
 .brand-mark img { width: 100%; height: 100%; object-fit: cover; }
-.brand-name { font-weight: 750; font-size: 15px; line-height: 1.2; }
-.brand-sub { color: #aeb9d0; font-size: 11px; margin-top: 3px; }
+.brand-copy { min-width: 0; display: flex; flex: 1; flex-direction: column; align-items: flex-start; }
+.brand-name { display: block; font-weight: 750; font-size: 15px; line-height: 1.35; overflow-wrap: anywhere; }
+.brand-sub { display: block; color: #aeb9d0; font-size: 11px; line-height: 1.35; margin-top: 4px; }
 .nav-label { padding: 10px 12px 6px; color: #8998b7; font-weight: 700; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
 .nav { display: grid; gap: 4px; overflow: auto; }
 .nav a { min-height: 43px; border-radius: 11px; padding: 0 12px; display: flex; align-items: center; gap: 12px; color: #cad2e2; font-size: 13px; font-weight: 600; }
@@ -48,9 +49,10 @@ a { color: inherit; text-decoration: none; }
 .nav a.active .nav-icon { background: #e6ebf5; color: #465d8b; }
 .sidebar-footer { margin-top: auto; padding: 14px 8px 0; border-top: 1px solid rgba(255,255,255,.1); }
 .sidebar-user { display: flex; align-items: center; gap: 10px; }
-.avatar { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: #788db6; color: white; font-size: 12px; font-weight: 800; }
-.sidebar-user-name { font-size: 12px; font-weight: 700; }
-.sidebar-user-role { font-size: 10px; color: #aeb9d0; text-transform: capitalize; }
+.avatar { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: #788db6; color: white; font-size: 12px; font-weight: 800; flex: none; }
+.sidebar-user-copy { min-width: 0; display: flex; flex: 1; flex-direction: column; align-items: flex-start; }
+.sidebar-user-name { display: block; max-width: 100%; overflow: hidden; font-size: 12px; font-weight: 700; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-user-role { display: block; color: #aeb9d0; font-size: 10px; line-height: 1.35; margin-top: 2px; text-transform: capitalize; }
 .logout { margin-left: auto; background: transparent; border: 0; color: #c4cce0; cursor: pointer; padding: 8px; }
 
 .main { grid-column: 2; min-width: 0; }

@@ -32,7 +32,10 @@
                     <img src="{{ asset('storage/'.auth()->user()->tenant->logo_path) }}" alt="Logo">
                 @else <i class="bi bi-shop"></i> @endif
             </span>
-            <span><span class="brand-name">{{ auth()->user()->tenant->name }}</span><span class="brand-sub">Warung OS</span></span>
+            <span class="brand-copy">
+                <span class="brand-name">{{ auth()->user()->tenant->name }}</span>
+                <span class="brand-sub">Warung OS</span>
+            </span>
         </a>
         <div class="nav-label">Operasional</div>
         <nav class="nav">
@@ -47,7 +50,10 @@
         <div class="sidebar-footer">
             <div class="sidebar-user">
                 <span class="avatar">{{ collect(explode(' ', auth()->user()->name))->map(fn($n) => mb_substr($n,0,1))->take(2)->join('') }}</span>
-                <span><span class="sidebar-user-name">{{ auth()->user()->name }}</span><span class="sidebar-user-role">{{ $role }}</span></span>
+                <span class="sidebar-user-copy">
+                    <span class="sidebar-user-name">{{ auth()->user()->name }}</span>
+                    <span class="sidebar-user-role">{{ $role }}</span>
+                </span>
                 <form method="POST" action="{{ route('logout') }}">@csrf<button class="logout" title="Keluar"><i class="bi bi-box-arrow-right"></i></button></form>
             </div>
         </div>
