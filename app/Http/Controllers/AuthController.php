@@ -24,7 +24,9 @@ class AuthController extends Controller
         $request->session()->regenerate();
         $request->session()->put('store_id', $request->user()->store_id);
 
-        return redirect()->intended(route('dashboard'));
+        $landing = in_array(Auth::user()->role, ['superadmin', 'head_ops', 'owner', 'admin']) ? 'dashboard' : 'pos';
+
+        return redirect()->intended(route($landing));
     }
 
     public function destroy(Request $request)

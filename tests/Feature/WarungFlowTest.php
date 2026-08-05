@@ -70,17 +70,16 @@ class WarungFlowTest extends TestCase
         $this->assertSoftDeleted($product);
     }
 
-    public function test_admin_can_render_every_main_module(): void
+    public function test_superadmin_can_render_every_main_module_with_empty_transactions(): void
     {
         $this->seed();
-        $admin = User::where('role', 'admin')->firstOrFail();
+        $admin = User::where('role', 'superadmin')->firstOrFail();
 
         foreach (['/dashboard', '/kasir', '/transaksi', '/produk', '/gudang', '/pembelian', '/pengeluaran', '/member', '/laporan', '/pengaturan'] as $url) {
             $this->actingAs($admin)->withSession(['store_id' => $admin->store_id])->get($url)->assertOk();
         }
 
-        $transaction = Transaction::firstOrFail();
-        $this->actingAs($admin)->get("/transaksi/{$transaction->id}/print")->assertOk();
+        $this->assertDatabaseCount('transactions', 0);
     }
 
     public function test_employee_cannot_discover_or_request_non_real_report(): void

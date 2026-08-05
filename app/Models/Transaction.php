@@ -11,7 +11,13 @@ class Transaction extends Model
 
     protected $guarded = [];
 
-    protected $casts = ['transacted_at' => 'datetime', 'total' => 'decimal:2'];
+    protected $casts = [
+        'transacted_at' => 'datetime',
+        'voided_at' => 'datetime',
+        'subtotal' => 'decimal:2',
+        'discount' => 'decimal:2',
+        'total' => 'decimal:2',
+    ];
 
     public function items()
     {
@@ -31,5 +37,15 @@ class Transaction extends Model
     public function store()
     {
         return $this->belongsTo(Store::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(TransactionPayment::class);
+    }
+
+    public function voidAuthorizer()
+    {
+        return $this->belongsTo(User::class, 'void_authorized_by');
     }
 }

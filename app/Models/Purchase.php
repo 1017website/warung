@@ -11,10 +11,10 @@ class Purchase extends Model
 
     protected $guarded = [];
 
-    protected $casts = ['purchased_at' => 'date'];
+    protected $casts = ['purchased_at' => 'date', 'received_at' => 'datetime', 'dp_amount' => 'decimal:2'];
 
     public function items()
     {
-        return $this->hasMany(PurchaseItem::class);
+        return $this->hasMany(PurchaseItem::class)->with('product');
     }
 }

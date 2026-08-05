@@ -3,11 +3,13 @@
 namespace App\Services;
 
 use App\Models\Expense;
+use App\Models\Member;
 use App\Models\Store;
 use App\Models\Tenant;
 use App\Models\Transaction;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -18,17 +20,19 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class TransactionReportExporter
 {
-    public function data(int $tenantId, int $storeId, Carbon $from, Carbon $to, float $factor): array
+    public function data(int $tenantId, ?int $storeId, Carbon $from, Carbon $to, float $factor): array
     {
-        $transactions = Transaction::with(['items', 'user', 'member'])
+        $transactions = Transaction::with(['items', 'user', 'member', 'payments', 'store'])
             ->where('tenant_id', $tenantId)
-            ->where('store_id', $storeId)
+            ->where('status', 'completed')
+            ->where('transaction_type', 'sale')
+            ->when($storeId, fn ($query) => $query->where('store_id', $storeId))
             ->whereBetween('transacted_at', [$from, $to])
             ->orderBy('transacted_at')
             ->get();
         $expenseRows = Expense::with('user')
             ->where('tenant_id', $tenantId)
-            ->where('store_id', $storeId)
+            ->when($storeId, fn ($query) => $query->where('store_id', $storeId))
             ->whereBetween('expense_date', [$from->toDateString(), $to->toDateString()])
             ->orderBy('expense_date')
             ->get();
@@ -42,12 +46,47 @@ class TransactionReportExporter
                 'date' => $date,
                 'total' => round($rows->sum('total') * $factor, 2),
             ])->values();
-        $payments = $transactions->groupBy('payment_method')
-            ->map(fn (Collection $rows, string $method) => (object) [
-                'payment_method' => $method,
-                'total' => round($rows->sum('total') * $factor, 2),
-                'count' => $rows->count(),
+        $paymentRows = $transactions->flatMap(function (Transaction $transaction) {
+            if ($transaction->payments->isNotEmpty()) {
+                return $transaction->payments->map(fn ($payment) => (object) [
+                    'method' => $payment->method,
+                    'provider' => $payment->provider,
+                    'amount' => (float) $payment->amount,
+                    'transaction_id' => $transaction->id,
+                ]);
+            }
+
+            return collect([(object) ['method' => $transaction->payment_method, 'provider' => null, 'amount' => (float) $transaction->total, 'transaction_id' => $transaction->id]]);
+        });
+        $payments = $paymentRows->groupBy(fn ($row) => $row->method.'|'.($row->provider ?: '-'))
+            ->map(fn (Collection $rows) => (object) [
+                'payment_method' => $rows->first()->method,
+                'provider' => $rows->first()->provider,
+                'total' => round($rows->sum('amount') * $factor, 2),
+                'count' => $rows->pluck('transaction_id')->unique()->count(),
             ])->values();
+        $productSales = $transactions->flatMap->items->groupBy('product_name')->map(fn (Collection $items, string $name) => (object) [
+            'name' => $name,
+            'quantity' => $items->sum('quantity'),
+            'sales' => round($items->sum('subtotal') * $factor, 2),
+        ])->sortByDesc('quantity')->values();
+        $newMembers = Member::where('tenant_id', $tenantId)->whereBetween('created_at', [$from, $to])->count();
+        $topupRows = DB::table('deposit_transactions')->where('tenant_id', $tenantId)->where('type', 'credit')
+            ->when($storeId, fn ($query) => $query->where('store_id', $storeId))->whereBetween('created_at', [$from, $to])->get();
+        $topups = $topupRows->groupBy(fn ($row) => $row->payment_method ?: 'cash')->map(fn (Collection $rows, string $method) => (object) [
+            'method' => $method,
+            'count' => $rows->count(),
+            'total' => round($rows->sum('amount') * $factor, 2),
+        ])->values();
+        $depositUsed = round($paymentRows->where('method', 'deposit')->sum('amount') * $factor, 2);
+        if ($depositUsed === 0.0) {
+            $depositUsed = round($transactions->where('payment_method', 'deposit')->sum('total') * $factor, 2);
+        }
+        $storeComparison = $transactions->groupBy('store_id')->map(fn (Collection $rows) => (object) [
+            'store' => $rows->first()->store?->name ?? 'Warung',
+            'sales' => round($rows->sum('total') * $factor, 2),
+            'transactions' => $rows->count(),
+        ])->sortByDesc('sales')->values();
 
         return [
             'transactions' => $transactions,
@@ -58,6 +97,12 @@ class TransactionReportExporter
             'profit' => round(($realSales - $realCost - $realExpenses) * $factor, 2),
             'daily' => $daily,
             'payments' => $payments,
+            'products' => $productSales,
+            'newMembers' => $newMembers,
+            'topups' => $topups,
+            'depositUsed' => $depositUsed,
+            'turnoverNetDeposit' => round(($realSales * $factor) - $depositUsed, 2),
+            'storeComparison' => $storeComparison,
         ];
     }
 
@@ -77,19 +122,19 @@ class TransactionReportExporter
 
         $this->buildTransactionsSheet($transactionsSheet, $data['transactions'], $tenant, $store, $from, $to, $type, $factor);
         $this->buildExpensesSheet($expensesSheet, $data['expenseRows'], $tenant, $store, $from, $to, $type, $factor);
-        $this->buildSummarySheet($summary, $tenant, $store, $from, $to, $type, count($data['transactions']), count($data['expenseRows']));
+        $this->buildSummarySheet($summary, $tenant, $store, $from, $to, $type, $factor, count($data['transactions']), count($data['expenseRows']));
 
         $spreadsheet->setActiveSheetIndex(0);
 
         return $spreadsheet;
     }
 
-    private function buildSummarySheet(Worksheet $sheet, Tenant $tenant, Store $store, Carbon $from, Carbon $to, string $type, int $transactionCount, int $expenseCount): void
+    private function buildSummarySheet(Worksheet $sheet, Tenant $tenant, Store $store, Carbon $from, Carbon $to, string $type, float $factor, int $transactionCount, int $expenseCount): void
     {
         $sheet->setShowGridlines(false);
         $sheet->mergeCells('A1:D1')->setCellValue('A1', 'LAPORAN TRANSAKSI');
         $sheet->mergeCells('A2:D2')->setCellValue('A2', $tenant->name.' · '.$store->name);
-        $sheet->mergeCells('A3:D3')->setCellValue('A3', $from->translatedFormat('d M Y').' – '.$to->translatedFormat('d M Y').' · '.($type === 'non_real' ? 'Non-riil (50%)' : 'Riil'));
+        $sheet->mergeCells('A3:D3')->setCellValue('A3', $from->translatedFormat('d M Y').' – '.$to->translatedFormat('d M Y').' · '.($type === 'non_real' ? 'Non-riil ('.round($factor * 100, 2).'%)' : 'Riil'));
 
         $sheet->fromArray([
             ['Indikator', 'Nilai', 'Keterangan'],
@@ -125,7 +170,7 @@ class TransactionReportExporter
     private function buildTransactionsSheet(Worksheet $sheet, Collection $transactions, Tenant $tenant, Store $store, Carbon $from, Carbon $to, string $type, float $factor): void
     {
         $sheet->setShowGridlines(false);
-        $sheet->mergeCells('A1:M1')->setCellValue('A1', 'RINCIAN TRANSAKSI · '.strtoupper($type === 'non_real' ? 'NON-RIIL 50%' : 'RIIL'));
+        $sheet->mergeCells('A1:M1')->setCellValue('A1', 'RINCIAN TRANSAKSI · '.strtoupper($type === 'non_real' ? 'NON-RIIL '.round($factor * 100, 2).'%' : 'RIIL'));
         $sheet->mergeCells('A2:M2')->setCellValue('A2', $tenant->name.' · '.$store->name.' · '.$from->format('d/m/Y').'–'.$to->format('d/m/Y'));
         $headers = ['Invoice', 'Waktu', 'Layanan', 'Meja / Platform', 'Kasir', 'Member', 'Item', 'Pembayaran', 'Subtotal', 'Diskon', 'Omzet', 'HPP', 'Laba Kotor'];
         $sheet->fromArray($headers, null, 'A4');
@@ -179,7 +224,7 @@ class TransactionReportExporter
     private function buildExpensesSheet(Worksheet $sheet, Collection $expenses, Tenant $tenant, Store $store, Carbon $from, Carbon $to, string $type, float $factor): void
     {
         $sheet->setShowGridlines(false);
-        $sheet->mergeCells('A1:E1')->setCellValue('A1', 'RINCIAN PENGELUARAN · '.strtoupper($type === 'non_real' ? 'NON-RIIL 50%' : 'RIIL'));
+        $sheet->mergeCells('A1:E1')->setCellValue('A1', 'RINCIAN PENGELUARAN · '.strtoupper($type === 'non_real' ? 'NON-RIIL '.round($factor * 100, 2).'%' : 'RIIL'));
         $sheet->mergeCells('A2:E2')->setCellValue('A2', $tenant->name.' · '.$store->name.' · '.$from->format('d/m/Y').'–'.$to->format('d/m/Y'));
         $sheet->fromArray(['Tanggal', 'Kategori', 'Keterangan', 'Dicatat Oleh', 'Nominal'], null, 'A4');
 

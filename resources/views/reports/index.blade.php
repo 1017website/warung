@@ -1,91 +1,17 @@
 @extends('layouts.app')
 @section('title', 'Laporan')
 @section('content')
-<div class="page-head"><div><h1>Laporan usaha</h1><p>{{ $canSeeNonReal ? 'Laporan non-riil dihitung otomatis sebesar 50% dari laporan riil.' : 'Ringkasan kinerja usaha pada periode terpilih.' }}</p></div><div class="actions">@if($canSeeNonReal)<div class="report-tabs"><a class="{{ $type === 'real' ? 'active' : '' }}" href="{{ route('reports',['type'=>'real','period'=>$period,'from'=>$from->toDateString(),'to'=>$to->toDateString()]) }}">Laporan riil</a><a class="{{ $type === 'non_real' ? 'active' : '' }}" href="{{ route('reports',['type'=>'non_real','period'=>$period,'from'=>$from->toDateString(),'to'=>$to->toDateString()]) }}">Non-riil</a></div>@endif<a class="btn btn-primary" href="{{ route('reports.export',['type'=>$type,'period'=>$period,'from'=>$from->toDateString(),'to'=>$to->toDateString()]) }}"><i class="bi bi-file-earmark-excel"></i> Unduh Excel</a></div></div>
-<div class="card card-pad report-filter-card">
-    <div class="quick-periods">
-        <a class="{{ $period === 'today' ? 'active' : '' }}" href="{{ route('reports',['type'=>$type,'period'=>'today']) }}"><i class="bi bi-calendar-event"></i> Hari ini</a>
-        <a class="{{ $period === 'week' ? 'active' : '' }}" href="{{ route('reports',['type'=>$type,'period'=>'week']) }}"><i class="bi bi-calendar-week"></i> Minggu ini</a>
-        <a class="{{ $period === 'month' ? 'active' : '' }}" href="{{ route('reports',['type'=>$type,'period'=>'month']) }}"><i class="bi bi-calendar3"></i> Bulan ini</a>
-        <a class="{{ $period === 'year' ? 'active' : '' }}" href="{{ route('reports',['type'=>$type,'period'=>'year']) }}"><i class="bi bi-calendar-range"></i> Tahun ini</a>
-    </div>
-    <form class="custom-period-form" method="GET"><input type="hidden" name="type" value="{{ $type }}"><input type="hidden" name="period" value="custom"><div class="field"><label>Dari tanggal</label><input type="date" name="from" value="{{ $from->toDateString() }}"></div><div class="field"><label>Sampai tanggal</label><input type="date" name="to" value="{{ $to->toDateString() }}"></div><div class="field" style="align-self:end"><button class="btn {{ $period === 'custom' ? 'btn-primary' : 'btn-soft' }}"><i class="bi bi-funnel"></i> Tanggal khusus</button></div></form>
-</div>
-<div class="grid stats">
-    <div class="card stat"><span class="stat-icon"><i class="bi bi-graph-up"></i></span><div class="stat-label">Penjualan</div><div class="stat-value">Rp {{ number_format($sales,0,',','.') }}</div><div class="stat-note">{{ $canSeeNonReal ? ($type === 'real' ? 'Laporan riil' : 'Laporan non-riil · 50%') : 'Periode terpilih' }}</div></div>
-    <div class="card stat"><span class="stat-icon"><i class="bi bi-box-seam"></i></span><div class="stat-label">Harga pokok</div><div class="stat-value">Rp {{ number_format($cost,0,',','.') }}</div><div class="stat-note">Modal barang terjual</div></div>
-    <div class="card stat"><span class="stat-icon"><i class="bi bi-wallet2"></i></span><div class="stat-label">Pengeluaran</div><div class="stat-value">Rp {{ number_format($expenses,0,',','.') }}</div><div class="stat-note">Biaya operasional</div></div>
-    <div class="card stat"><span class="stat-icon"><i class="bi bi-piggy-bank"></i></span><div class="stat-label">Laba bersih</div><div class="stat-value">Rp {{ number_format($profit,0,',','.') }}</div><div class="stat-note">{{ $sales ? number_format(($profit/$sales)*100,1) : 0 }}% margin</div></div>
-</div>
-<div class="grid two-col">
-    <section class="card card-pad">
-        <div class="card-title"><div><h2>Penjualan harian</h2><p>{{ $from->translatedFormat('d M') }} – {{ $to->translatedFormat('d M Y') }}</p></div></div>
-        @php
-            $maxDaily = max(1, $daily->max('total') ?? 1);
-        @endphp
-        <div class="chart">
-            @forelse($daily as $d)
-                <div class="bar-col" title="Rp {{ number_format($d->total,0,',','.') }}"><div class="bar" style="height:{{ max(3,($d->total/$maxDaily)*88) }}%"></div><span>{{ \Carbon\Carbon::parse($d->date)->format('d/m') }}</span></div>
-            @empty
-                <div class="cart-empty" style="width:100%">Tidak ada data pada periode ini.</div>
-            @endforelse
-        </div>
-    </section>
-    <section class="card card-pad">
-        <div class="card-title"><div><h2>Metode pembayaran</h2><p>Kontribusi terhadap omzet</p></div></div>
-        <div class="list">
-            @forelse($payments as $pay)
-                <div class="list-item"><span class="list-icon">{{ strtoupper(substr($pay->payment_method,0,2)) }}</span><div class="list-body"><div class="list-title">{{ strtoupper($pay->payment_method) }}</div><div class="list-sub">{{ $pay->count }} transaksi</div></div><span class="money">Rp {{ number_format($pay->total,0,',','.') }}</span></div>
-            @empty
-                <div class="cart-empty">Belum ada data pembayaran.</div>
-            @endforelse
-        </div>
-    </section>
-</div>
-<section class="card card-pad" style="margin-top:16px">
-    <div class="card-title">
-        <div><h2><i class="bi bi-receipt-cutoff"></i> Detail transaksi</h2><p>{{ $transactionRows->count() }} transaksi pada periode terpilih</p></div>
-        <div class="search" style="max-width:290px"><input id="report-transaction-search" placeholder="Cari invoice, kasir, atau menu…"></div>
-    </div>
-    <div class="table-wrap">
-        <table id="report-transaction-table">
-            <thead><tr><th>Invoice & waktu</th><th>Jenis pesanan</th><th>Kasir / member</th><th>Detail pesanan</th><th>Pembayaran</th><th>Omzet</th><th>HPP</th><th>Laba kotor</th><th></th></tr></thead>
-            <tbody>
-            @forelse($transactionRows as $transaction)
-                @php
-                    $rowCost = $transaction->items->sum(fn($item) => $item->cost * $item->quantity) * $factor;
-                    $rowSales = $transaction->total * $factor;
-                    $rowProfit = $rowSales - $rowCost;
-                @endphp
-                <tr>
-                    <td><div class="cell-main">{{ $transaction->invoice_no }}</div><div class="cell-sub">{{ $transaction->transacted_at->translatedFormat('d M Y, H:i') }}</div></td>
-                    <td>
-                        <div class="cell-main">{{ match($transaction->service_type) {'takeaway' => 'Take away', 'online' => 'Ojek online', default => 'Dine in'} }}</div>
-                        <div class="cell-sub">{{ $transaction->service_type === 'dine_in' ? 'Meja '.($transaction->table_number ?: '—') : ($transaction->service_type === 'online' ? ($transaction->online_platform ?: 'Platform online') : 'Dibawa pulang') }}</div>
-                    </td>
-                    <td><div class="cell-main">{{ $transaction->user->name }}</div><div class="cell-sub">{{ $transaction->member?->name ?? 'Pelanggan umum' }}</div></td>
-                    <td><div class="report-items">@foreach($transaction->items as $item)<span class="report-item">{{ $item->product_name }} <b>×{{ $item->quantity }}</b></span>@endforeach</div></td>
-                    <td><span class="badge gray">{{ strtoupper($transaction->payment_method) }}</span></td>
-                    <td class="money">Rp {{ number_format($rowSales,0,',','.') }}</td>
-                    <td class="money">Rp {{ number_format($rowCost,0,',','.') }}</td>
-                    <td class="money report-profit">Rp {{ number_format($rowProfit,0,',','.') }}</td>
-                    <td>@if($type === 'real')<a class="btn btn-outline btn-sm" href="{{ route('transactions.print',$transaction) }}" target="_blank" title="Buka struk asli"><i class="bi bi-printer"></i></a>@endif</td>
-                </tr>
-            @empty
-                <tr><td colspan="9"><div class="cart-empty">Belum ada transaksi pada periode ini.</div></td></tr>
-            @endforelse
-            </tbody>
-        </table>
-    </div>
-</section>
+<div class="page-head"><div><h1>Laporan {{ $isConsolidated ? 'consolidated' : $activeStore->name }}</h1><p>{{ $canSeeNonReal ? 'Laporan non-riil memakai '.number_format($percentage,2).'% dari laporan riil.' : 'Ringkasan kinerja periode terpilih.' }} @if($canSeeNonReal && in_array(auth()->user()->role,['superadmin','admin']))<a href="{{ route('settings') }}#aturan-bisnis">Ubah di Pengaturan → Aturan laporan & membership</a>@endif</p></div><div class="actions">@if($canSeeNonReal)<div class="report-tabs"><a class="{{ $type==='real'?'active':'' }}" href="{{ route('reports',['type'=>'real','period'=>$period]) }}">Laporan riil</a><a class="{{ $type==='non_real'?'active':'' }}" href="{{ route('reports',['type'=>'non_real','period'=>$period]) }}">Non-riil</a></div>@endif<a class="btn btn-primary" href="{{ route('reports.export',['type'=>$type,'period'=>$period,'from'=>$from->toDateString(),'to'=>$to->toDateString()]) }}"><i class="bi bi-file-earmark-excel"></i> Unduh Excel</a></div></div>
+<div class="card card-pad report-filter-card"><div class="quick-periods"><a class="{{ $period==='today'?'active':'' }}" href="{{ route('reports',['type'=>$type,'period'=>'today']) }}">Hari ini</a><a class="{{ $period==='week'?'active':'' }}" href="{{ route('reports',['type'=>$type,'period'=>'week']) }}">Minggu ini</a><a class="{{ $period==='month'?'active':'' }}" href="{{ route('reports',['type'=>$type,'period'=>'month']) }}">Bulan ini</a><a class="{{ $period==='year'?'active':'' }}" href="{{ route('reports',['type'=>$type,'period'=>'year']) }}">Tahun ini</a></div><form class="custom-period-form" method="GET"><input type="hidden" name="type" value="{{ $type }}"><input type="hidden" name="period" value="custom"><div class="field"><label>Dari</label><input type="date" name="from" value="{{ $from->toDateString() }}"></div><div class="field"><label>Sampai</label><input type="date" name="to" value="{{ $to->toDateString() }}"></div><div class="field" style="align-self:end"><button class="btn btn-soft"><i class="bi bi-funnel"></i> Terapkan</button></div></form></div>
+<div class="grid stats"><div class="card stat"><span class="stat-icon"><i class="bi bi-graph-up"></i></span><div class="stat-label">Omzet</div><div class="stat-value">Rp {{ number_format($sales,0,',','.') }}</div><div class="stat-note">Sebelum pemakaian deposit</div></div><div class="card stat"><span class="stat-icon"><i class="bi bi-person-badge"></i></span><div class="stat-label">Deposit terpakai</div><div class="stat-value">Rp {{ number_format($depositUsed,0,',','.') }}</div><div class="stat-note">Diklaim pada pembayaran</div></div><div class="card stat"><span class="stat-icon"><i class="bi bi-cash-stack"></i></span><div class="stat-label">Omzet − deposit</div><div class="stat-value">Rp {{ number_format($turnoverNetDeposit,0,',','.') }}</div><div class="stat-note">Penerimaan di luar deposit</div></div><div class="card stat"><span class="stat-icon"><i class="bi bi-piggy-bank"></i></span><div class="stat-label">Laba bersih</div><div class="stat-value">Rp {{ number_format($profit,0,',','.') }}</div><div class="stat-note">HPP Rp {{ number_format($cost,0,',','.') }} · Pengeluaran Rp {{ number_format($expenses,0,',','.') }}</div></div></div>
+@if($isConsolidated)
+<section class="card card-pad" style="margin-bottom:16px"><div class="card-title"><div><h2>Perbandingan seluruh warung</h2><p>Bar chart dengan trendline omzet antar cabang.</p></div></div>@php($maxStore=max(1,$storeComparison->max('sales')??1))<div class="comparison-chart {{ $storeComparison->isEmpty()?'empty':'' }}">@forelse($storeComparison as $index=>$store)<div class="comparison-col"><div class="comparison-value">Rp {{ number_format($store->sales,0,',','.') }}</div><div class="comparison-bar" style="height:{{ max(4,($store->sales/$maxStore)*180) }}px"></div><b>{{ $store->store }}</b><small>{{ $store->transactions }} trx</small></div>@empty<div class="cart-empty">Belum ada data cabang pada periode ini.</div>@endforelse @if($storeComparison->count()>1)<svg class="comparison-trend" viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points="@foreach($storeComparison as $i=>$store){{ ($i+.5)*(100/$storeComparison->count()) }},{{ 88-($store->sales/$maxStore)*72 }} @endforeach" fill="none" stroke="#d06b4d" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>@endif</div></section>
+@endif
+<div class="grid two-col"><section class="card card-pad"><div class="card-title"><div><h2>Penjualan harian</h2><p>{{ $from->translatedFormat('d M') }} – {{ $to->translatedFormat('d M Y') }}</p></div></div>@php($maxDaily=max(1,$daily->max('total')??1))<div class="chart">@forelse($daily as $d)<div class="bar-col" title="Rp {{ number_format($d->total,0,',','.') }}"><div class="bar" style="height:{{ max(3,($d->total/$maxDaily)*88) }}%"></div><span>{{ \Carbon\Carbon::parse($d->date)->format('d/m') }}</span></div>@empty<div class="cart-empty" style="width:100%">Tidak ada data.</div>@endforelse</div></section><section class="card card-pad"><div class="card-title"><div><h2>Metode pembayaran</h2><p>Bank/provider dan deposit di-breakdown.</p></div></div><div class="list">@forelse($payments as $pay)<div class="list-item"><span class="list-icon">{{ strtoupper(substr($pay->payment_method,0,2)) }}</span><div class="list-body"><div class="list-title">{{ strtoupper($pay->payment_method) }}{{ $pay->provider?' · '.$pay->provider:'' }}</div><div class="list-sub">{{ $pay->count }} transaksi</div></div><span class="money">Rp {{ number_format($pay->total,0,',','.') }}</span></div>@empty<div class="cart-empty">Belum ada pembayaran.</div>@endforelse</div></section></div>
+<div class="grid two-col" style="margin-top:16px"><section class="card card-pad"><div class="card-title"><div><h2>Produk terjual</h2><p>Rangkuman produk dan qty</p></div></div><div class="table-wrap"><table><thead><tr><th>Produk</th><th>Qty</th><th>Penjualan</th></tr></thead><tbody>@forelse($productSales as $product)<tr><td>{{ $product->name }}</td><td class="money">{{ $product->quantity }}</td><td class="money">Rp {{ number_format($product->sales,0,',','.') }}</td></tr>@empty<tr><td colspan="3">Belum ada data.</td></tr>@endforelse</tbody></table></div></section><section class="card card-pad"><div class="card-title"><div><h2>Membership & deposit baru</h2><p>{{ $newMembers }} member baru pada periode ini</p></div></div><div class="list">@forelse($topups as $topup)<div class="list-item"><span class="list-icon"><i class="bi bi-wallet2"></i></span><div class="list-body"><div class="list-title">Top up {{ strtoupper($topup->method) }}</div><div class="list-sub">{{ $topup->count }} kali</div></div><span class="money">Rp {{ number_format($topup->total,0,',','.') }}</span></div>@empty<div class="cart-empty">Belum ada top up.</div>@endforelse</div></section></div>
+<section class="card card-pad" style="margin-top:16px"><div class="card-title"><div><h2><i class="bi bi-receipt-cutoff"></i> Detail transaksi</h2><p>{{ $transactionRows->count() }} transaksi</p></div><div class="search" style="max-width:290px"><input id="report-transaction-search" placeholder="Cari invoice, kasir, atau menu…"></div></div><div class="table-wrap"><table id="report-transaction-table"><thead><tr><th>Invoice & waktu</th><th>Jenis</th><th>Kasir / member</th><th>Detail pesanan</th><th>Pembayaran</th><th>Omzet</th><th>HPP</th><th>Laba kotor</th><th></th></tr></thead><tbody>
+@forelse($transactionRows as $transaction)@php($rowCost=$transaction->items->sum(fn($item)=>$item->cost*$item->quantity)*$factor)@php($rowSales=$transaction->total*$factor)@php($rowProfit=$rowSales-$rowCost)<tr><td><div class="cell-main">{{ $transaction->invoice_no }}</div><div class="cell-sub">{{ $transaction->transacted_at->translatedFormat('d M Y, H:i') }}{{ $isConsolidated?' · '.$transaction->store->name:'' }}</div></td><td>{{ match($transaction->service_type){'takeaway'=>'Take away','online'=>'Ojek online',default=>'Dine in'} }}</td><td><div class="cell-main">{{ $transaction->user->name }}</div><div class="cell-sub">{{ $transaction->member?->name ?? 'Pelanggan umum' }}</div></td><td><div class="report-items">@foreach($transaction->items as $item)<span class="report-item">{{ $item->product_name }} <b>×{{ $item->quantity }}</b></span>@endforeach</div></td><td>@if($transaction->payments->isNotEmpty())@foreach($transaction->payments as $pay)<span class="badge gray">{{ strtoupper($pay->method) }}{{ $pay->provider?' · '.$pay->provider:'' }}</span>@endforeach @else<span class="badge gray">{{ strtoupper($transaction->payment_method) }}</span>@endif</td><td class="money">Rp {{ number_format($rowSales,0,',','.') }}</td><td class="money">Rp {{ number_format($rowCost,0,',','.') }}</td><td class="money report-profit">Rp {{ number_format($rowProfit,0,',','.') }}</td><td>@if($type==='real')<a class="btn btn-outline btn-sm" href="{{ route('transactions.print',$transaction) }}" target="_blank"><i class="bi bi-printer"></i></a>@endif</td></tr>
+@empty<tr><td colspan="9"><div class="cart-empty">Belum ada transaksi.</div></td></tr>@endforelse
+</tbody></table></div></section>
 @endsection
-@push('scripts')
-<script>
-document.getElementById('report-transaction-search')?.addEventListener('input', event => {
-    const query = event.target.value.toLowerCase();
-    document.querySelectorAll('#report-transaction-table tbody tr').forEach(row => {
-        row.style.display = row.innerText.toLowerCase().includes(query) ? '' : 'none';
-    });
-});
-</script>
-@endpush
+@push('scripts')<script>document.getElementById('report-transaction-search')?.addEventListener('input',event=>{const q=event.target.value.toLowerCase();document.querySelectorAll('#report-transaction-table tbody tr').forEach(row=>row.style.display=row.innerText.toLowerCase().includes(q)?'':'none')})</script>@endpush

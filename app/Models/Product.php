@@ -11,7 +11,7 @@ class Product extends Model
 
     protected $guarded = [];
 
-    protected $casts = ['selling_price' => 'decimal:2', 'purchase_price' => 'decimal:2', 'is_active' => 'boolean'];
+    protected $casts = ['selling_price' => 'decimal:2', 'online_selling_price' => 'decimal:2', 'purchase_price' => 'decimal:2', 'is_active' => 'boolean'];
 
     public function category()
     {

@@ -1,12 +1,20 @@
 @extends('layouts.app')
 @section('title', 'Kasir')
 @section('content')
-<div class="page-head"><div><h1><i class="bi bi-calculator"></i> Kasir {{ $activeStore->name }}</h1><p>Pilih produk, tentukan pembayaran, lalu cetak struk.</p></div><span class="badge"><span class="dot"></span>Siap melayani</span></div>
+<div class="page-head">
+    <div><h1><i class="bi bi-calculator"></i> Kasir {{ $activeStore->name }}</h1><p>Transaksi tunai, split deposit, pending bill, dan retur pengganti.</p></div>
+    <div class="actions">
+        @if(in_array(auth()->user()->role,['superadmin','head_ops','spv','outlet_manager','owner','admin']))<form method="POST" action="{{ route('pos.custom-amount') }}">@csrf<input type="hidden" name="enabled" value="{{ auth()->user()->tenant->allow_custom_amount?0:1 }}"><button class="btn btn-outline" title="Manager/SPV dapat mengaktifkan atau menonaktifkan fitur ini"><i class="bi bi-toggles"></i> Custom {{ auth()->user()->tenant->allow_custom_amount?'ON':'OFF' }}</button></form>@endif
+        @if($pendingBills->isNotEmpty())<button class="btn btn-soft" onclick="openModal('pending-modal')"><i class="bi bi-hourglass-split"></i> Open bill <span class="badge amber">{{ $pendingBills->count() }}</span></button>@endif
+        <a class="btn btn-outline" href="{{ route('pos.close') }}" target="_blank"><i class="bi bi-printer"></i> Tutup kasir</a>
+    </div>
+</div>
 <div class="pos-layout">
     <section class="pos-products">
         <div class="search-row">
             <div class="search"><input id="product-search" placeholder="Cari nama, SKU, atau scan barcode…" autocomplete="off"></div>
-            <button class="btn btn-soft icon-btn" onclick="document.getElementById('product-search').focus()" title="Fokus pencarian"><i class="bi bi-upc-scan"></i></button>
+            <select id="product-sort" style="max-width:190px"><option value="name-asc">A–Z</option><option value="name-desc">Z–A</option><option value="price-asc">Harga terendah</option><option value="price-desc">Harga tertinggi</option></select>
+            @if(auth()->user()->tenant->allow_custom_amount)<button class="btn btn-soft" onclick="openModal('custom-modal')"><i class="bi bi-plus-circle"></i> Custom</button>@endif
         </div>
         <div class="category-pills"><button class="pill active" data-category="all">Semua</button>@foreach($categories as $category)<button class="pill" data-category="{{ $category->id }}">{{ $category->name }}</button>@endforeach</div>
         <div class="product-grid" id="product-grid">
@@ -15,116 +23,77 @@
                 <button class="product-card" data-id="{{ $product->id }}" data-category="{{ $product->category_id ?: 'none' }}" data-search="{{ strtolower($product->name.' '.$product->sku.' '.$product->barcode) }}" @disabled($stock <= 0)>
                     <span class="product-category">{{ $product->category?->name ?? 'Umum' }}</span>
                     <div class="product-name">{{ $product->name }}</div>
-                    <div class="product-meta"><span class="product-price">Rp {{ number_format($product->selling_price,0,',','.') }}</span><span class="product-stock">{{ $stock > 0 ? 'Stok '.$stock : 'Habis' }}</span></div>
+                    <div class="product-meta"><span class="product-price">Rp {{ number_format($product->selling_price,0,',','.') }} / {{ $product->unit }}</span><span class="product-stock">{{ $stock > 0 ? 'Stok '.rtrim(rtrim(number_format((float)$stock,3,',','.'),'0'),',').' '.$product->unit : 'Habis' }}</span></div>
                 </button>
             @endforeach
         </div>
-        @if($products->isEmpty())<div class="card cart-empty">Belum ada produk aktif. Tambahkan produk lebih dulu.</div>@endif
     </section>
     <aside class="card cart">
-        <div class="cart-head"><h2>Pesanan baru</h2><span class="cart-count" id="cart-count">0</span></div>
+        <div class="cart-head"><div><h2 id="bill-title">Pesanan baru</h2><div class="hint" id="bill-reference"></div></div><span class="cart-count" id="cart-count">0</span></div>
         <div class="member-select">
-            <div style="display:flex;gap:7px">
-                <select id="member-id"><option value="">Pelanggan umum</option>@foreach($members as $member)<option value="{{ $member->id }}" data-balance="{{ $member->deposit_balance }}">{{ $member->name }} · {{ $member->member_code }}</option>@endforeach</select>
-                <button class="btn btn-soft icon-btn" onclick="startScanner()" title="Scan QR member"><i class="bi bi-qr-code-scan"></i></button>
-            </div>
+            <div style="display:flex;gap:7px"><select id="member-id"><option value="">Pelanggan umum</option>@foreach($members as $member)<option value="{{ $member->id }}" data-balance="{{ $member->deposit_balance }}" data-discount="{{ $member->discount_percent }}">{{ $member->name }} · {{ $member->member_code }}</option>@endforeach</select><button class="btn btn-soft icon-btn" onclick="startScanner()" title="Scan QR member"><i class="bi bi-qr-code-scan"></i></button></div>
             <div id="member-balance" class="hint" style="margin-top:7px;display:none"></div>
         </div>
         <div class="order-service">
             <label>Jenis pesanan</label>
-            <div class="service-grid">
-                <button type="button" class="service-option active" data-service="dine_in"><i class="bi bi-shop"></i><span>Dine in</span></button>
-                <button type="button" class="service-option" data-service="takeaway"><i class="bi bi-bag-check"></i><span>Take away</span></button>
-                <button type="button" class="service-option" data-service="online"><i class="bi bi-scooter"></i><span>Ojek online</span></button>
-            </div>
-            <div class="field service-detail" id="table-field">
-                <label for="table-number">Nomor meja</label>
-                <input id="table-number" maxlength="20" placeholder="Contoh: A-07">
-            </div>
-            <div class="field service-detail" id="platform-field" hidden>
-                <label for="online-platform">Platform ojek online</label>
-                <select id="online-platform">
-                    <option value="">Pilih platform</option>
-                    <option value="GoFood">GoFood</option>
-                    <option value="GrabFood">GrabFood</option>
-                    <option value="ShopeeFood">ShopeeFood</option>
-                    <option value="Maxim Food">Maxim Food</option>
-                    <option value="Lainnya">Lainnya</option>
-                </select>
-            </div>
+            <div class="service-grid"><button type="button" class="service-option active" data-service="dine_in"><i class="bi bi-shop"></i><span>Dine in</span></button><button type="button" class="service-option" data-service="takeaway"><i class="bi bi-bag-check"></i><span>Take away</span></button><button type="button" class="service-option" data-service="online"><i class="bi bi-scooter"></i><span>Ojek online</span></button></div>
+            <div class="field service-detail" id="table-field"><label for="table-number">Nomor meja</label><input id="table-number" maxlength="20" placeholder="Contoh: A-07"></div>
+            <div class="field service-detail" id="platform-field" hidden><label for="online-platform">Platform</label><select id="online-platform"><option value="">Pilih platform</option><option>GoFood</option><option>GrabFood</option><option>ShopeeFood</option><option>Maxim Food</option><option>Lainnya</option></select></div>
         </div>
         <div class="cart-items" id="cart-items"><div class="cart-empty">Keranjang masih kosong.<br>Klik produk untuk menambahkan.</div></div>
         <div class="cart-summary">
             <div class="summary-row"><span>Subtotal</span><b id="subtotal">Rp 0</b></div>
-            <div class="summary-row"><span>Diskon</span><div class="input-prefix" style="width:120px"><span>Rp</span><input id="discount" type="text" data-money-input data-min="0" value="0" inputmode="numeric" autocomplete="off" style="min-height:34px"></div></div>
+            <div class="summary-row"><select id="discount-type" style="width:135px"><option value="amount">Diskon Rp</option><option value="percent">Diskon %</option><option value="member">Diskon member</option></select><input id="discount" type="text" data-money-input data-min="0" value="0" inputmode="numeric" style="width:110px;min-height:34px"></div>
             <div class="summary-row total"><span>Total</span><span id="total">Rp 0</span></div>
-            <div class="payment-grid">
-                <button class="payment active" data-payment="cash"><i class="bi bi-cash"></i><br>Tunai</button><button class="payment" data-payment="qris"><i class="bi bi-qr-code"></i><br>QRIS</button><button class="payment" data-payment="transfer"><i class="bi bi-bank"></i><br>Transfer</button><button class="payment" data-payment="deposit"><i class="bi bi-person-badge"></i><br>Deposit</button>
-            </div>
-            <div class="field" id="paid-field"><label>Uang diterima</label><input id="paid-amount" type="text" data-money-input data-min="0" inputmode="numeric" autocomplete="off" placeholder="0"></div>
-            <button class="btn btn-primary pay-btn" id="checkout-btn" style="margin-top:12px"><i class="bi bi-printer"></i> Bayar & cetak struk</button>
+            <div class="payment-grid"><button class="payment active" data-payment="cash"><i class="bi bi-cash"></i><br>Tunai</button><button class="payment" data-payment="qris"><i class="bi bi-qr-code"></i><br>QRIS</button><button class="payment" data-payment="transfer"><i class="bi bi-bank"></i><br>Transfer</button><button class="payment" data-payment="debit"><i class="bi bi-credit-card"></i><br>Debit</button><button class="payment" data-payment="deposit"><i class="bi bi-person-badge"></i><br>Deposit</button></div>
+            <div class="field" id="provider-field" hidden><label>Bank / provider penerima</label><input id="payment-provider" placeholder="Contoh: BCA / QRIS BRI"></div>
+            <div class="field" id="deposit-field" hidden><label>Deposit yang dipakai <small>(boleh sebagian)</small></label><input id="deposit-amount" type="text" data-money-input data-min="0" inputmode="numeric" value="0"></div>
+            <div class="field" id="paid-field"><label>Uang diterima</label><input id="paid-amount" type="text" data-money-input data-min="0" inputmode="numeric" placeholder="0"></div>
+            <label class="inventory-note amber" style="margin-top:10px"><input type="checkbox" id="replacement-mode" style="width:auto;min-height:auto"><span><b>Retur / transaksi pengganti</b><br>Wajib otorisasi Manager/SPV, tanpa pembayaran.</span></label>
+            <div class="field" id="replacement-pin-field" hidden><label>PIN Manager/SPV</label><input id="approval-pin" type="password" inputmode="numeric" maxlength="12"></div>
+            <div class="actions" style="margin-top:12px"><button class="btn btn-soft" id="hold-btn"><i class="bi bi-hourglass"></i> Pending</button><button class="btn btn-primary pay-btn" id="checkout-btn"><i class="bi bi-printer"></i> Bayar & cetak</button></div>
         </div>
     </aside>
 </div>
 @endsection
+
 @push('modals')
+<div class="modal" id="custom-modal"><div class="modal-card" style="max-width:440px"><div class="modal-head"><h2>Custom amount</h2><button class="modal-close" onclick="closeModal('custom-modal')">×</button></div><div class="form-grid"><div class="field full"><label>Nama produk</label><input id="custom-name" maxlength="120" placeholder="Wajib tampil di nota"></div><div class="field full"><label>Harga</label><input id="custom-price" type="text" data-money-input data-min="0" inputmode="numeric"></div><div class="field full"><button class="btn btn-primary" onclick="addCustomItem()">Tambahkan</button></div></div></div></div>
+<div class="modal" id="pending-modal"><div class="modal-card"><div class="modal-head"><div><h2>Open bill</h2><div class="hint">Pesanan tersimpan, belum memotong stok.</div></div><button class="modal-close" onclick="closeModal('pending-modal')">×</button></div><div class="list">@foreach($pendingBills as $bill)<button class="list-item" style="width:100%;border:0;text-align:left" onclick="loadPending({{ $bill->id }})"><span class="list-icon"><i class="bi bi-receipt"></i></span><span class="list-body"><b>{{ $bill->invoice_no }}</b><small>{{ $bill->member?->name ?? 'Umum' }} · {{ $bill->items->sum('quantity') }} item · {{ $bill->transacted_at->format('H:i') }}</small></span><span class="money">Rp {{ number_format($bill->total,0,',','.') }}</span></button>@endforeach</div></div></div>
 <div class="modal" id="scanner-modal"><div class="modal-card" style="max-width:450px"><div class="modal-head"><div><h2>Scan QR member</h2><div class="hint">Arahkan kamera ke kode QR membership.</div></div><button class="modal-close" onclick="stopScanner()">×</button></div><video id="camera" class="camera" playsinline muted></video><div id="scanner-status" class="hint" style="margin:12px 0">Menyiapkan kamera…</div><div class="field"><label>Atau masukkan kode member</label><div style="display:flex;gap:8px"><input id="manual-code" placeholder="MBR-00001"><button class="btn btn-soft" onclick="findMember(document.getElementById('manual-code').value)">Cari</button></div></div></div></div>
 @endpush
+
 @push('scripts')
 <script>
-const products = @json($posProducts);
-const cart = new Map(); let payment = 'cash', serviceType = 'dine_in', stream = null, scanning = false;
-const byId = id => products.find(p => p.id === Number(id));
-document.querySelectorAll('.product-card').forEach(el => el.addEventListener('click', () => addItem(Number(el.dataset.id))));
-document.querySelectorAll('.pill').forEach(el => el.addEventListener('click', () => {document.querySelectorAll('.pill').forEach(x=>x.classList.remove('active'));el.classList.add('active'); filterProducts();}));
-document.getElementById('product-search').addEventListener('input', filterProducts);
-document.getElementById('discount').addEventListener('input', renderCart);
-document.getElementById('member-id').addEventListener('change', showMemberBalance);
-document.querySelectorAll('.payment').forEach(el => el.addEventListener('click', () => {payment=el.dataset.payment;document.querySelectorAll('.payment').forEach(x=>x.classList.toggle('active',x===el));document.getElementById('paid-field').style.display=payment==='cash'?'grid':'none';}));
-document.querySelectorAll('.service-option').forEach(el => el.addEventListener('click', () => {
-    serviceType=el.dataset.service;
-    document.querySelectorAll('.service-option').forEach(x=>x.classList.toggle('active',x===el));
-    document.getElementById('table-field').hidden=serviceType!=='dine_in';
-    document.getElementById('platform-field').hidden=serviceType!=='online';
-}));
-
-function filterProducts(){
-    const q=document.getElementById('product-search').value.toLowerCase(), cat=document.querySelector('.pill.active').dataset.category;
-    document.querySelectorAll('.product-card').forEach(el=>el.style.display=(el.dataset.search.includes(q)&&(cat==='all'||el.dataset.category===cat))?'':'none');
-}
-function addItem(id){const p=byId(id), item=cart.get(id)||{...p,qty:0};if(item.qty<p.stock){item.qty++;cart.set(id,item);renderCart();}}
-function changeQty(id,delta){const item=cart.get(id);item.qty+=delta;if(item.qty<=0)cart.delete(id);else item.qty=Math.min(item.qty,item.stock);renderCart();}
-function totals(){const subtotal=[...cart.values()].reduce((s,i)=>s+i.price*i.qty,0), discount=Math.min(moneyValue(document.getElementById('discount')),subtotal);return{subtotal,discount,total:subtotal-discount};}
-function renderCart(){
-    const box=document.getElementById('cart-items');
-    box.innerHTML=cart.size?[...cart.values()].map(i=>`<div class="cart-line"><div><div class="cart-line-name">${i.name}</div><div class="cart-line-price">Rp ${money(i.price)} / item</div><div class="qty"><button onclick="changeQty(${i.id},-1)">−</button><span>${i.qty}</span><button onclick="changeQty(${i.id},1)">+</button></div></div><b class="money">Rp ${money(i.price*i.qty)}</b></div>`).join(''):'<div class="cart-empty">Keranjang masih kosong.<br>Klik produk untuk menambahkan.</div>';
-    const t=totals();document.getElementById('cart-count').textContent=[...cart.values()].reduce((s,i)=>s+i.qty,0);document.getElementById('subtotal').textContent='Rp '+money(t.subtotal);document.getElementById('total').textContent='Rp '+money(t.total);
-}
-function showMemberBalance(){const option=document.getElementById('member-id').selectedOptions[0], el=document.getElementById('member-balance');if(option.value){el.style.display='block';el.textContent='Saldo deposit: Rp '+money(option.dataset.balance);}else el.style.display='none';}
-document.getElementById('checkout-btn').addEventListener('click', async () => {
-    if(!cart.size)return alert('Tambahkan produk ke keranjang.');
-    const tableNumber=document.getElementById('table-number').value.trim(), onlinePlatform=document.getElementById('online-platform').value;
-    if(serviceType==='dine_in'&&!tableNumber)return alert('Masukkan nomor meja untuk pesanan dine in.');
-    if(serviceType==='online'&&!onlinePlatform)return alert('Pilih platform ojek online.');
-    const btn=document.getElementById('checkout-btn'), t=totals(); if(payment==='deposit'&&!document.getElementById('member-id').value)return alert('Pilih atau scan member untuk pembayaran deposit.');
-    btn.disabled=true;btn.innerHTML='<i class="bi bi-arrow-repeat"></i> Memproses…';
-    try{
-        const response=await fetch('{{ route('pos.checkout') }}',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content},body:JSON.stringify({items:[...cart.values()].map(i=>({id:i.id,qty:i.qty})),member_id:document.getElementById('member-id').value||null,discount:t.discount,payment_method:payment,paid_amount:moneyValue(document.getElementById('paid-amount')),service_type:serviceType,table_number:serviceType==='dine_in'?tableNumber:null,online_platform:serviceType==='online'?onlinePlatform:null})});
-        const data=await response.json();if(!response.ok)throw new Error(data.message||Object.values(data.errors||{})[0]?.[0]||'Transaksi gagal.');
-        cart.clear();renderCart();setMoneyInputValue(document.getElementById('discount'),0);setMoneyInputValue(document.getElementById('paid-amount'),'');window.open(data.print_url,'_blank','width=420,height=720');alert('Transaksi '+data.invoice+' berhasil.');
-        setTimeout(()=>location.reload(),700);
-    }catch(e){alert(e.message)}finally{btn.disabled=false;btn.innerHTML='<i class="bi bi-printer"></i> Bayar & cetak struk'}
-});
-async function findMember(code){
-    if(!code)return;const status=document.getElementById('scanner-status');status.textContent='Mencari member…';
-    try{const r=await fetch('/member/find/'+encodeURIComponent(code),{headers:{'Accept':'application/json'}});if(!r.ok)throw new Error();const m=await r.json();document.getElementById('member-id').value=m.id;showMemberBalance();stopScanner();alert('Member '+m.name+' ditemukan.');}catch(e){status.textContent='Member tidak ditemukan. Periksa kode lalu coba lagi.'}
-}
-async function startScanner(){
-    openModal('scanner-modal');
-    if(!('BarcodeDetector' in window)){document.getElementById('scanner-status').textContent='Browser ini belum mendukung scan otomatis. Masukkan kode member secara manual.';return;}
-    try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});const video=document.getElementById('camera');video.srcObject=stream;await video.play();scanning=true;const detector=new BarcodeDetector({formats:['qr_code']});document.getElementById('scanner-status').textContent='Kamera aktif — arahkan ke QR member.';scanFrame(detector,video);}catch(e){document.getElementById('scanner-status').textContent='Kamera tidak dapat dibuka. Izinkan akses kamera atau gunakan kode manual.'}
-}
-async function scanFrame(detector,video){if(!scanning)return;try{const codes=await detector.detect(video);if(codes.length){await findMember(codes[0].rawValue);return;}}catch(e){}requestAnimationFrame(()=>scanFrame(detector,video));}
-function stopScanner(){scanning=false;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;closeModal('scanner-modal');}
+const products=@json($posProducts);
+const pendingBills=@json($pendingBillData);
+const cart=new Map();let payment='cash',serviceType='dine_in',stream=null,scanning=false,pendingId=null,customSequence=0;
+const byId=id=>products.find(p=>p.id===Number(id));
+document.querySelectorAll('.product-card').forEach(el=>el.addEventListener('click',()=>addItem(Number(el.dataset.id))));
+document.querySelectorAll('.pill').forEach(el=>el.addEventListener('click',()=>{document.querySelectorAll('.pill').forEach(x=>x.classList.remove('active'));el.classList.add('active');filterProducts()}));
+document.getElementById('product-search').addEventListener('input',filterProducts);document.getElementById('product-sort').addEventListener('change',sortProducts);
+document.getElementById('discount').addEventListener('input',renderCart);document.getElementById('discount-type').addEventListener('change',renderCart);document.getElementById('deposit-amount').addEventListener('input',renderPayment);
+document.getElementById('member-id').addEventListener('change',showMemberBalance);
+document.querySelectorAll('.payment').forEach(el=>el.addEventListener('click',()=>{payment=el.dataset.payment;document.querySelectorAll('.payment').forEach(x=>x.classList.toggle('active',x===el));if(payment==='deposit')setMoneyInputValue(document.getElementById('deposit-amount'),totals().total);renderPayment()}));
+document.querySelectorAll('.service-option').forEach(el=>el.addEventListener('click',()=>{serviceType=el.dataset.service;document.querySelectorAll('.service-option').forEach(x=>x.classList.toggle('active',x===el));document.getElementById('table-field').hidden=serviceType!=='dine_in';document.getElementById('platform-field').hidden=serviceType!=='online';cart.forEach(item=>{if(!item.custom){const p=byId(item.id);item.price=serviceType==='online'?p.online_price:p.price}});renderCart()}));
+document.getElementById('replacement-mode').addEventListener('change',event=>{document.getElementById('replacement-pin-field').hidden=!event.target.checked;renderPayment()});
+function filterProducts(){const q=document.getElementById('product-search').value.toLowerCase(),cat=document.querySelector('.pill.active').dataset.category;document.querySelectorAll('.product-card').forEach(el=>el.style.display=(el.dataset.search.includes(q)&&(cat==='all'||el.dataset.category===cat))?'':'none')}
+function sortProducts(){const mode=document.getElementById('product-sort').value,[field,direction]=mode.split('-');[...document.querySelectorAll('.product-card')].sort((a,b)=>{const pa=byId(a.dataset.id),pb=byId(b.dataset.id),av=field==='price'?pa.price:pa.name,bv=field==='price'?pb.price:pb.name;return (typeof av==='string'?av.localeCompare(bv):av-bv)*(direction==='asc'?1:-1)}).forEach(el=>document.getElementById('product-grid').appendChild(el))}
+function addItem(id){const p=byId(id),item=cart.get('p'+id)||{...p,key:'p'+id,qty:0,custom:false};if(item.qty<p.stock){item.qty=Math.min(item.qty+Number(p.increment||1),p.stock);item.price=serviceType==='online'?p.online_price:p.price;cart.set(item.key,item);renderCart()}}
+function addCustomItem(){const name=document.getElementById('custom-name').value.trim(),price=moneyValue(document.getElementById('custom-price'));if(!name||price<0)return alert('Nama dan harga wajib diisi.');const key='c'+(++customSequence);cart.set(key,{key,id:null,name,price,qty:1,stock:999999,unit:'item',step:1,increment:1,custom:true});closeModal('custom-modal');document.getElementById('custom-name').value='';setMoneyInputValue(document.getElementById('custom-price'),'');renderCart()}
+function changeQty(key,direction){const item=cart.get(key);item.qty+=direction*Number(item.increment||1);if(item.qty<=0)cart.delete(key);else item.qty=Math.min(item.qty,item.stock);renderCart()}
+function setQty(key,value){const item=cart.get(key),qty=Number(value);if(!Number.isFinite(qty)||qty<=0)cart.delete(key);else item.qty=Math.min(qty,item.stock);renderCart()}
+function totals(){const subtotal=[...cart.values()].reduce((s,i)=>s+i.price*i.qty,0),type=document.getElementById('discount-type').value;let value=moneyValue(document.getElementById('discount'));if(type==='member'){const option=document.getElementById('member-id').selectedOptions[0];value=Number(option?.dataset.discount||0)}const discount=Math.min(type==='amount'?value:subtotal*Math.min(value,100)/100,subtotal);return{subtotal,discount,total:subtotal-discount,value,type}}
+function renderCart(){const box=document.getElementById('cart-items');box.innerHTML=cart.size?[...cart.values()].map(i=>`<div class="cart-line"><div><div class="cart-line-name">${escapeHtml(i.name)}${i.custom?' <span class="badge amber">Custom</span>':''}</div><div class="cart-line-price">Rp ${money(i.price)} / ${escapeHtml(i.unit||'item')}</div><div class="qty"><button onclick="changeQty('${i.key}',-1)">−</button><input type="number" min="${i.step||1}" step="${i.step||1}" max="${i.stock}" value="${i.qty}" onchange="setQty('${i.key}',this.value)" style="width:78px;min-height:30px;text-align:center"><span>${escapeHtml(i.unit||'item')}</span><button onclick="changeQty('${i.key}',1)">+</button></div></div><b class="money">Rp ${money(i.price*i.qty)}</b></div>`).join(''):'<div class="cart-empty">Keranjang masih kosong.<br>Klik produk untuk menambahkan.</div>';const t=totals();document.getElementById('cart-count').textContent=cart.size;document.getElementById('subtotal').textContent='Rp '+money(t.subtotal);document.getElementById('total').textContent='Rp '+money(t.total);if(t.type==='member')document.getElementById('discount').value=String(t.value);renderPayment()}
+function renderPayment(){const member=!!document.getElementById('member-id').value,replacement=document.getElementById('replacement-mode').checked;document.getElementById('deposit-field').hidden=!member||replacement;document.getElementById('provider-field').hidden=!['qris','transfer','debit'].includes(payment)||replacement;document.getElementById('paid-field').hidden=payment!=='cash'||replacement;}
+function showMemberBalance(){const option=document.getElementById('member-id').selectedOptions[0],el=document.getElementById('member-balance');if(option.value){el.style.display='block';el.textContent='Saldo deposit Rp '+money(option.dataset.balance)+' · Diskon '+Number(option.dataset.discount||0)+'%';document.getElementById('deposit-field').hidden=false;if(Number(option.dataset.discount)>0){document.getElementById('discount-type').value='member';setMoneyInputValue(document.getElementById('discount'),option.dataset.discount)}}else{el.style.display='none';setMoneyInputValue(document.getElementById('deposit-amount'),0);if(document.getElementById('discount-type').value==='member')document.getElementById('discount-type').value='amount'}renderCart()}
+function orderPayload(){const t=totals(),deposit=Math.min(moneyValue(document.getElementById('deposit-amount')),t.total),remaining=t.total-deposit,payments=[];if(deposit>0)payments.push({method:'deposit',amount:deposit});if(remaining>0){payments.push({method:payment==='deposit'?'cash':payment,provider:document.getElementById('payment-provider').value.trim()||null,amount:(payment==='cash'&&deposit<t.total)?Math.max(remaining,moneyValue(document.getElementById('paid-amount'))):remaining})}return{items:[...cart.values()].map(i=>({id:i.id,qty:i.qty,name:i.custom?i.name:null,price:i.custom?i.price:null})),member_id:document.getElementById('member-id').value||null,discount_type:t.type,discount_value:t.value,payments,service_type:serviceType,table_number:serviceType==='dine_in'?document.getElementById('table-number').value.trim():null,online_platform:serviceType==='online'?document.getElementById('online-platform').value:null,pending_transaction_id:pendingId,transaction_type:document.getElementById('replacement-mode').checked?'replacement':'sale',approval_pin:document.getElementById('approval-pin').value||null}}
+async function submitOrder(url,hold=false){if(!cart.size)return alert('Tambahkan produk ke keranjang.');if(!hold&&payment==='deposit'&&!document.getElementById('member-id').value)return alert('Pilih atau scan member untuk pembayaran deposit.');const payload=orderPayload();if(serviceType==='dine_in'&&!payload.table_number)return alert('Masukkan nomor meja.');if(serviceType==='online'&&!payload.online_platform)return alert('Pilih platform online.');const providerPayment=payload.payments.find(p=>['qris','transfer','debit'].includes(p.method));if(!hold&&providerPayment&&!providerPayment.provider)return alert('Isi bank/provider penerima.');const btn=hold?document.getElementById('hold-btn'):document.getElementById('checkout-btn');btn.disabled=true;try{const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content},body:JSON.stringify(payload)}),data=await response.json();if(!response.ok)throw new Error(data.message||Object.values(data.errors||{})[0]?.[0]||'Transaksi gagal.');if(data.print_url)window.open(data.print_url,'_blank','width=420,height=720');alert((hold?'Bill ':'Transaksi ')+data.invoice+' berhasil.');location.reload()}catch(error){alert(error.message)}finally{btn.disabled=false}}
+document.getElementById('checkout-btn').addEventListener('click',()=>submitOrder('{{ route('pos.checkout') }}'));document.getElementById('hold-btn').addEventListener('click',()=>submitOrder('{{ route('pos.pending') }}',true));
+function loadPending(id){const bill=pendingBills.find(row=>row.id===id);cart.clear();bill.items.forEach((item,index)=>{const p=item.id?byId(item.id):null,key=item.id?'p'+item.id:'pending'+index;cart.set(key,{key,id:item.id,name:item.name,price:item.price,qty:item.qty,stock:p?.stock||999999,unit:p?.unit||'item',step:p?.step||1,increment:p?.increment||1,custom:item.custom})});pendingId=bill.id;document.getElementById('bill-title').textContent='Lanjutkan open bill';document.getElementById('bill-reference').textContent=bill.invoice;document.getElementById('member-id').value=bill.member_id||'';document.getElementById('discount-type').value=bill.discount_type||'amount';setMoneyInputValue(document.getElementById('discount'),bill.discount_value||0);document.getElementById('table-number').value=bill.table_number||'';document.getElementById('online-platform').value=bill.online_platform||'';document.querySelector(`.service-option[data-service="${bill.service_type}"]`).click();showMemberBalance();closeModal('pending-modal');renderCart()}
+async function findMember(code){if(!code)return;const status=document.getElementById('scanner-status');status.textContent='Mencari member…';try{const r=await fetch('/member/find/'+encodeURIComponent(code),{headers:{Accept:'application/json'}});if(!r.ok)throw new Error();const m=await r.json();document.getElementById('member-id').value=m.id;showMemberBalance();stopScanner();alert('Member '+m.name+' ditemukan.')}catch(e){status.textContent='Member tidak ditemukan.'}}
+async function startScanner(){openModal('scanner-modal');if(!('BarcodeDetector'in window)){document.getElementById('scanner-status').textContent='Scan otomatis tidak didukung. Masukkan kode manual.';return}try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});const video=document.getElementById('camera');video.srcObject=stream;await video.play();scanning=true;scanFrame(new BarcodeDetector({formats:['qr_code']}),video)}catch(e){document.getElementById('scanner-status').textContent='Kamera tidak dapat dibuka.'}}
+async function scanFrame(detector,video){if(!scanning)return;try{const codes=await detector.detect(video);if(codes.length)return findMember(codes[0].rawValue)}catch(e){}requestAnimationFrame(()=>scanFrame(detector,video))}function stopScanner(){scanning=false;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;closeModal('scanner-modal')}function escapeHtml(value){const div=document.createElement('div');div.textContent=value;return div.innerHTML}
+document.addEventListener('DOMContentLoaded',()=>{renderCart();sortProducts()});
 </script>
 @endpush

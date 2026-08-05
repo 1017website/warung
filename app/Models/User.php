@@ -27,6 +27,7 @@ class User extends Authenticatable
         'store_id',
         'role',
         'is_active',
+        'authorization_pin',
     ];
 
     /**
@@ -36,6 +37,7 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
+        'authorization_pin',
         'remember_token',
     ];
 

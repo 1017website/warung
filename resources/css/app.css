@@ -402,3 +402,27 @@ input:focus, select:focus, textarea:focus { border-color: #8094bc; box-shadow: 0
     body:has(#qr-modal.open) .membership-modal-card { width: 86mm; max-width: none; padding: 3mm; overflow: visible; box-shadow: none; }
     body:has(#qr-modal.open) .membership-card { width: 80mm; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 }
+/* Revision 2026-08: consolidated reports, live purchasing, and device/member cards */
+.comparison-chart{position:relative;display:flex;align-items:flex-end;justify-content:space-around;gap:18px;min-height:250px;padding:24px 18px 0;border-bottom:1px solid var(--border,#dfe7e2);overflow:hidden}
+.comparison-chart.empty{min-height:110px;align-items:center;justify-content:center;padding:12px;border-bottom:0}
+.comparison-col{position:relative;z-index:2;display:flex;min-width:90px;flex:1;flex-direction:column;align-items:center;gap:5px;text-align:center}
+.comparison-bar{width:min(74px,70%);min-height:4px;border-radius:10px 10px 2px 2px;background:linear-gradient(180deg,#6d9d99,#476c5c);box-shadow:0 8px 18px rgba(71,108,92,.16)}
+.comparison-value{font-size:11px;font-weight:700;color:#476c5c}
+.comparison-col b{font-size:11px}.comparison-col small{font-size:9px;color:#7d8983}
+.comparison-trend{position:absolute;z-index:3;inset:16px 0 48px;width:100%;height:calc(100% - 64px);pointer-events:none;overflow:visible}
+.purchase-live-form{display:grid;grid-template-columns:minmax(130px,1fr) minmax(135px,1fr) auto;gap:6px;align-items:center;min-width:340px}
+.purchase-live-form select,.purchase-live-form input{min-height:34px;padding:6px 8px;font-size:11px}
+.payment-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+.list-item[type=button],button.list-item{background:transparent;cursor:pointer}
+@media(max-width:760px){.comparison-chart{justify-content:flex-start;overflow-x:auto}.comparison-col{min-width:110px}.payment-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.purchase-live-form{min-width:310px}}
+@media print{body:has(#card-print-modal.open) *{visibility:hidden}body:has(#card-print-modal.open) #card-print-modal,body:has(#card-print-modal.open) #card-print-modal *{visibility:visible}body:has(#card-print-modal.open) #card-print-modal{display:block!important;position:absolute;inset:0;padding:0;background:#fff}body:has(#card-print-modal.open) .membership-card{width:80mm;print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+/* Buffet quantities and card-first membership onboarding */
+.membership-flow{background:linear-gradient(135deg,#f7fbf8,#fffaf4)}
+.membership-steps{grid-template-columns:repeat(4,minmax(0,1fr))}
+.membership-steps .service-option{cursor:default;justify-content:flex-start;gap:10px}
+.membership-steps .service-option b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#476c5c;color:#fff}
+#member-data-fields:disabled{opacity:.5}
+.demo-account{border:1px solid #d8e1dc;background:#fff;border-radius:8px;padding:6px 9px;text-align:left;color:#35564a;cursor:pointer;font:inherit;font-size:12px}
+.demo-account:hover{background:#edf5f0;border-color:#88a89a}
+.qty input{border:1px solid #d7dfda;border-radius:7px;padding:3px 5px}
+@media(max-width:720px){.membership-steps{grid-template-columns:1fr 1fr}}

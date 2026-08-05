@@ -12,16 +12,16 @@
 @php
     $role = auth()->user()->role;
     $nav = [
-        ['dashboard', 'bi-grid-1x2', 'Ringkasan', ['superadmin','owner','admin','cashier','warehouse']],
-        ['pos', 'bi-calculator', 'Kasir', ['superadmin','owner','admin','cashier']],
-        ['transactions', 'bi-receipt', 'Transaksi', ['superadmin','owner','admin','cashier']],
-        ['products', 'bi-box-seam', 'Produk', ['superadmin','owner','admin','warehouse']],
-        ['inventory', 'bi-boxes', 'Stok / Gudang', ['superadmin','owner','admin','warehouse']],
-        ['purchases', 'bi-bag-check', 'Pembelian', ['superadmin','owner','admin','warehouse']],
-        ['expenses', 'bi-wallet2', 'Pengeluaran', ['superadmin','owner','admin']],
-        ['members', 'bi-people', 'Membership', ['superadmin','owner','admin']],
-        ['reports', 'bi-bar-chart', 'Laporan', ['superadmin','owner','admin']],
-        ['settings', 'bi-sliders', 'Pengaturan', ['superadmin','owner','admin']],
+        ['dashboard', 'bi-grid-1x2', 'Ringkasan', ['superadmin','head_ops','owner','admin']],
+        ['pos', 'bi-calculator', 'Kasir', ['superadmin','head_ops','ops_admin','owner','admin','cashier','spv','outlet_manager']],
+        ['transactions', 'bi-receipt', 'Transaksi', ['superadmin','head_ops','ops_admin','owner','admin','cashier','spv','outlet_manager']],
+        ['products', 'bi-box-seam', 'Produk', ['superadmin','head_ops','ops_admin','owner','admin','warehouse']],
+        ['inventory', 'bi-boxes', 'Stok / Gudang', ['superadmin','head_ops','ops_admin','owner','admin','warehouse','cashier','spv','outlet_manager']],
+        ['purchases', 'bi-bag-check', 'Pembelian', ['superadmin','head_ops','ops_admin','owner','admin','warehouse']],
+        ['expenses', 'bi-wallet2', 'Pengeluaran', ['superadmin','head_ops','ops_admin','owner','admin','cashier','spv','outlet_manager']],
+        ['members', 'bi-people', 'Membership', ['superadmin','head_ops','ops_admin','owner','admin','cashier','spv','outlet_manager']],
+        ['reports', 'bi-bar-chart', 'Laporan', ['superadmin','head_ops','owner','admin']],
+        ['settings', 'bi-sliders', 'Pengaturan', ['superadmin','admin']],
     ];
 @endphp
 <div class="app-shell">
@@ -68,8 +68,11 @@
                     <span>Cabang</span>
                 </label>
                 <select id="active-store" name="store_id" aria-label="Pilih cabang aktif" onchange="this.form.submit()">
+                    @if(in_array($role, ['superadmin','head_ops','owner','admin']))
+                        <option value="consolidated" @selected($isConsolidated)>Consolidated · Semua warung</option>
+                    @endif
                     @foreach($availableStores as $store)
-                        <option value="{{ $store->id }}" @selected($activeStore?->id === $store->id)>{{ $store->name }}</option>
+                        <option value="{{ $store->id }}" @selected(!$isConsolidated && $activeStore?->id === $store->id)>{{ $store->name }}</option>
                     @endforeach
                 </select>
             </form>

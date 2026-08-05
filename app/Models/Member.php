@@ -11,5 +11,10 @@ class Member extends Model
 
     protected $guarded = [];
 
-    protected $casts = ['deposit_balance' => 'decimal:2', 'is_active' => 'boolean'];
+    protected $casts = ['deposit_balance' => 'decimal:2', 'discount_percent' => 'decimal:2', 'birth_date' => 'date', 'is_active' => 'boolean'];
+
+    public function card()
+    {
+        return $this->hasOne(MemberCard::class);
+    }
 }

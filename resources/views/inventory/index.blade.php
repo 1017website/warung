@@ -1,70 +1,22 @@
 @extends('layouts.app')
 @section('title', 'Stok / Gudang')
 @section('content')
-<div class="page-head">
-    <div><h1><i class="bi bi-box-seam"></i> Stok & gudang</h1><p>Bahan baku tersimpan di gudang, sedangkan stok makanan diatur ulang setiap hari.</p></div>
-    <button class="btn btn-primary" onclick="openModal('adjust-modal')"><i class="bi bi-sliders2"></i> Penyesuaian stok</button>
-</div>
-
-<div class="inventory-tabs" role="tablist">
-    <button class="inventory-tab active" data-target="ingredients-panel"><i class="bi bi-boxes"></i><span><b>Gudang bahan baku</b><small>Stok berkelanjutan</small></span></button>
-    <button class="inventory-tab" data-target="menu-panel"><i class="bi bi-calendar2-check"></i><span><b>Stok makanan hari ini</b><small>{{ today()->translatedFormat('d F Y') }}</small></span></button>
-</div>
-
-<div class="grid two-col inventory-layout">
-    <div>
-        <section class="card card-pad inventory-panel active" id="ingredients-panel">
-            <div class="card-title"><div><h2>Gudang bahan baku</h2><p>Bertambah saat pembelian diterima dan tidak direset harian.</p></div><span class="badge gray">{{ $ingredientStocks->total() }} item</span></div>
-            <div class="inventory-note"><i class="bi bi-info-circle"></i><span>Gunakan stok ini untuk beras, ayam, telur, minyak, bumbu, dan bahan produksi lainnya.</span></div>
-            <div class="table-wrap"><table><thead><tr><th>Bahan baku</th><th>Kategori</th><th>Stok gudang</th><th>Status</th></tr></thead><tbody>
-                @forelse($ingredientStocks as $stock)
-                    <tr><td><div class="cell-main">{{ $stock->product->name }}</div><div class="cell-sub">{{ $stock->product->sku }}</div></td><td>{{ $stock->product->category?->name ?? 'Bahan baku' }}</td><td class="money">{{ $stock->quantity }} {{ $stock->product->unit }}</td><td><span class="badge {{ $stock->quantity <= 0 ? 'red' : ($stock->quantity <= $stock->product->minimum_stock ? 'amber' : '') }}">{{ $stock->quantity <= 0 ? 'Habis' : ($stock->quantity <= $stock->product->minimum_stock ? 'Menipis' : 'Aman') }}</span></td></tr>
-                @empty
-                    <tr><td colspan="4"><div class="cart-empty">Belum ada bahan baku. Tambahkan produk dengan jenis “Bahan baku”.</div></td></tr>
-                @endforelse
-            </tbody></table></div>
-            <div class="pagination">{{ $ingredientStocks->appends(['menu' => $menuStocks->currentPage()])->links() }}</div>
-        </section>
-
-        <section class="card card-pad inventory-panel" id="menu-panel">
-            <div class="card-title"><div><h2>Stok makanan hari ini</h2><p>Jumlah porsi siap dijual khusus {{ today()->translatedFormat('l, d F Y') }}.</p></div><span class="badge">{{ $menuStocks->total() }} menu</span></div>
-            <div class="inventory-note menu"><i class="bi bi-sun"></i><span>Stok menu baru dimulai dari 0 pada hari berikutnya. Isi sesuai jumlah makanan yang siap dijual hari ini.</span></div>
-            <div class="table-wrap"><table><thead><tr><th>Menu</th><th>Kategori</th><th>Siap dijual</th><th>Status</th></tr></thead><tbody>
-                @forelse($menuStocks as $stock)
-                    <tr><td><div class="cell-main">{{ $stock->product->name }}</div><div class="cell-sub">{{ $stock->product->sku }}</div></td><td>{{ $stock->product->category?->name ?? 'Menu' }}</td><td class="money">{{ $stock->quantity }} {{ $stock->product->unit }}</td><td><span class="badge {{ $stock->quantity <= 0 ? 'red' : ($stock->quantity <= $stock->product->minimum_stock ? 'amber' : '') }}">{{ $stock->quantity <= 0 ? 'Habis' : ($stock->quantity <= $stock->product->minimum_stock ? 'Menipis' : 'Siap jual') }}</span></td></tr>
-                @empty
-                    <tr><td colspan="4"><div class="cart-empty">Belum ada menu aktif untuk hari ini.</div></td></tr>
-                @endforelse
-            </tbody></table></div>
-            <div class="pagination">{{ $menuStocks->appends(['bahan' => $ingredientStocks->currentPage()])->links() }}</div>
-        </section>
-    </div>
-
-    <section class="card card-pad"><div class="card-title"><div><h2>Pergerakan terbaru</h2><p>Jejak perubahan kedua jenis stok</p></div></div><div class="list">
-        @forelse($movements as $move)<div class="list-item"><span class="list-icon">{{ $move->quantity > 0 ? '+' : '−' }}</span><div class="list-body"><div class="list-title">{{ $move->product_name }}</div><div class="list-sub">{{ $move->notes }} · {{ \Carbon\Carbon::parse($move->created_at)->diffForHumans() }}</div></div><span class="badge {{ $move->quantity < 0 ? 'amber' : '' }}">{{ $move->quantity > 0 ? '+' : '' }}{{ $move->quantity }}</span></div>@empty<div class="cart-empty">Belum ada pergerakan.</div>@endforelse
-    </div></section>
-</div>
+@php($qtyFmt=fn($value)=>rtrim(rtrim(number_format((float)$value,3,',','.'),'0'),','))
+<div class="page-head"><div><h1><i class="bi bi-box-seam"></i> Stok bahan baku & olahan</h1><p>Produksi menghubungkan bahan baku ke olahan; stock opname menunjukkan selisih fisik vs sistem.</p></div><div class="actions"><button class="btn btn-soft" onclick="openModal('count-modal')"><i class="bi bi-clipboard-check"></i> Stock opname</button><button class="btn btn-soft" onclick="openModal('adjust-modal')"><i class="bi bi-sliders2"></i> Penyesuaian</button><button class="btn btn-primary" onclick="openModal('production-modal')"><i class="bi bi-arrow-repeat"></i> Catat produksi</button></div></div>
+<section class="card card-pad" style="margin-bottom:16px"><div class="card-title"><div><h2>Stok bahan baku</h2><p>Status aman memakai batas minimum pada master produk.</p></div><span class="badge gray">{{ $ingredientStocks->count() }} bahan</span></div><div class="inventory-note"><i class="bi bi-info-circle"></i><span><b>Aman</b> di atas minimum · <b>Perlu perhatian</b> ≤ minimum · <b>Tidak aman</b> ≤ 50% minimum · <b>Kosong</b> = 0.</span></div><div class="table-wrap"><table><thead><tr><th>SKU / bahan baku</th><th>Kategori</th><th>Stok awal</th><th>Stok datang</th><th>Stok keluar</th><th>Terolah</th><th>Sisa stok</th><th>Status</th></tr></thead><tbody>
+@forelse($ingredientStocks as $stock)@php($min=$stock->product->minimum_stock)@php($status=$stock->quantity<=0?'KOSONG':($stock->quantity<=max(1,$min/2)?'Tidak aman':($stock->quantity<=$min?'Perlu perhatian':'Aman')))@php($class=$status==='Aman'?'':($status==='Perlu perhatian'?'amber':'red'))
+<tr><td><div class="cell-main">{{ $stock->product->name }}</div><div class="cell-sub">{{ $stock->product->sku }} · {{ $stock->product->unit }}</div></td><td>{{ $stock->product->category?->name ?? 'Bahan baku' }}</td><td>{{ $qtyFmt($stock->opening) }}</td><td>{{ $qtyFmt($stock->incoming) }}</td><td>{{ $qtyFmt($stock->outgoing) }}</td><td>{{ $qtyFmt($stock->processed) }}</td><td class="money">{{ $qtyFmt($stock->quantity) }} {{ $stock->product->unit }}</td><td><span class="badge {{ $class }}">{{ $status }}</span><div class="cell-sub">Batas min. {{ $qtyFmt($min) }} {{ $stock->product->unit }}</div></td></tr>
+@empty<tr><td colspan="8"><div class="cart-empty">Belum ada bahan baku.</div></td></tr>@endforelse
+</tbody></table></div></section>
+<section class="card card-pad"><div class="card-title"><div><h2>Stok olahan hari ini</h2><p>Rumus sistem: stok awal + tambahan olahan − terjual − konsumsi.</p></div><span class="badge">{{ today()->translatedFormat('d F Y') }}</span></div><div class="table-wrap"><table><thead><tr><th>SKU / olahan</th><th>Kategori</th><th>Stok awal</th><th>Tambahan olahan</th><th>Terjual</th><th>Konsumsi</th><th>Sisa sistem</th><th>Sisa fisik</th><th>Selisih</th><th>Status</th></tr></thead><tbody>
+@forelse($menuStocks as $stock)@php($actual=$stock->count?->actual_quantity)@php($difference=$actual===null?null:$stock->quantity-$actual)@php($balanced=$difference!==null&&abs((float)$difference)<0.001)
+<tr><td><div class="cell-main">{{ $stock->product->name }}</div><div class="cell-sub">{{ $stock->product->sku }} · {{ $stock->product->unit }}</div></td><td>{{ $stock->product->category?->name ?? 'Menu' }}</td><td>{{ $qtyFmt($stock->opening) }}</td><td>{{ $qtyFmt($stock->produced) }}</td><td>{{ $qtyFmt($stock->sold) }}</td><td>{{ $qtyFmt($stock->consumption) }}</td><td class="money">{{ $qtyFmt($stock->quantity) }} {{ $stock->product->unit }}</td><td class="money">{{ $actual===null?'—':$qtyFmt($actual).' '.$stock->product->unit }}</td><td class="money">{{ $difference===null?'—':$qtyFmt($difference) }}</td><td><span class="badge {{ $difference===null?'gray':($balanced?'':'red') }}">{{ $difference===null?'Belum opname':($balanced?'Balance':'Tidak balance') }}</span>@if($stock->count?->notes)<div class="cell-sub">{{ $stock->count->notes }}</div>@endif</td></tr>
+@empty<tr><td colspan="10"><div class="cart-empty">Belum ada menu aktif.</div></td></tr>@endforelse
+</tbody></table></div></section>
+<div class="grid two-col" style="margin-top:16px"><section class="card card-pad"><div class="card-title"><div><h2>Produksi terbaru</h2><p>Koneksi bahan baku → olahan</p></div></div><div class="list">@forelse($productions as $production)<div class="list-item"><span class="list-icon"><i class="bi bi-arrow-right"></i></span><div class="list-body"><div class="list-title">{{ $production->ingredient->name }} → {{ $production->menu->name }}</div><div class="list-sub">{{ $production->ingredient_quantity }} {{ $production->ingredient->unit }} menghasilkan {{ $production->output_quantity }} {{ $production->menu->unit }}</div></div></div>@empty<div class="cart-empty">Belum ada produksi.</div>@endforelse</div></section><section class="card card-pad"><div class="card-title"><div><h2>Pergerakan terbaru</h2><p>Audit perubahan stok</p></div></div><div class="list">@forelse($movements as $move)<div class="list-item"><span class="list-icon">{{ $move->quantity>0?'+':'−' }}</span><div class="list-body"><div class="list-title">{{ $move->product_name }}</div><div class="list-sub">{{ $move->notes }} · {{ \Carbon\Carbon::parse($move->created_at)->diffForHumans() }}</div></div><span class="badge {{ $move->quantity<0?'amber':'' }}">{{ $move->quantity>0?'+':'' }}{{ $move->quantity }}</span></div>@empty<div class="cart-empty">Belum ada pergerakan.</div>@endforelse</div></section></div>
 @endsection
-
 @push('modals')
-<div class="modal" id="adjust-modal"><div class="modal-card"><div class="modal-head"><div><h2>Penyesuaian stok</h2><div class="hint">Sistem otomatis menyesuaikan gudang atau stok menu hari ini.</div></div><button class="modal-close" onclick="closeModal('adjust-modal')">×</button></div><form method="POST" action="{{ route('inventory.adjust') }}" class="form-grid">@csrf
-    <div class="field full"><label>Produk</label><select name="product_id" required>
-        <optgroup label="Gudang bahan baku">@foreach($inventoryProducts->where('product_type', 'ingredient') as $product)<option value="{{ $product->id }}">[Bahan baku] {{ $product->name }}</option>@endforeach</optgroup>
-        <optgroup label="Stok makanan hari ini">@foreach($inventoryProducts->where('product_type', 'menu') as $product)<option value="{{ $product->id }}">[Menu hari ini] {{ $product->name }}</option>@endforeach</optgroup>
-    </select></div>
-    <div class="field"><label>Jenis</label><select name="type"><option value="adjustment_in">Tambah stok</option><option value="adjustment_out">Kurangi stok</option></select></div>
-    <div class="field"><label>Jumlah</label><input type="number" name="quantity" min="1" required></div>
-    <div class="field full"><label>Alasan</label><textarea name="notes" required placeholder="Contoh: Produksi 20 porsi / hasil stock opname"></textarea></div>
-    <div class="field full"><button class="btn btn-primary">Simpan penyesuaian</button></div>
-</form></div></div>
-@endpush
-
-@push('scripts')
-<script>
-document.querySelectorAll('.inventory-tab').forEach(tab => tab.addEventListener('click', () => {
-    document.querySelectorAll('.inventory-tab').forEach(item => item.classList.toggle('active', item === tab));
-    document.querySelectorAll('.inventory-panel').forEach(panel => panel.classList.toggle('active', panel.id === tab.dataset.target));
-}));
-if(new URLSearchParams(location.search).has('menu')) document.querySelector('[data-target="menu-panel"]').click();
-</script>
+<div class="modal" id="production-modal"><div class="modal-card"><div class="modal-head"><div><h2>Catat produksi olahan</h2><div class="hint">Bahan baku berkurang dan stok menu bertambah dalam satu proses.</div></div><button class="modal-close" onclick="closeModal('production-modal')">×</button></div><form method="POST" action="{{ route('inventory.production') }}" class="form-grid">@csrf<div class="field full"><label>Bahan baku</label><select name="ingredient_product_id" required>@foreach($inventoryProducts->where('product_type','ingredient') as $product)<option value="{{ $product->id }}">{{ $product->name }} ({{ $product->unit }})</option>@endforeach</select></div><div class="field"><label>Jumlah terolah</label><input type="number" name="ingredient_quantity" min="1" required></div><div class="field"><label>Olahan / menu tujuan</label><select name="menu_product_id" required>@foreach($inventoryProducts->where('product_type','menu') as $product)<option value="{{ $product->id }}">{{ $product->name }}</option>@endforeach</select></div><div class="field"><label>Tambahan olahan</label><input type="number" name="output_quantity" min="1" required></div><div class="field"><label>Keterangan</label><input name="notes" placeholder="Opsional"></div><div class="field full"><button class="btn btn-primary">Simpan produksi</button></div></form></div></div>
+<div class="modal" id="adjust-modal"><div class="modal-card"><div class="modal-head"><h2>Penyesuaian stok</h2><button class="modal-close" onclick="closeModal('adjust-modal')">×</button></div><form method="POST" action="{{ route('inventory.adjust') }}" class="form-grid">@csrf<div class="field full"><label>Produk</label><select name="product_id" required>@foreach($inventoryProducts as $product)<option value="{{ $product->id }}">[{{ $product->product_type==='menu'?'Olahan':'Bahan baku' }}] {{ $product->name }}</option>@endforeach</select></div><div class="field"><label>Jenis</label><select name="type"><option value="adjustment_in">Tambah stok</option><option value="adjustment_out">Kurangi stok</option><option value="consumption">Konsumsi owner/karyawan</option></select></div><div class="field"><label>Qty</label><input type="number" name="quantity" min="1" required></div><div class="field full"><label>Alasan / keterangan</label><textarea name="notes" required></textarea></div><div class="field full"><button class="btn btn-primary">Simpan penyesuaian</button></div></form></div></div>
+<div class="modal" id="count-modal"><div class="modal-card"><div class="modal-head"><div><h2>Stock opname akhir hari</h2><div class="hint">Masukkan sisa fisik untuk melihat balance/tidak balance.</div></div><button class="modal-close" onclick="closeModal('count-modal')">×</button></div><form method="POST" action="{{ route('inventory.count') }}" class="form-grid">@csrf<div class="field full"><label>Produk</label><select name="product_id" required>@foreach($inventoryProducts as $product)<option value="{{ $product->id }}">{{ $product->name }}</option>@endforeach</select></div><div class="field"><label>Sisa fisik</label><input type="number" name="actual_quantity" min="0" required></div><div class="field"><label>Keterangan</label><input name="notes" placeholder="Contoh: konsumsi owner 2"></div><div class="field full"><button class="btn btn-primary">Simpan opname</button></div></form></div></div>
 @endpush
