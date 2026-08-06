@@ -11,6 +11,7 @@ use App\Models\MemberCard;
 use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\Purchase;
+use App\Models\Role;
 use App\Models\StockCount;
 use App\Models\StockProduction;
 use App\Models\Store;
@@ -31,8 +32,6 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class WarungController extends Controller
 {
-    private const SUPERVISOR_ROLES = ['superadmin', 'head_ops', 'spv', 'outlet_manager', 'owner', 'admin'];
-
     private function tenantId(): int
     {
         return (int) auth()->user()->tenant_id;
@@ -40,18 +39,30 @@ class WarungController extends Controller
 
     private function storeId(): int
     {
+        // Selain superadmin & head of ops, cabang aktif dipaku ke cabang milik akun
+        // sehingga session tidak dapat dipakai untuk melihat warung lain.
+        if (! auth()->user()->canAccessAllStores()) {
+            return (int) auth()->user()->store_id;
+        }
+
         return (int) (session('store_id') ?: auth()->user()->store_id);
     }
 
     private function isConsolidated(): bool
     {
-        return session('view_scope') === 'consolidated'
-            && in_array(auth()->user()->role, ['superadmin', 'head_ops', 'owner', 'admin']);
+        return session('view_scope') === 'consolidated' && auth()->user()->canAccessAllStores();
     }
 
     private function stores()
     {
-        return Store::where('tenant_id', $this->tenantId())->where('is_active', true)->orderBy('name')->get();
+        return Store::where('tenant_id', $this->tenantId())->where('is_active', true)
+            ->unless(auth()->user()->canAccessAllStores(), fn ($q) => $q->whereKey(auth()->user()->store_id))
+            ->orderBy('name')->get();
+    }
+
+    private function assertStoreAccess(?int $storeId): void
+    {
+        abort_unless(auth()->user()->canAccessStore($storeId), 404);
     }
 
     private function view(string $name, array $data = [])
@@ -97,9 +108,11 @@ class WarungController extends Controller
             return null;
         }
 
+        $supervisorKeys = Role::where('tenant_id', $this->tenantId())->where('is_supervisor', true)->pluck('key');
+
         return User::where('tenant_id', $this->tenantId())
             ->where('is_active', true)
-            ->whereIn('role', self::SUPERVISOR_ROLES)
+            ->whereIn('role', $supervisorKeys)
             ->get()
             ->first(fn (User $user) => $user->authorization_pin && Hash::check($pin, $user->authorization_pin));
     }
@@ -108,12 +121,13 @@ class WarungController extends Controller
     {
         $value = $request->validate(['store_id' => 'required'])['store_id'];
         if ($value === 'consolidated') {
-            abort_unless(in_array(auth()->user()->role, ['superadmin', 'head_ops', 'owner', 'admin']), 403);
+            abort_unless(auth()->user()->canAccessAllStores(), 403);
             $request->session()->put('view_scope', 'consolidated');
 
             return back()->with('success', 'Tampilan consolidated aktif untuk seluruh warung.');
         }
 
+        abort_unless(auth()->user()->canAccessStore($value), 403);
         $store = Store::where('tenant_id', $this->tenantId())->whereKey((int) $value)->firstOrFail();
         $request->session()->put('store_id', $store->id);
         $request->session()->put('view_scope', 'store');
@@ -409,7 +423,7 @@ class WarungController extends Controller
 
     public function toggleCustomAmount(Request $request)
     {
-        abort_unless(in_array(auth()->user()->role, self::SUPERVISOR_ROLES), 403);
+        abort_unless(auth()->user()->isSupervisor(), 403);
         auth()->user()->tenant->update(['allow_custom_amount' => $request->boolean('enabled')]);
 
         return back()->with('success', 'Custom amount '.($request->boolean('enabled') ? 'diaktifkan.' : 'dinonaktifkan.'));
@@ -424,7 +438,7 @@ class WarungController extends Controller
             ->whereDate('transactions.transacted_at', today())->select('transaction_items.product_name', DB::raw("COALESCE(products.unit, 'item') as unit"), DB::raw('SUM(transaction_items.quantity) as quantity'))
             ->groupBy('transaction_items.product_name', 'products.unit')->orderBy('transaction_items.product_name')->get();
 
-        return view('pos.close', ['sales' => $sales, 'store' => Store::findOrFail($this->storeId()), 'tenant' => auth()->user()->tenant]);
+        return view('pos.close', ['sales' => $sales, 'store' => Store::where('tenant_id', $this->tenantId())->findOrFail($this->storeId()), 'tenant' => auth()->user()->tenant]);
     }
 
     public function products()
@@ -689,6 +703,7 @@ class WarungController extends Controller
     public function updatePurchaseStatus(Request $request, Purchase $purchase)
     {
         abort_unless($purchase->tenant_id === $this->tenantId(), 404);
+        $this->assertStoreAccess($purchase->store_id);
         $data = $request->validate(['status' => ['required', Rule::in(['received', 'not_received'])], 'payment_status' => ['required', Rule::in(['paid', 'dp', 'unpaid'])], 'dp_amount' => 'nullable|numeric|min:0']);
         abort_if(($data['dp_amount'] ?? 0) > $purchase->total, 422, 'DP tidak boleh melebihi total pembelian.');
         DB::transaction(function () use ($purchase, $data) {
@@ -724,6 +739,7 @@ class WarungController extends Controller
     public function destroyExpense(Expense $expense)
     {
         abort_unless($expense->tenant_id === $this->tenantId(), 404);
+        $this->assertStoreAccess($expense->store_id);
         $expense->delete();
         return back()->with('success', 'Pengeluaran dipindahkan ke arsip.');
     }
@@ -734,7 +750,7 @@ class WarungController extends Controller
         $members = Member::where('tenant_id', $this->tenantId())->when($search, fn ($q) => $q->where(fn ($query) => $query->where('name', 'like', "%{$search}%")->orWhere('member_code', 'like', "%{$search}%")->orWhere('qr_code', $search)))->latest()->paginate(20)->withQueryString();
         $availableCards = MemberCard::where('tenant_id', $this->tenantId())->where('status', 'available')->orderBy('member_code')->get();
         $memberSummary = null;
-        if (auth()->user()->role === 'superadmin') {
+        if (auth()->user()->role === User::SUPERADMIN) {
             $memberSummary = ['count' => Member::where('tenant_id', $this->tenantId())->count(), 'deposit' => Member::where('tenant_id', $this->tenantId())->sum('deposit_balance')];
         }
         return $this->view('members.index', compact('members', 'availableCards', 'memberSummary', 'search'));
@@ -792,6 +808,7 @@ class WarungController extends Controller
     public function print(Transaction $transaction)
     {
         abort_unless($transaction->tenant_id === $this->tenantId(), 404);
+        $this->assertStoreAccess($transaction->store_id);
         $transaction->load(['items.product', 'member', 'user', 'store', 'payments']);
         return view('transactions.print', ['transaction' => $transaction, 'tenant' => auth()->user()->tenant]);
     }
@@ -827,7 +844,7 @@ class WarungController extends Controller
 
     public function reports(Request $request, TransactionReportExporter $exporter)
     {
-        $canSeeNonReal = in_array(auth()->user()->role, ['superadmin', 'owner']);
+        $canSeeNonReal = auth()->user()->canSeeNonRealReport();
         $type = $canSeeNonReal && $request->get('type') === 'non_real' ? 'non_real' : 'real';
         $percentage = (float) auth()->user()->tenant->non_real_percentage;
         $factor = $type === 'non_real' ? $percentage / 100 : 1;
@@ -841,7 +858,7 @@ class WarungController extends Controller
 
     public function exportReport(Request $request, TransactionReportExporter $exporter)
     {
-        $canSeeNonReal = in_array(auth()->user()->role, ['superadmin', 'owner']);
+        $canSeeNonReal = auth()->user()->canSeeNonRealReport();
         $type = $canSeeNonReal && $request->get('type') === 'non_real' ? 'non_real' : 'real';
         $factor = $type === 'non_real' ? (float) auth()->user()->tenant->non_real_percentage / 100 : 1;
         [, $from, $to] = $this->reportRange($request);
@@ -855,15 +872,84 @@ class WarungController extends Controller
         }, $filename, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Cache-Control' => 'no-store, no-cache']);
     }
 
+    private function roles()
+    {
+        return Role::where('tenant_id', $this->tenantId())->orderBy('position')->orderBy('name')->get();
+    }
+
     public function settings()
     {
         $users = User::where('tenant_id', $this->tenantId())->orderBy('name')->get();
-        $creatableRoles = auth()->user()->role === 'superadmin' ? [
-            'head_ops' => 'Head of Ops', 'ops_admin' => 'Ops Admin', 'outlet_manager' => 'Outlet Manager', 'spv' => 'SPV', 'cashier' => 'Kasir',
-        ] : [];
+        $roles = $this->roles();
+        $userCountPerRole = User::where('tenant_id', $this->tenantId())->selectRaw('role, count(*) as total')->groupBy('role')->pluck('total', 'role');
+        // Superadmin adalah satu-satunya otoritas yang membuat akun, dan tidak bisa menugaskan role sistem.
+        $creatableRoles = auth()->user()->role === User::SUPERADMIN
+            ? $roles->where('is_system', false)->pluck('name', 'key')
+            : collect();
         $devices = ConnectedDevice::where('tenant_id', $this->tenantId())->with('store')->get();
         $cards = MemberCard::where('tenant_id', $this->tenantId())->where('status', 'available')->latest()->take(20)->get();
-        return $this->view('settings.index', ['tenant' => auth()->user()->tenant, 'stores' => $this->stores(), 'users' => $users, 'creatableRoles' => $creatableRoles, 'devices' => $devices, 'cards' => $cards]);
+
+        return $this->view('settings.index', ['tenant' => auth()->user()->tenant, 'stores' => $this->stores(), 'users' => $users, 'roles' => $roles, 'userCountPerRole' => $userCountPerRole, 'creatableRoles' => $creatableRoles, 'canManageRoles' => auth()->user()->role === User::SUPERADMIN, 'devices' => $devices, 'cards' => $cards]);
+    }
+
+    private function roleData(Request $request, ?Role $role = null): array
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:60'],
+            'summary' => ['nullable', 'string', 'max:120'],
+            'modules' => ['required', 'array', 'min:1'],
+            'modules.*' => [Rule::in(array_keys(Role::MODULES))],
+            'can_see_non_real' => ['nullable', 'boolean'],
+            'is_supervisor' => ['nullable', 'boolean'],
+        ]);
+
+        return [
+            'name' => $data['name'],
+            'summary' => $data['summary'] ?? null,
+            'modules' => Role::sanitizeModules($data['modules']),
+            'can_see_non_real' => $request->boolean('can_see_non_real'),
+            'is_supervisor' => $request->boolean('is_supervisor'),
+            // Akses lintas warung tidak dibuka lewat form; lihat catatan pada view Pengaturan.
+            'can_access_all_stores' => $role?->can_access_all_stores ?? false,
+        ];
+    }
+
+    public function storeRole(Request $request)
+    {
+        abort_unless(auth()->user()->role === User::SUPERADMIN, 403);
+        $key = $request->validate([
+            'key' => ['required', 'string', 'max:30', 'regex:/^[a-z][a-z0-9_]*$/', Rule::unique('roles')->where('tenant_id', $this->tenantId())],
+        ])['key'];
+        Role::create($this->roleData($request) + [
+            'tenant_id' => $this->tenantId(),
+            'key' => $key,
+            'is_system' => false,
+            'position' => (int) Role::where('tenant_id', $this->tenantId())->max('position') + 1,
+        ]);
+
+        return back()->with('success', 'Role baru berhasil ditambahkan.');
+    }
+
+    public function updateRole(Request $request, Role $role)
+    {
+        abort_unless(auth()->user()->role === User::SUPERADMIN, 403);
+        abort_unless($role->tenant_id === $this->tenantId(), 404);
+        abort_if($role->is_system, 422, 'Hak akses role sistem tidak dapat diubah.');
+        $role->update($this->roleData($request, $role));
+        auth()->user()->forgetRoleDefinition();
+
+        return back()->with('success', 'Hak akses '.$role->name.' berhasil diperbarui.');
+    }
+
+    public function destroyRole(Role $role)
+    {
+        abort_unless(auth()->user()->role === User::SUPERADMIN, 403);
+        abort_unless($role->tenant_id === $this->tenantId(), 404);
+        abort_if($role->is_system, 422, 'Role sistem tidak dapat dihapus.');
+        abort_if($role->users()->exists(), 422, 'Role masih dipakai akun aktif. Pindahkan akunnya terlebih dahulu.');
+        $role->delete();
+
+        return back()->with('success', 'Role '.$role->name.' dihapus.');
     }
 
     public function updateBrand(Request $request)
@@ -905,7 +991,10 @@ class WarungController extends Controller
     public function storeDevice(Request $request)
     {
         $data = $request->validate(['name' => 'required|string|max:120', 'type' => ['required', Rule::in(['receipt_printer', 'cash_drawer', 'barcode_scanner', 'customer_display', 'other'])], 'connection' => 'nullable|string|max:120', 'store_id' => 'nullable|integer']);
-        if (! empty($data['store_id'])) abort_unless(Store::where('tenant_id', $this->tenantId())->whereKey($data['store_id'])->exists(), 422);
+        if (! empty($data['store_id'])) {
+            abort_unless(Store::where('tenant_id', $this->tenantId())->whereKey($data['store_id'])->exists(), 422);
+            $this->assertStoreAccess((int) $data['store_id']);
+        }
         ConnectedDevice::create($data + ['tenant_id' => $this->tenantId(), 'status' => 'active']);
         return back()->with('success', 'Perangkat berhasil ditambahkan.');
     }
@@ -919,9 +1008,10 @@ class WarungController extends Controller
 
     public function storeUser(Request $request)
     {
-        abort_unless(auth()->user()->role === 'superadmin', 403);
-        $roles = ['head_ops', 'ops_admin', 'outlet_manager', 'spv', 'cashier'];
-        $data = $request->validate(['name' => 'required|string|max:120', 'email' => 'required|email|unique:users,email', 'role' => ['required', Rule::in($roles)], 'store_id' => 'required|integer', 'password' => 'required|string|min:8', 'authorization_pin' => 'nullable|digits_between:4,8']);
+        abort_unless(auth()->user()->role === User::SUPERADMIN, 403);
+        // Role diambil dari master, kecuali role sistem yang tidak boleh ditugaskan ke akun baru.
+        $assignable = Role::where('tenant_id', $this->tenantId())->where('is_system', false)->pluck('key')->all();
+        $data = $request->validate(['name' => 'required|string|max:120', 'email' => 'required|email|unique:users,email', 'role' => ['required', Rule::in($assignable)], 'store_id' => 'required|integer', 'password' => 'required|string|min:8', 'authorization_pin' => 'nullable|digits_between:4,8']);
         abort_unless(Store::where('tenant_id', $this->tenantId())->whereKey($data['store_id'])->exists(), 422);
         if (! empty($data['authorization_pin'])) $data['authorization_pin'] = Hash::make($data['authorization_pin']);
         User::create($data + ['tenant_id' => $this->tenantId(), 'password' => Hash::make($data['password']), 'is_active' => true]);
@@ -930,15 +1020,15 @@ class WarungController extends Controller
 
     public function destroyUser(User $user)
     {
-        abort_unless(auth()->user()->role === 'superadmin' && $user->tenant_id === $this->tenantId() && $user->id !== auth()->id(), 403);
+        abort_unless(auth()->user()->role === User::SUPERADMIN && $user->tenant_id === $this->tenantId() && $user->id !== auth()->id(), 403);
         $user->delete();
         return back()->with('success', 'Akun pengguna dinonaktifkan.');
     }
 
     public function updateUserPin(Request $request, User $user)
     {
-        abort_unless(auth()->user()->role === 'superadmin' && $user->tenant_id === $this->tenantId(), 403);
-        abort_unless(in_array($user->role, self::SUPERVISOR_ROLES), 422, 'PIN otorisasi hanya untuk Manager/SPV.');
+        abort_unless(auth()->user()->role === User::SUPERADMIN && $user->tenant_id === $this->tenantId(), 403);
+        abort_unless($user->isSupervisor(), 422, 'PIN otorisasi hanya untuk Manager/SPV.');
         $pin = $request->validate(['authorization_pin' => 'required|digits_between:4,8'])['authorization_pin'];
         $user->update(['authorization_pin' => Hash::make($pin)]);
 
@@ -947,7 +1037,7 @@ class WarungController extends Controller
 
     public function precreateMemberCards(Request $request)
     {
-        abort_unless(auth()->user()->role === 'superadmin', 403);
+        abort_unless(auth()->user()->role === User::SUPERADMIN, 403);
         $count = $request->validate(['count' => 'required|integer|min:1|max:100'])['count'];
         for ($i = 0; $i < $count; $i++) {
             $next = (MemberCard::where('tenant_id', $this->tenantId())->max('id') ?? 0) + 1;

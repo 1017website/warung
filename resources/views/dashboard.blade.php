@@ -3,7 +3,7 @@
 @section('content')
 <div class="page-head">
     <div><h1>Selamat {{ now()->hour < 12 ? 'pagi' : (now()->hour < 17 ? 'siang' : 'sore') }}, {{ str(auth()->user()->name)->before(' ') }}!</h1><p>Berikut kondisi {{ $isConsolidated ? 'consolidated seluruh warung' : $activeStore->name }} hari ini.</p></div>
-    @if(in_array(auth()->user()->role, ['superadmin','owner','admin','cashier']))<a class="btn btn-primary" href="{{ route('pos') }}"><i class="bi bi-calculator"></i> Buka kasir</a>@endif
+    @if(auth()->user()->canAccess('pos'))<a class="btn btn-primary" href="{{ route('pos') }}"><i class="bi bi-calculator"></i> Buka kasir</a>@endif
 </div>
 <div class="grid stats">
     <div class="card stat"><span class="stat-icon"><i class="bi bi-graph-up-arrow"></i></span><div class="stat-label">Penjualan hari ini</div><div class="stat-value">Rp {{ number_format($sales, 0, ',', '.') }}</div><div class="stat-note">{{ $transactionCount }} transaksi selesai</div></div>

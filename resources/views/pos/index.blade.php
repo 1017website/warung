@@ -4,7 +4,7 @@
 <div class="page-head">
     <div><h1><i class="bi bi-calculator"></i> Kasir {{ $activeStore->name }}</h1><p>Transaksi tunai, split deposit, pending bill, dan retur pengganti.</p></div>
     <div class="actions">
-        @if(in_array(auth()->user()->role,['superadmin','head_ops','spv','outlet_manager','owner','admin']))<form method="POST" action="{{ route('pos.custom-amount') }}">@csrf<input type="hidden" name="enabled" value="{{ auth()->user()->tenant->allow_custom_amount?0:1 }}"><button class="btn btn-outline" title="Manager/SPV dapat mengaktifkan atau menonaktifkan fitur ini"><i class="bi bi-toggles"></i> Custom {{ auth()->user()->tenant->allow_custom_amount?'ON':'OFF' }}</button></form>@endif
+        @if(auth()->user()->isSupervisor())<form method="POST" action="{{ route('pos.custom-amount') }}">@csrf<input type="hidden" name="enabled" value="{{ auth()->user()->tenant->allow_custom_amount?0:1 }}"><button class="btn btn-outline" title="Manager/SPV dapat mengaktifkan atau menonaktifkan fitur ini"><i class="bi bi-toggles"></i> Custom {{ auth()->user()->tenant->allow_custom_amount?'ON':'OFF' }}</button></form>@endif
         @if($pendingBills->isNotEmpty())<button class="btn btn-soft" onclick="openModal('pending-modal')"><i class="bi bi-hourglass-split"></i> Open bill <span class="badge amber">{{ $pendingBills->count() }}</span></button>@endif
         <a class="btn btn-outline" href="{{ route('pos.close') }}" target="_blank"><i class="bi bi-printer"></i> Tutup kasir</a>
     </div>

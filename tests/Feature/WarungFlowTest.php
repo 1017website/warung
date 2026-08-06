@@ -7,6 +7,7 @@ use App\Models\DailyMenuStock;
 use App\Models\Expense;
 use App\Models\Member;
 use App\Models\Product;
+use App\Models\Role;
 use App\Models\Store;
 use App\Models\Tenant;
 use App\Models\Transaction;
@@ -21,9 +22,10 @@ class WarungFlowTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function setupWarung(string $role = 'admin'): array
+    private function setupWarung(string $role = 'superadmin'): array
     {
         $tenant = Tenant::create(['name' => 'Test Warung', 'slug' => 'test-warung']);
+        Role::provisionDefaults($tenant->id);
         $store = Store::create(['tenant_id' => $tenant->id, 'name' => 'Pusat', 'code' => 'PST', 'is_active' => true]);
         $user = User::create(['tenant_id' => $tenant->id, 'store_id' => $store->id, 'name' => 'Admin', 'email' => $role.'@test.id', 'role' => $role, 'is_active' => true, 'password' => 'password']);
 
@@ -84,9 +86,9 @@ class WarungFlowTest extends TestCase
 
     public function test_employee_cannot_discover_or_request_non_real_report(): void
     {
-        ['store' => $store, 'user' => $admin] = $this->setupWarung('admin');
+        ['store' => $store, 'user' => $headOps] = $this->setupWarung('head_ops');
 
-        $this->actingAs($admin)
+        $this->actingAs($headOps)
             ->withSession(['store_id' => $store->id])
             ->get('/laporan?type=non_real')
             ->assertOk()
@@ -95,20 +97,20 @@ class WarungFlowTest extends TestCase
             ->assertDontSee('Non-riil');
     }
 
-    public function test_owner_non_real_report_is_automatically_half_of_real_figures(): void
+    public function test_superadmin_non_real_report_is_automatically_half_of_real_figures(): void
     {
-        ['tenant' => $tenant, 'store' => $store, 'user' => $owner] = $this->setupWarung('owner');
+        ['tenant' => $tenant, 'store' => $store, 'user' => $superadmin] = $this->setupWarung('superadmin');
         $product = Product::create(['tenant_id' => $tenant->id, 'name' => 'Nasi Goreng', 'sku' => 'NG-1', 'unit' => 'porsi', 'purchase_price' => 4000, 'selling_price' => 10000, 'minimum_stock' => 2]);
         $transaction = Transaction::create([
-            'tenant_id' => $tenant->id, 'store_id' => $store->id, 'user_id' => $owner->id,
+            'tenant_id' => $tenant->id, 'store_id' => $store->id, 'user_id' => $superadmin->id,
             'invoice_no' => 'TRX-REPORT-1', 'report_type' => 'real', 'subtotal' => 10000,
             'discount' => 0, 'total' => 10000, 'payment_method' => 'cash',
             'paid_amount' => 10000, 'change_amount' => 0, 'transacted_at' => now(),
         ]);
         $transaction->items()->create(['product_id' => $product->id, 'product_name' => $product->name, 'quantity' => 1, 'price' => 10000, 'cost' => 4000, 'subtotal' => 10000]);
-        Expense::create(['tenant_id' => $tenant->id, 'store_id' => $store->id, 'user_id' => $owner->id, 'category' => 'Operasional', 'description' => 'Gas', 'amount' => 1000, 'report_type' => 'real', 'expense_date' => today()]);
+        Expense::create(['tenant_id' => $tenant->id, 'store_id' => $store->id, 'user_id' => $superadmin->id, 'category' => 'Operasional', 'description' => 'Gas', 'amount' => 1000, 'report_type' => 'real', 'expense_date' => today()]);
 
-        $report = $this->actingAs($owner)
+        $report = $this->actingAs($superadmin)
             ->withSession(['store_id' => $store->id])
             ->get('/laporan?type=non_real');
         $report->assertOk()
@@ -122,7 +124,7 @@ class WarungFlowTest extends TestCase
             ->assertSeeText('Nasi Goreng')
             ->assertSeeText('Rp 3.000');
 
-        $export = $this->actingAs($owner)
+        $export = $this->actingAs($superadmin)
             ->withSession(['store_id' => $store->id])
             ->get('/laporan/export?type=non_real');
         $export->assertOk()
@@ -145,8 +147,8 @@ class WarungFlowTest extends TestCase
 
     public function test_employee_export_request_is_forced_to_real_workbook(): void
     {
-        ['store' => $store, 'user' => $admin] = $this->setupWarung('admin');
-        $response = $this->actingAs($admin)
+        ['store' => $store, 'user' => $headOps] = $this->setupWarung('head_ops');
+        $response = $this->actingAs($headOps)
             ->withSession(['store_id' => $store->id])
             ->get('/laporan/export?type=non_real');
 
@@ -235,9 +237,9 @@ class WarungFlowTest extends TestCase
 
     public function test_report_has_simple_quick_period_filters(): void
     {
-        ['store' => $store, 'user' => $admin] = $this->setupWarung('admin');
+        ['store' => $store, 'user' => $headOps] = $this->setupWarung('head_ops');
 
-        $this->actingAs($admin)->withSession(['store_id' => $store->id])
+        $this->actingAs($headOps)->withSession(['store_id' => $store->id])
             ->get('/laporan?period=today')
             ->assertOk()
             ->assertViewHas('period', 'today')
@@ -251,7 +253,7 @@ class WarungFlowTest extends TestCase
 
     public function test_only_administrator_roles_can_run_whitelisted_maintenance_commands(): void
     {
-        ['tenant' => $tenant, 'store' => $store, 'user' => $admin] = $this->setupWarung('admin');
+        ['tenant' => $tenant, 'store' => $store, 'user' => $admin] = $this->setupWarung('superadmin');
         $cashier = User::create(['tenant_id' => $tenant->id, 'store_id' => $store->id, 'name' => 'Kasir', 'email' => 'cashier-maintenance@test.id', 'role' => 'cashier', 'is_active' => true, 'password' => 'password']);
 
         Artisan::shouldReceive('call')->once()->with('optimize:clear', [])->andReturn(0);

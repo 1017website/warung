@@ -9,6 +9,7 @@ use App\Models\MemberCard;
 use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\Purchase;
+use App\Models\Role;
 use App\Models\Store;
 use App\Models\Tenant;
 use App\Models\Transaction;
@@ -24,6 +25,7 @@ class RevisionFeaturesTest extends TestCase
     private function setupWarung(): array
     {
         $tenant = Tenant::create(['name' => 'Warung Revisi', 'slug' => 'warung-revisi', 'allow_custom_amount' => true]);
+        Role::provisionDefaults($tenant->id);
         $store = Store::create(['tenant_id' => $tenant->id, 'name' => 'Pusat', 'code' => 'PST', 'is_active' => true]);
         $user = User::create([
             'tenant_id' => $tenant->id, 'store_id' => $store->id, 'name' => 'Supervisor', 'email' => 'spv@test.id',

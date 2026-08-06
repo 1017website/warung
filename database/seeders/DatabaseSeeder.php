@@ -7,6 +7,7 @@ use App\Models\DailyMenuStock;
 use App\Models\MemberCard;
 use App\Models\Product;
 use App\Models\ProductStock;
+use App\Models\Role;
 use App\Models\StockCount;
 use App\Models\StockProduction;
 use App\Models\Store;
@@ -29,6 +30,8 @@ class DatabaseSeeder extends Seeder
             'member_discount_percent' => 10,
             'receipt_sort_by_category' => true,
         ]);
+
+        Role::provisionDefaults($tenant->id);
 
         $melati = Store::create(['tenant_id' => $tenant->id, 'name' => 'Cabang Melati', 'code' => 'MLT-01', 'address' => 'Jl. Melati No. 17, Jakarta', 'phone' => '021-555-017', 'is_active' => true]);
         $kenanga = Store::create(['tenant_id' => $tenant->id, 'name' => 'Cabang Kenanga', 'code' => 'KNG-02', 'address' => 'Jl. Kenanga No. 8, Jakarta', 'phone' => '021-555-018', 'is_active' => true]);
