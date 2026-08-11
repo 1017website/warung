@@ -4,7 +4,7 @@
 <div class="page-head">
     <div><h1><i class="bi bi-calculator"></i> Kasir {{ $activeStore->name }}</h1><p>Transaksi tunai, split deposit, pending bill, dan retur pengganti.</p></div>
     <div class="actions">
-        @if(auth()->user()->isSupervisor())<form method="POST" action="{{ route('pos.custom-amount') }}">@csrf<input type="hidden" name="enabled" value="{{ auth()->user()->tenant->allow_custom_amount?0:1 }}"><button class="btn btn-outline" title="Manager/SPV dapat mengaktifkan atau menonaktifkan fitur ini"><i class="bi bi-toggles"></i> Custom {{ auth()->user()->tenant->allow_custom_amount?'ON':'OFF' }}</button></form>@endif
+        @if(auth()->user()->isSupervisor())<form method="POST" action="{{ route('pos.custom-amount') }}">@csrf<input type="hidden" name="enabled" value="{{ $activeStore->allow_custom_amount?0:1 }}"><button class="btn btn-outline" title="Manager/SPV dapat mengaktifkan atau menonaktifkan fitur ini untuk cabang aktif"><i class="bi bi-toggles"></i> Custom {{ $activeStore->allow_custom_amount?'ON':'OFF' }}</button></form>@endif
         @if($pendingBills->isNotEmpty())<button class="btn btn-soft" onclick="openModal('pending-modal')"><i class="bi bi-hourglass-split"></i> Open bill <span class="badge amber">{{ $pendingBills->count() }}</span></button>@endif
         <a class="btn btn-outline" href="{{ route('pos.close') }}" target="_blank"><i class="bi bi-printer"></i> Tutup kasir</a>
     </div>
@@ -14,7 +14,7 @@
         <div class="search-row">
             <div class="search"><input id="product-search" placeholder="Cari nama, SKU, atau scan barcode…" autocomplete="off"></div>
             <select id="product-sort" style="max-width:190px"><option value="name-asc">A–Z</option><option value="name-desc">Z–A</option><option value="price-asc">Harga terendah</option><option value="price-desc">Harga tertinggi</option></select>
-            @if(auth()->user()->tenant->allow_custom_amount)<button class="btn btn-soft" onclick="openModal('custom-modal')"><i class="bi bi-plus-circle"></i> Custom</button>@endif
+            @if($activeStore->allow_custom_amount)<button class="btn btn-soft" onclick="openModal('custom-modal')"><i class="bi bi-plus-circle"></i> Custom</button>@endif
         </div>
         <div class="category-pills"><button class="pill active" data-category="all">Semua</button>@foreach($categories as $category)<button class="pill" data-category="{{ $category->id }}">{{ $category->name }}</button>@endforeach</div>
         <div class="product-grid" id="product-grid">

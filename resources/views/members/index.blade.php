@@ -13,7 +13,7 @@
 </div>
 
 <section class="card card-pad membership-flow">
-    <div class="card-title"><div><h2>Alur aktivasi kartu</h2><p>{{ $availableCards->count() }} kartu pra-cetak siap dipakai · diskon default {{ number_format(auth()->user()->tenant->member_discount_percent,1,',','.') }}%</p></div>
+    <div class="card-title"><div><h2>Alur aktivasi kartu</h2><p>{{ $availableCards->count() }} kartu pra-cetak siap dipakai · diskon default {{ $activeStore->name }} {{ number_format($activeStore->member_discount_percent,1,',','.') }}%</p></div>
         @if(auth()->user()->role==='superadmin')<a class="btn btn-outline btn-sm" href="{{ route('settings') }}#aturan-bisnis"><i class="bi bi-gear"></i> Atur diskon</a>@endif
     </div>
     <div class="service-grid membership-steps">
@@ -68,7 +68,7 @@
             <div class="field"><label>Email</label><input type="email" name="email"></div>
             <div class="field"><label>Domisili</label><input name="domicile"></div>
             <div class="field"><label>Tanggal lahir</label><input type="date" name="birth_date"></div>
-            <div class="field"><label>Diskon member (%)</label><input type="number" name="discount_percent" min="0" max="100" step="0.1" value="{{ auth()->user()->tenant->member_discount_percent }}"></div>
+            <div class="field"><label>Diskon member (%)</label><input type="number" name="discount_percent" min="0" max="100" step="0.1" value="{{ $activeStore->member_discount_percent }}"></div>
             <div class="field full"><button class="btn btn-primary"><i class="bi bi-person-check"></i> Aktifkan kartu & simpan member</button></div>
         </fieldset>
     </form>

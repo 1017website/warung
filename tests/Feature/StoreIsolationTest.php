@@ -117,6 +117,84 @@ class StoreIsolationTest extends TestCase
         $this->actingAs($cashier)->get("/transaksi/{$foreign->id}/print")->assertNotFound();
     }
 
+    public function test_receipt_and_business_settings_are_isolated_per_store(): void
+    {
+        ['tenant' => $tenant, 'melati' => $melati, 'kenanga' => $kenanga] = $this->setupTwoStores();
+        $admin = $this->makeUser($tenant, $melati, 'superadmin');
+        $melatiTransaction = $this->transactionFor($tenant, $melati, $admin, 'TRX-MELATI-SETTING');
+        $kenangaTransaction = $this->transactionFor($tenant, $kenanga, $admin, 'TRX-KENANGA-SETTING');
+
+        $this->actingAs($admin)->withSession(['store_id' => $melati->id])->post('/pengaturan/brand', [
+            'store_id' => $melati->id,
+            'business_name' => 'Brand Khusus Melati',
+        ])->assertRedirect()->assertSessionHas('success');
+        $this->actingAs($admin)->withSession(['store_id' => $melati->id])->post('/pengaturan/receipt', [
+            'store_id' => $melati->id,
+            'receipt_header' => 'HEADER MELATI',
+            'receipt_footer' => 'FOOTER MELATI',
+            'receipt_show_logo' => '1',
+        ])->assertRedirect()->assertSessionHas('success');
+        $this->actingAs($admin)->withSession(['store_id' => $melati->id])->post('/pengaturan/aturan-bisnis', [
+            'store_id' => $melati->id,
+            'non_real_percentage' => 35,
+            'member_discount_percent' => 7.5,
+        ])->assertRedirect()->assertSessionHas('success');
+
+        $this->assertDatabaseHas('stores', [
+            'id' => $melati->id,
+            'business_name' => 'Brand Khusus Melati',
+            'receipt_header' => 'HEADER MELATI',
+            'receipt_footer' => 'FOOTER MELATI',
+            'non_real_percentage' => 35,
+            'member_discount_percent' => 7.5,
+        ]);
+        $this->assertDatabaseMissing('stores', ['id' => $kenanga->id, 'receipt_header' => 'HEADER MELATI']);
+
+        $this->actingAs($admin)->get("/transaksi/{$melatiTransaction->id}/print")
+            ->assertOk()->assertSeeText('Brand Khusus Melati')->assertSeeText('HEADER MELATI')->assertSeeText('FOOTER MELATI');
+        $this->actingAs($admin)->get("/transaksi/{$kenangaTransaction->id}/print")
+            ->assertOk()->assertDontSeeText('Brand Khusus Melati')->assertDontSeeText('HEADER MELATI')->assertDontSeeText('FOOTER MELATI');
+    }
+
+    public function test_settings_post_cannot_target_store_from_another_tenant(): void
+    {
+        ['tenant' => $tenant, 'melati' => $melati] = $this->setupTwoStores();
+        $admin = $this->makeUser($tenant, $melati, 'superadmin');
+        $otherTenant = Tenant::create(['name' => 'Tenant Lain', 'slug' => 'tenant-lain']);
+        $otherStore = Store::create(['tenant_id' => $otherTenant->id, 'name' => 'Cabang Asing', 'code' => 'ASG', 'is_active' => true]);
+
+        $this->actingAs($admin)->post('/pengaturan/receipt', [
+            'store_id' => $otherStore->id,
+            'receipt_header' => 'BOCOR',
+        ])->assertNotFound();
+
+        $this->assertDatabaseMissing('stores', ['id' => $otherStore->id, 'receipt_header' => 'BOCOR']);
+    }
+
+    public function test_consolidated_non_real_report_uses_each_store_percentage(): void
+    {
+        ['tenant' => $tenant, 'melati' => $melati, 'kenanga' => $kenanga] = $this->setupTwoStores();
+        $admin = $this->makeUser($tenant, $melati, 'superadmin');
+        $melati->update(['non_real_percentage' => 50]);
+        $kenanga->update(['non_real_percentage' => 25]);
+
+        $this->transactionFor($tenant, $melati, $admin, 'TRX-MELATI-REPORT')->update(['subtotal' => 10000, 'total' => 10000, 'paid_amount' => 10000]);
+        $this->transactionFor($tenant, $kenanga, $admin, 'TRX-KENANGA-REPORT')->update(['subtotal' => 20000, 'total' => 20000, 'paid_amount' => 20000]);
+
+        $this->actingAs($admin)
+            ->withSession(['store_id' => $melati->id, 'view_scope' => 'consolidated'])
+            ->get('/laporan?type=non_real&period=today')
+            ->assertOk()
+            ->assertViewHas('sales', 10000.0)
+            ->assertSeeText('persentase masing-masing cabang');
+
+        $export = $this->actingAs($admin)
+            ->withSession(['store_id' => $melati->id, 'view_scope' => 'consolidated'])
+            ->get('/laporan/export?type=non_real&period=today')
+            ->assertOk();
+        $this->assertStringStartsWith('PK', $export->streamedContent());
+    }
+
     public function test_limited_role_cannot_void_or_delete_records_of_another_store(): void
     {
         ['tenant' => $tenant, 'melati' => $melati, 'kenanga' => $kenanga] = $this->setupTwoStores();

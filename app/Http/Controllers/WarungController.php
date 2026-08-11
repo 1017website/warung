@@ -32,6 +32,8 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class WarungController extends Controller
 {
+    private ?Store $activeStoreRecord = null;
+
     private function tenantId(): int
     {
         return (int) auth()->user()->tenant_id;
@@ -60,6 +62,26 @@ class WarungController extends Controller
             ->orderBy('name')->get();
     }
 
+    private function activeStoreRecord(): Store
+    {
+        if ($this->activeStoreRecord?->id === $this->storeId()) {
+            return $this->activeStoreRecord;
+        }
+
+        return $this->activeStoreRecord = Store::with('tenant')
+            ->where('tenant_id', $this->tenantId())
+            ->whereKey($this->storeId())
+            ->firstOrFail();
+    }
+
+    private function requestedSettingsStore(Request $request): Store
+    {
+        $storeId = (int) $request->input('store_id', $this->storeId());
+        $this->assertStoreAccess($storeId);
+
+        return Store::with('tenant')->where('tenant_id', $this->tenantId())->findOrFail($storeId);
+    }
+
     private function assertStoreAccess(?int $storeId): void
     {
         abort_unless(auth()->user()->canAccessStore($storeId), 404);
@@ -69,6 +91,7 @@ class WarungController extends Controller
     {
         $stores = $this->stores();
         $activeStore = $stores->firstWhere('id', $this->storeId()) ?: $stores->first();
+        $activeStore?->loadMissing('tenant');
 
         return view($name, $data + [
             'activeStore' => $activeStore,
@@ -100,6 +123,22 @@ class WarungController extends Controller
         };
 
         return [$period, $from, $to];
+    }
+
+    private function reportFactor(string $type): float|array
+    {
+        if ($type !== 'non_real') {
+            return 1;
+        }
+
+        if (! $this->isConsolidated()) {
+            return (float) $this->activeStoreRecord()->non_real_percentage / 100;
+        }
+
+        return Store::where('tenant_id', $this->tenantId())->where('is_active', true)
+            ->pluck('non_real_percentage', 'id')
+            ->map(fn ($percentage) => (float) $percentage / 100)
+            ->all();
     }
 
     private function supervisorByPin(?string $pin): ?User
@@ -241,7 +280,7 @@ class WarungController extends Controller
 
     private function orderLines(array $data, bool $checkStock = true)
     {
-        $allowCustom = (bool) auth()->user()->tenant->allow_custom_amount;
+        $allowCustom = (bool) $this->activeStoreRecord()->allow_custom_amount;
 
         return collect($data['items'])->map(function ($line) use ($data, $checkStock, $allowCustom) {
             if (empty($line['id'])) {
@@ -424,7 +463,7 @@ class WarungController extends Controller
     public function toggleCustomAmount(Request $request)
     {
         abort_unless(auth()->user()->isSupervisor(), 403);
-        auth()->user()->tenant->update(['allow_custom_amount' => $request->boolean('enabled')]);
+        $this->activeStoreRecord()->update(['allow_custom_amount' => $request->boolean('enabled')]);
 
         return back()->with('success', 'Custom amount '.($request->boolean('enabled') ? 'diaktifkan.' : 'dinonaktifkan.'));
     }
@@ -438,7 +477,7 @@ class WarungController extends Controller
             ->whereDate('transactions.transacted_at', today())->select('transaction_items.product_name', DB::raw("COALESCE(products.unit, 'item') as unit"), DB::raw('SUM(transaction_items.quantity) as quantity'))
             ->groupBy('transaction_items.product_name', 'products.unit')->orderBy('transaction_items.product_name')->get();
 
-        return view('pos.close', ['sales' => $sales, 'store' => Store::where('tenant_id', $this->tenantId())->findOrFail($this->storeId()), 'tenant' => auth()->user()->tenant]);
+        return view('pos.close', ['sales' => $sales, 'store' => $this->activeStoreRecord(), 'tenant' => auth()->user()->tenant]);
     }
 
     public function products()
@@ -762,7 +801,7 @@ class WarungController extends Controller
         $member = DB::transaction(function () use ($data) {
             $card = MemberCard::where('tenant_id', $this->tenantId())->where('status', 'available')->lockForUpdate()->findOrFail($data['member_card_id']);
             unset($data['member_card_id']);
-            $data['discount_percent'] = $data['discount_percent'] ?? (float) auth()->user()->tenant->member_discount_percent;
+            $data['discount_percent'] = $data['discount_percent'] ?? (float) $this->activeStoreRecord()->member_discount_percent;
             $member = Member::create($data + ['tenant_id' => $this->tenantId(), 'member_code' => $card->member_code, 'qr_code' => $card->qr_code, 'is_active' => true]);
             $card->update(['member_id' => $member->id, 'status' => 'assigned']);
 
@@ -810,7 +849,7 @@ class WarungController extends Controller
         abort_unless($transaction->tenant_id === $this->tenantId(), 404);
         $this->assertStoreAccess($transaction->store_id);
         $transaction->load(['items.product', 'member', 'user', 'store', 'payments']);
-        return view('transactions.print', ['transaction' => $transaction, 'tenant' => auth()->user()->tenant]);
+        return view('transactions.print', ['transaction' => $transaction, 'tenant' => auth()->user()->tenant, 'receiptStore' => $transaction->store]);
     }
 
     public function destroyTransaction(Request $request, Transaction $transaction)
@@ -846,8 +885,8 @@ class WarungController extends Controller
     {
         $canSeeNonReal = auth()->user()->canSeeNonRealReport();
         $type = $canSeeNonReal && $request->get('type') === 'non_real' ? 'non_real' : 'real';
-        $percentage = (float) auth()->user()->tenant->non_real_percentage;
-        $factor = $type === 'non_real' ? $percentage / 100 : 1;
+        $percentage = (float) $this->activeStoreRecord()->non_real_percentage;
+        $factor = $this->reportFactor($type);
         [$period, $from, $to] = $this->reportRange($request);
         $storeId = $this->isConsolidated() ? null : $this->storeId();
         $data = $exporter->data($this->tenantId(), $storeId, $from, $to, $factor);
@@ -860,7 +899,7 @@ class WarungController extends Controller
     {
         $canSeeNonReal = auth()->user()->canSeeNonRealReport();
         $type = $canSeeNonReal && $request->get('type') === 'non_real' ? 'non_real' : 'real';
-        $factor = $type === 'non_real' ? (float) auth()->user()->tenant->non_real_percentage / 100 : 1;
+        $factor = $this->reportFactor($type);
         [, $from, $to] = $this->reportRange($request);
         $store = $this->isConsolidated() ? new Store(['name' => 'Consolidated Semua Warung']) : Store::where('tenant_id', $this->tenantId())->findOrFail($this->storeId());
         $data = $exporter->data($this->tenantId(), $this->isConsolidated() ? null : $this->storeId(), $from, $to, $factor);
@@ -886,10 +925,13 @@ class WarungController extends Controller
         $creatableRoles = auth()->user()->role === User::SUPERADMIN
             ? $roles->where('is_system', false)->pluck('name', 'key')
             : collect();
-        $devices = ConnectedDevice::where('tenant_id', $this->tenantId())->with('store')->get();
+        $settingsStore = $this->activeStoreRecord();
+        $devices = ConnectedDevice::where('tenant_id', $this->tenantId())->with('store')
+            ->where(fn ($query) => $query->whereNull('store_id')->orWhere('store_id', $settingsStore->id))
+            ->get();
         $cards = MemberCard::where('tenant_id', $this->tenantId())->where('status', 'available')->latest()->take(20)->get();
 
-        return $this->view('settings.index', ['tenant' => auth()->user()->tenant, 'stores' => $this->stores(), 'users' => $users, 'roles' => $roles, 'userCountPerRole' => $userCountPerRole, 'creatableRoles' => $creatableRoles, 'canManageRoles' => auth()->user()->role === User::SUPERADMIN, 'devices' => $devices, 'cards' => $cards]);
+        return $this->view('settings.index', ['tenant' => auth()->user()->tenant, 'settingsStore' => $settingsStore, 'stores' => $this->stores(), 'users' => $users, 'roles' => $roles, 'userCountPerRole' => $userCountPerRole, 'creatableRoles' => $creatableRoles, 'canManageRoles' => auth()->user()->role === User::SUPERADMIN, 'devices' => $devices, 'cards' => $cards]);
     }
 
     private function roleData(Request $request, ?Role $role = null): array
@@ -954,37 +996,53 @@ class WarungController extends Controller
 
     public function updateBrand(Request $request)
     {
-        $data = $request->validate(['name' => 'required|string|max:120', 'logo' => 'nullable|image|max:2048']);
+        $store = $this->requestedSettingsStore($request);
+        $data = $request->validate(['business_name' => 'required|string|max:120', 'logo' => 'nullable|image|max:2048']);
         if ($request->hasFile('logo')) $data['logo_path'] = $request->file('logo')->store('branding', 'public');
         unset($data['logo']);
-        auth()->user()->tenant->update($data);
-        return back()->with('success', 'Identitas warung berhasil diperbarui.');
+        $store->update($data);
+        return back()->with('success', 'Identitas '.$store->name.' berhasil diperbarui.');
     }
 
     public function updateReceiptSettings(Request $request)
     {
-        $data = $request->validate(['receipt_header' => 'nullable|string|max:120', 'receipt_footer' => 'nullable|string|max:180', 'non_real_percentage' => 'required|numeric|min:0|max:100']);
+        $store = $this->requestedSettingsStore($request);
+        $data = $request->validate(['receipt_header' => 'nullable|string|max:120', 'receipt_footer' => 'nullable|string|max:180']);
         $data['receipt_show_logo'] = $request->boolean('receipt_show_logo');
         $data['receipt_sort_by_category'] = $request->boolean('receipt_sort_by_category');
-        auth()->user()->tenant->update($data);
-        return back()->with('success', 'Tampilan struk berhasil diperbarui.');
+        $store->update($data);
+        return back()->with('success', 'Tampilan struk '.$store->name.' berhasil diperbarui.');
     }
 
     public function updateBusinessRules(Request $request)
     {
+        $store = $this->requestedSettingsStore($request);
         $data = $request->validate([
             'non_real_percentage' => 'required|numeric|min:0|max:100',
             'member_discount_percent' => 'required|numeric|min:0|max:100',
         ]);
-        auth()->user()->tenant->update($data);
+        $store->update($data);
 
-        return back()->with('success', 'Persentase laporan dan diskon membership berhasil diperbarui.');
+        return back()->with('success', 'Aturan laporan dan membership '.$store->name.' berhasil diperbarui.');
     }
 
     public function storeBranch(Request $request)
     {
         $data = $request->validate(['name' => 'required|string|max:120', 'code' => ['required', 'string', 'max:20', Rule::unique('stores')->where('tenant_id', $this->tenantId())], 'address' => 'nullable|string|max:255', 'phone' => 'nullable|string|max:30']);
-        Store::create($data + ['tenant_id' => $this->tenantId(), 'is_active' => true]);
+        $source = $this->activeStoreRecord();
+        Store::create($data + [
+            'tenant_id' => $this->tenantId(),
+            'is_active' => true,
+            'business_name' => $source->business_name,
+            'logo_path' => $source->logo_path,
+            'allow_custom_amount' => $source->allow_custom_amount,
+            'non_real_percentage' => $source->non_real_percentage,
+            'member_discount_percent' => $source->member_discount_percent,
+            'receipt_header' => $source->receipt_header,
+            'receipt_footer' => $source->receipt_footer,
+            'receipt_show_logo' => $source->receipt_show_logo,
+            'receipt_sort_by_category' => $source->receipt_sort_by_category,
+        ]);
         return back()->with('success', 'Cabang baru berhasil ditambahkan.');
     }
 

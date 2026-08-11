@@ -157,7 +157,7 @@ class RevisionFeaturesTest extends TestCase
             'domicile' => 'Jakarta',
         ])->assertRedirect()->assertSessionHas('success');
 
-        $this->assertDatabaseHas('tenants', ['id' => $tenant->id, 'non_real_percentage' => 65, 'member_discount_percent' => 12.5]);
+        $this->assertDatabaseHas('stores', ['id' => $store->id, 'non_real_percentage' => 65, 'member_discount_percent' => 12.5]);
         $this->assertDatabaseHas('members', ['member_code' => 'MBR-P00001', 'name' => 'Siti Rahma', 'discount_percent' => 12.5]);
         $this->assertDatabaseHas('member_cards', ['id' => $card->id, 'status' => 'assigned']);
         $this->actingAs($user)->getJson('/member/card/WK-MBR-P00001')->assertNotFound();
