@@ -14,7 +14,7 @@
 
 <section class="card card-pad membership-flow">
     <div class="card-title"><div><h2>Alur aktivasi kartu</h2><p>{{ $availableCards->count() }} kartu pra-cetak siap dipakai · diskon default {{ $activeStore->name }} {{ number_format($activeStore->member_discount_percent,1,',','.') }}%</p></div>
-        @if(auth()->user()->role==='superadmin')<a class="btn btn-outline btn-sm" href="{{ route('settings') }}#aturan-bisnis"><i class="bi bi-gear"></i> Atur diskon</a>@endif
+        @if(auth()->user()->canManageSystem())<a class="btn btn-outline btn-sm" href="{{ route('settings') }}#aturan-bisnis"><i class="bi bi-gear"></i> Atur diskon</a>@endif
     </div>
     <div class="service-grid membership-steps">
         <div class="service-option active"><b>1</b><span>Cetak kartu QR</span></div>

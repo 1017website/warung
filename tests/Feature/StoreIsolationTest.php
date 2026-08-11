@@ -80,7 +80,7 @@ class StoreIsolationTest extends TestCase
     {
         ['tenant' => $tenant, 'melati' => $melati, 'kenanga' => $kenanga] = $this->setupTwoStores();
 
-        foreach (['superadmin', 'head_ops'] as $role) {
+        foreach (['developer', 'superadmin', 'head_ops'] as $role) {
             $user = $this->makeUser($tenant, $melati, $role);
             $this->actingAs($user)->withSession(['store_id' => $melati->id])
                 ->post('/switch-store', ['store_id' => $kenanga->id])->assertRedirect();

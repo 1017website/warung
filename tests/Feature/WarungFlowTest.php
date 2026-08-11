@@ -251,25 +251,57 @@ class WarungFlowTest extends TestCase
             ->assertSeeText('Tahun ini');
     }
 
-    public function test_only_administrator_roles_can_run_whitelisted_maintenance_commands(): void
+    public function test_only_developer_can_run_whitelisted_maintenance_commands(): void
     {
-        ['tenant' => $tenant, 'store' => $store, 'user' => $admin] = $this->setupWarung('superadmin');
+        ['tenant' => $tenant, 'store' => $store, 'user' => $developer] = $this->setupWarung('developer');
+        $superadmin = User::create(['tenant_id' => $tenant->id, 'store_id' => $store->id, 'name' => 'Superadmin', 'email' => 'superadmin-maintenance@test.id', 'role' => 'superadmin', 'is_active' => true, 'password' => 'password']);
         $cashier = User::create(['tenant_id' => $tenant->id, 'store_id' => $store->id, 'name' => 'Kasir', 'email' => 'cashier-maintenance@test.id', 'role' => 'cashier', 'is_active' => true, 'password' => 'password']);
 
         Artisan::shouldReceive('call')->once()->with('optimize:clear', [])->andReturn(0);
         Artisan::shouldReceive('output')->once()->andReturn('Cache berhasil dibersihkan.');
 
-        $this->actingAs($admin)->withSession(['store_id' => $store->id])
+        $this->actingAs($developer)->withSession(['store_id' => $store->id])
             ->post('/pengaturan/pemeliharaan', ['command' => 'optimize_clear'])
             ->assertRedirect()
             ->assertSessionHas('success')
             ->assertSessionHas('maintenance_output', 'Cache berhasil dibersihkan.');
 
-        $this->actingAs($admin)->withSession(['store_id' => $store->id])
+        $this->actingAs($developer)->withSession(['store_id' => $store->id])
             ->post('/pengaturan/pemeliharaan', ['command' => 'command_bebas'])
             ->assertSessionHasErrors('command');
 
+        $this->actingAs($superadmin)->withSession(['store_id' => $store->id])
+            ->post('/pengaturan/pemeliharaan', ['command' => 'optimize_clear'])
+            ->assertForbidden();
+
         $this->actingAs($cashier)->withSession(['store_id' => $store->id])
+            ->post('/pengaturan/pemeliharaan', ['command' => 'optimize_clear'])
+            ->assertForbidden();
+    }
+
+    public function test_superadmin_keeps_maintenance_access_until_developer_exists(): void
+    {
+        ['tenant' => $tenant, 'store' => $store, 'user' => $superadmin] = $this->setupWarung('superadmin');
+
+        Artisan::shouldReceive('call')->once()->with('optimize:clear', [])->andReturn(0);
+        Artisan::shouldReceive('output')->once()->andReturn('Cache berhasil dibersihkan.');
+
+        $this->actingAs($superadmin)->withSession(['store_id' => $store->id])
+            ->get('/pengaturan')->assertOk()->assertSee('name="command"', false);
+        $this->actingAs($superadmin)->withSession(['store_id' => $store->id])
+            ->post('/pengaturan/pemeliharaan', ['command' => 'optimize_clear'])
+            ->assertRedirect()->assertSessionHas('success');
+
+        User::create([
+            'tenant_id' => $tenant->id, 'store_id' => $store->id, 'name' => 'Developer',
+            'email' => 'developer-transition@test.id', 'role' => User::DEVELOPER,
+            'is_active' => true, 'password' => 'password',
+        ]);
+
+        $this->actingAs($superadmin)->withSession(['store_id' => $store->id])
+            ->get('/pengaturan')->assertOk()->assertDontSee('name="command"', false)
+            ->assertSeeText('Pemeliharaan kini khusus Developer');
+        $this->actingAs($superadmin)->withSession(['store_id' => $store->id])
             ->post('/pengaturan/pemeliharaan', ['command' => 'optimize_clear'])
             ->assertForbidden();
     }

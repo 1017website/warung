@@ -37,7 +37,7 @@ class RoleMasterTest extends TestCase
         $roles = Role::where('tenant_id', $tenant->id)->orderBy('position')->get();
 
         $this->assertSame(
-            ['superadmin', 'head_ops', 'ops_admin', 'outlet_manager', 'spv', 'cashier'],
+            ['developer', 'superadmin', 'head_ops', 'ops_admin', 'outlet_manager', 'spv', 'cashier'],
             $roles->pluck('key')->all()
         );
         $this->assertSame(
@@ -52,10 +52,9 @@ class RoleMasterTest extends TestCase
             ['pos', 'transactions', 'inventory', 'expenses', 'members'],
             $this->roleKey($tenant->id, 'cashier')->modules
         );
-        // Hanya Superadmin & Head of Ops yang boleh melihat warung lain.
-        $this->assertSame(['superadmin', 'head_ops'], $roles->where('can_access_all_stores', true)->pluck('key')->all());
-        $this->assertSame(['superadmin'], $roles->where('can_see_non_real', true)->pluck('key')->all());
-        $this->assertSame(['superadmin', 'head_ops', 'outlet_manager', 'spv'], $roles->where('is_supervisor', true)->pluck('key')->values()->all());
+        $this->assertSame(['developer', 'superadmin', 'head_ops'], $roles->where('can_access_all_stores', true)->pluck('key')->all());
+        $this->assertSame(['developer', 'superadmin'], $roles->where('can_see_non_real', true)->pluck('key')->all());
+        $this->assertSame(['developer', 'superadmin', 'head_ops', 'outlet_manager', 'spv'], $roles->where('is_supervisor', true)->pluck('key')->values()->all());
     }
 
     public function test_provision_defaults_is_idempotent(): void
@@ -64,7 +63,7 @@ class RoleMasterTest extends TestCase
         Role::provisionDefaults($tenant->id);
         Role::provisionDefaults($tenant->id);
 
-        $this->assertSame(6, Role::where('tenant_id', $tenant->id)->count());
+        $this->assertSame(7, Role::where('tenant_id', $tenant->id)->count());
     }
 
     public function test_superadmin_grants_a_menu_and_the_role_can_open_it_immediately(): void
@@ -214,7 +213,7 @@ class RoleMasterTest extends TestCase
         $this->assertSame(['pos', 'transactions', 'members'], $cashierRole->fresh()->modules);
     }
 
-    public function test_only_superadmin_can_manage_the_role_master(): void
+    public function test_only_system_administrators_can_manage_the_role_master(): void
     {
         ['tenant' => $tenant, 'store' => $store] = $this->setupWarung();
         $cashierRole = $this->roleKey($tenant->id, 'cashier');
@@ -228,6 +227,25 @@ class RoleMasterTest extends TestCase
         $this->actingAs($headOps)->put("/pengaturan/role/{$cashierRole->id}", ['name' => 'X', 'modules' => ['pos']])->assertForbidden();
         $this->actingAs($headOps)->post('/pengaturan/role', ['key' => 'baru', 'name' => 'X', 'modules' => ['pos']])->assertForbidden();
         $this->actingAs($headOps)->delete("/pengaturan/role/{$cashierRole->id}")->assertForbidden();
+    }
+
+    public function test_developer_can_manage_roles_and_superadmin_cannot_delete_developer(): void
+    {
+        ['tenant' => $tenant, 'store' => $store, 'superadmin' => $superadmin] = $this->setupWarung();
+        $developer = User::create([
+            'tenant_id' => $tenant->id, 'store_id' => $store->id, 'name' => 'Developer', 'email' => 'developer@master.test',
+            'role' => User::DEVELOPER, 'is_active' => true, 'password' => 'password',
+        ]);
+        $cashierRole = $this->roleKey($tenant->id, 'cashier');
+
+        $this->actingAs($developer)->put("/pengaturan/role/{$cashierRole->id}", [
+            'name' => 'Kasir Developer',
+            'modules' => ['pos', 'transactions'],
+        ])->assertRedirect()->assertSessionHas('success');
+        $this->assertSame('Kasir Developer', $cashierRole->fresh()->name);
+
+        $this->actingAs($superadmin)->delete("/pengaturan/pengguna/{$developer->id}")->assertForbidden();
+        $this->assertDatabaseHas('users', ['id' => $developer->id, 'deleted_at' => null]);
     }
 
     public function test_role_of_another_tenant_is_not_reachable(): void
@@ -250,6 +268,6 @@ class RoleMasterTest extends TestCase
             ->assertSeeText('Master role & hak akses menu', false)
             ->assertSeeText('Tambah role')
             ->assertSee('name="modules[]"', false)
-            ->assertViewHas('roles', fn ($roles) => $roles->count() === 6);
+            ->assertViewHas('roles', fn ($roles) => $roles->count() === 7);
     }
 }

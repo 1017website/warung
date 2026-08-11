@@ -20,6 +20,8 @@ class User extends Authenticatable
      */
     public const SUPERADMIN = 'superadmin';
 
+    public const DEVELOPER = 'developer';
+
     public const HEAD_OPS = 'head_ops';
 
     public const OPS_ADMIN = 'ops_admin';
@@ -120,6 +122,34 @@ class User extends Authenticatable
     public function canAccessAllStores(): bool
     {
         return (bool) $this->roleDefinition()?->can_access_all_stores;
+    }
+
+    public function isDeveloper(): bool
+    {
+        return $this->role === self::DEVELOPER;
+    }
+
+    public function canManageSystem(): bool
+    {
+        return in_array($this->role, [self::DEVELOPER, self::SUPERADMIN], true);
+    }
+
+    public function canRunMaintenance(): bool
+    {
+        if ($this->isDeveloper()) {
+            return true;
+        }
+
+        if ($this->role !== self::SUPERADMIN) {
+            return false;
+        }
+
+        // Masa transisi: Superadmin tetap dapat melakukan pemeliharaan sampai
+        // setidaknya satu akun Developer aktif tersedia pada tenant yang sama.
+        return ! self::where('tenant_id', $this->tenant_id)
+            ->where('role', self::DEVELOPER)
+            ->where('is_active', true)
+            ->exists();
     }
 
     public function canAccessStore(int|string|null $storeId): bool

@@ -38,9 +38,19 @@ class Role extends Model
 
     /**
      * Data awal master role, disalin dari tabel TIERING AKSES pada POINT REVISION.docx.
-     * Dipakai migrasi dan seeder; setelah itu Superadmin bebas mengubah lewat Pengaturan.
+     * Dipakai migrasi dan seeder; setelah itu Developer/Superadmin dapat mengubahnya lewat Pengaturan.
      */
     public const DEFAULTS = [
+        [
+            'key' => 'developer',
+            'name' => 'Developer',
+            'summary' => 'Semua fitur & pemeliharaan sistem',
+            'modules' => ['dashboard', 'pos', 'transactions', 'products', 'inventory', 'purchases', 'expenses', 'members', 'reports', 'settings'],
+            'can_access_all_stores' => true,
+            'can_see_non_real' => true,
+            'is_supervisor' => true,
+            'is_system' => true,
+        ],
         [
             'key' => 'superadmin',
             'name' => 'Superadmin',

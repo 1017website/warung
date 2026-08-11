@@ -789,7 +789,7 @@ class WarungController extends Controller
         $members = Member::where('tenant_id', $this->tenantId())->when($search, fn ($q) => $q->where(fn ($query) => $query->where('name', 'like', "%{$search}%")->orWhere('member_code', 'like', "%{$search}%")->orWhere('qr_code', $search)))->latest()->paginate(20)->withQueryString();
         $availableCards = MemberCard::where('tenant_id', $this->tenantId())->where('status', 'available')->orderBy('member_code')->get();
         $memberSummary = null;
-        if (auth()->user()->role === User::SUPERADMIN) {
+        if (auth()->user()->canManageSystem()) {
             $memberSummary = ['count' => Member::where('tenant_id', $this->tenantId())->count(), 'deposit' => Member::where('tenant_id', $this->tenantId())->sum('deposit_balance')];
         }
         return $this->view('members.index', compact('members', 'availableCards', 'memberSummary', 'search'));
@@ -921,8 +921,8 @@ class WarungController extends Controller
         $users = User::where('tenant_id', $this->tenantId())->orderBy('name')->get();
         $roles = $this->roles();
         $userCountPerRole = User::where('tenant_id', $this->tenantId())->selectRaw('role, count(*) as total')->groupBy('role')->pluck('total', 'role');
-        // Superadmin adalah satu-satunya otoritas yang membuat akun, dan tidak bisa menugaskan role sistem.
-        $creatableRoles = auth()->user()->role === User::SUPERADMIN
+        // Developer/Superadmin dapat membuat akun, tetapi tidak dapat menugaskan role sistem.
+        $creatableRoles = auth()->user()->canManageSystem()
             ? $roles->where('is_system', false)->pluck('name', 'key')
             : collect();
         $settingsStore = $this->activeStoreRecord();
@@ -931,7 +931,7 @@ class WarungController extends Controller
             ->get();
         $cards = MemberCard::where('tenant_id', $this->tenantId())->where('status', 'available')->latest()->take(20)->get();
 
-        return $this->view('settings.index', ['tenant' => auth()->user()->tenant, 'settingsStore' => $settingsStore, 'stores' => $this->stores(), 'users' => $users, 'roles' => $roles, 'userCountPerRole' => $userCountPerRole, 'creatableRoles' => $creatableRoles, 'canManageRoles' => auth()->user()->role === User::SUPERADMIN, 'devices' => $devices, 'cards' => $cards]);
+        return $this->view('settings.index', ['tenant' => auth()->user()->tenant, 'settingsStore' => $settingsStore, 'stores' => $this->stores(), 'users' => $users, 'roles' => $roles, 'userCountPerRole' => $userCountPerRole, 'creatableRoles' => $creatableRoles, 'canManageRoles' => auth()->user()->canManageSystem(), 'devices' => $devices, 'cards' => $cards]);
     }
 
     private function roleData(Request $request, ?Role $role = null): array
@@ -958,7 +958,7 @@ class WarungController extends Controller
 
     public function storeRole(Request $request)
     {
-        abort_unless(auth()->user()->role === User::SUPERADMIN, 403);
+        abort_unless(auth()->user()->canManageSystem(), 403);
         $key = $request->validate([
             'key' => ['required', 'string', 'max:30', 'regex:/^[a-z][a-z0-9_]*$/', Rule::unique('roles')->where('tenant_id', $this->tenantId())],
         ])['key'];
@@ -974,7 +974,7 @@ class WarungController extends Controller
 
     public function updateRole(Request $request, Role $role)
     {
-        abort_unless(auth()->user()->role === User::SUPERADMIN, 403);
+        abort_unless(auth()->user()->canManageSystem(), 403);
         abort_unless($role->tenant_id === $this->tenantId(), 404);
         abort_if($role->is_system, 422, 'Hak akses role sistem tidak dapat diubah.');
         $role->update($this->roleData($request, $role));
@@ -985,7 +985,7 @@ class WarungController extends Controller
 
     public function destroyRole(Role $role)
     {
-        abort_unless(auth()->user()->role === User::SUPERADMIN, 403);
+        abort_unless(auth()->user()->canManageSystem(), 403);
         abort_unless($role->tenant_id === $this->tenantId(), 404);
         abort_if($role->is_system, 422, 'Role sistem tidak dapat dihapus.');
         abort_if($role->users()->exists(), 422, 'Role masih dipakai akun aktif. Pindahkan akunnya terlebih dahulu.');
@@ -1066,7 +1066,7 @@ class WarungController extends Controller
 
     public function storeUser(Request $request)
     {
-        abort_unless(auth()->user()->role === User::SUPERADMIN, 403);
+        abort_unless(auth()->user()->canManageSystem(), 403);
         // Role diambil dari master, kecuali role sistem yang tidak boleh ditugaskan ke akun baru.
         $assignable = Role::where('tenant_id', $this->tenantId())->where('is_system', false)->pluck('key')->all();
         $data = $request->validate(['name' => 'required|string|max:120', 'email' => 'required|email|unique:users,email', 'role' => ['required', Rule::in($assignable)], 'store_id' => 'required|integer', 'password' => 'required|string|min:8', 'authorization_pin' => 'nullable|digits_between:4,8']);
@@ -1078,14 +1078,16 @@ class WarungController extends Controller
 
     public function destroyUser(User $user)
     {
-        abort_unless(auth()->user()->role === User::SUPERADMIN && $user->tenant_id === $this->tenantId() && $user->id !== auth()->id(), 403);
+        abort_unless(auth()->user()->canManageSystem() && $user->tenant_id === $this->tenantId() && $user->id !== auth()->id(), 403);
+        abort_if($user->role === User::DEVELOPER && ! auth()->user()->isDeveloper(), 403);
         $user->delete();
         return back()->with('success', 'Akun pengguna dinonaktifkan.');
     }
 
     public function updateUserPin(Request $request, User $user)
     {
-        abort_unless(auth()->user()->role === User::SUPERADMIN && $user->tenant_id === $this->tenantId(), 403);
+        abort_unless(auth()->user()->canManageSystem() && $user->tenant_id === $this->tenantId(), 403);
+        abort_if($user->role === User::DEVELOPER && ! auth()->user()->isDeveloper(), 403);
         abort_unless($user->isSupervisor(), 422, 'PIN otorisasi hanya untuk Manager/SPV.');
         $pin = $request->validate(['authorization_pin' => 'required|digits_between:4,8'])['authorization_pin'];
         $user->update(['authorization_pin' => Hash::make($pin)]);
@@ -1095,7 +1097,7 @@ class WarungController extends Controller
 
     public function precreateMemberCards(Request $request)
     {
-        abort_unless(auth()->user()->role === User::SUPERADMIN, 403);
+        abort_unless(auth()->user()->canManageSystem(), 403);
         $count = $request->validate(['count' => 'required|integer|min:1|max:100'])['count'];
         for ($i = 0; $i < $count; $i++) {
             $next = (MemberCard::where('tenant_id', $this->tenantId())->max('id') ?? 0) + 1;
@@ -1106,6 +1108,7 @@ class WarungController extends Controller
 
     public function runMaintenance(Request $request)
     {
+        abort_unless(auth()->user()->canRunMaintenance(), 403);
         $data = $request->validate(['command' => ['required', Rule::in(['migrate', 'optimize_clear', 'storage_link'])]]);
         $commands = [
             'migrate' => ['command' => 'migrate', 'parameters' => ['--force' => true], 'label' => 'Migrasi database'],

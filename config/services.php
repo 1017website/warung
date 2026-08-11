@@ -28,6 +28,16 @@ return [
         'key' => env('RESEND_KEY'),
     ],
 
+    // Kredensial hanya disimpan di .env server. Migration membaca konfigurasi
+    // ini dan menyimpan password yang sudah di-hash, bukan teks aslinya.
+    'developer' => [
+        'name' => env('DEVELOPER_NAME', 'Developer 1017 Website'),
+        'email' => env('DEVELOPER_EMAIL'),
+        'password' => env('DEVELOPER_PASSWORD'),
+        'tenant_slug' => env('DEVELOPER_TENANT_SLUG'),
+        'store_code' => env('DEVELOPER_STORE_CODE'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

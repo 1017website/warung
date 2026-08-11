@@ -37,6 +37,7 @@ class AccessTieringTest extends TestCase
         $operational = ['pos', 'transactions', 'members', 'inventory', 'expenses'];
 
         return [
+            'Developer — semua fitur' => ['developer', array_keys(self::URLS)],
             'Superadmin — semua fitur' => ['superadmin', array_keys(self::URLS)],
             'Head of Ops' => ['head_ops', [...$operational, 'purchases', 'products', 'reports', 'dashboard']],
             'Ops Admin — gaboleh lihat omset' => ['ops_admin', [...$operational, 'purchases', 'products']],
@@ -90,11 +91,11 @@ class AccessTieringTest extends TestCase
         $this->assertSame($allowed, $menu, "Menu sidebar role {$role} tidak sama dengan modul yang benar-benar bisa dibuka.");
     }
 
-    public function test_only_superadmin_sees_non_real_report_and_can_manage_accounts(): void
+    public function test_only_developer_and_superadmin_see_non_real_report_and_settings(): void
     {
         foreach (array_column(Role::DEFAULTS, 'key') as $role) {
             $user = $this->userWithRole($role);
-            $expected = $role === User::SUPERADMIN;
+            $expected = in_array($role, [User::DEVELOPER, User::SUPERADMIN], true);
 
             $this->assertSame($expected, $user->canSeeNonRealReport(), "canSeeNonRealReport salah untuk {$role}.");
             $this->assertSame($expected, $user->canAccess('settings'), "Akses Pengaturan salah untuk {$role}.");
@@ -106,7 +107,7 @@ class AccessTieringTest extends TestCase
         foreach (array_column(Role::DEFAULTS, 'key') as $role) {
             $user = $this->userWithRole($role);
             $this->assertSame(
-                in_array($role, ['superadmin', 'head_ops', 'spv', 'outlet_manager'], true),
+                in_array($role, ['developer', 'superadmin', 'head_ops', 'spv', 'outlet_manager'], true),
                 $user->isSupervisor(),
                 "isSupervisor salah untuk {$role}."
             );
