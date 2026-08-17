@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\ConnectedDevice;
 use App\Models\DailyMenuStock;
 use App\Models\Expense;
+use App\Models\InventoryDailyRecord;
 use App\Models\Member;
 use App\Models\MemberCard;
 use App\Models\Product;
@@ -28,11 +29,49 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class WarungController extends Controller
 {
     private ?Store $activeStoreRecord = null;
+
+    private function menuStockForDate(int $productId, Carbon|string|null $date = null): DailyMenuStock
+    {
+        $stockDate = $date instanceof Carbon ? $date->toDateString() : Carbon::parse($date ?? today())->toDateString();
+        $attributes = [
+            'tenant_id' => $this->tenantId(),
+            'store_id' => $this->storeId(),
+            'product_id' => $productId,
+            'stock_date' => $stockDate,
+        ];
+
+        if ($stock = DailyMenuStock::where($attributes)->first()) {
+            return $stock;
+        }
+
+        $carryOver = (float) (DailyMenuStock::where('tenant_id', $this->tenantId())
+            ->where('store_id', $this->storeId())
+            ->where('product_id', $productId)
+            ->whereDate('stock_date', '<', $stockDate)
+            ->latest('stock_date')
+            ->value('quantity') ?? 0);
+
+        return DailyMenuStock::firstOrCreate($attributes, ['quantity' => $carryOver]);
+    }
+
+    private function inventoryRecordFor(Product $product, float $opening): InventoryDailyRecord
+    {
+        return InventoryDailyRecord::firstOrCreate([
+            'tenant_id' => $this->tenantId(),
+            'store_id' => $this->storeId(),
+            'product_id' => $product->id,
+            'record_date' => today()->toDateString(),
+        ], [
+            'opening_quantity' => $opening,
+            'used_quantity' => 0,
+        ]);
+    }
 
     private function tenantId(): int
     {
@@ -294,10 +333,7 @@ class WarungController extends Controller
             }
 
             $product = Product::with('category')->where('tenant_id', $this->tenantId())->where('product_type', 'menu')->lockForUpdate()->findOrFail($line['id']);
-            $stock = DailyMenuStock::firstOrCreate(
-                ['tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id, 'stock_date' => today()],
-                ['quantity' => 0]
-            );
+            $stock = $this->menuStockForDate($product->id);
             $stock->refresh();
             if ($checkStock) {
                 abort_if($stock->quantity < $line['qty'], 422, "Stok {$product->name} tidak mencukupi.");
@@ -601,7 +637,7 @@ class WarungController extends Controller
     {
         Product::where('tenant_id', $this->tenantId())->where('is_active', true)->each(function ($product) {
             $product->product_type === 'menu'
-                ? DailyMenuStock::firstOrCreate(['tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id, 'stock_date' => today()], ['quantity' => 0])
+                ? $this->menuStockForDate($product->id)
                 : ProductStock::firstOrCreate(['tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id], ['quantity' => 0]);
         });
         $movementsToday = DB::table('stock_movements')->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->whereDate('created_at', today())->get()->groupBy('product_id');
@@ -609,19 +645,24 @@ class WarungController extends Controller
         $ingredientStocks = ProductStock::with('product.category')->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())
             ->whereHas('product', fn ($q) => $q->where('product_type', 'ingredient'))->orderBy('quantity')->get()->map(function ($stock) use ($movementsToday) {
                 $moves = $movementsToday->get($stock->product_id, collect());
-                $stock->opening = $stock->quantity - $moves->sum('quantity');
-                $stock->incoming = $moves->where('activity', '!=', 'production')->where('quantity', '>', 0)->sum('quantity');
-                $stock->outgoing = abs($moves->whereNotIn('activity', ['production'])->where('quantity', '<', 0)->sum('quantity'));
+                $record = $this->inventoryRecordFor($stock->product, (float) $stock->quantity - (float) $moves->sum('quantity'));
+                $stock->opening = $record->opening_quantity;
+                $stock->incoming = $moves->filter(fn ($move) => $move->quantity > 0 && in_array($move->activity, ['purchase', 'adjustment'], true))->sum('quantity');
+                $stock->used = $record->used_quantity;
                 $stock->processed = abs($moves->where('activity', 'production')->where('quantity', '<', 0)->sum('quantity'));
+                $stock->inventory_notes = $record->notes;
                 return $stock;
             });
         $menuStocks = DailyMenuStock::with('product.category')->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->whereDate('stock_date', today())
             ->whereHas('product', fn ($q) => $q->where('product_type', 'menu'))->orderBy('quantity')->get()->map(function ($stock) use ($movementsToday, $counts) {
                 $moves = $movementsToday->get($stock->product_id, collect());
-                $stock->opening = $stock->quantity - $moves->sum('quantity');
+                $record = $this->inventoryRecordFor($stock->product, (float) $stock->quantity - (float) $moves->sum('quantity'));
+                $stock->opening = $record->opening_quantity;
                 $stock->produced = $moves->where('activity', 'production')->where('quantity', '>', 0)->sum('quantity');
                 $stock->sold = abs($moves->where('activity', 'sale')->sum('quantity'));
                 $stock->consumption = abs($moves->where('activity', 'consumption')->sum('quantity'));
+                $stock->reprocessed = abs($moves->where('activity', 'reprocess_out')->sum('quantity'));
+                $stock->inventory_notes = $record->notes;
                 $stock->count = $counts->get($stock->product_id);
                 return $stock;
             });
@@ -630,8 +671,9 @@ class WarungController extends Controller
             ->where('stock_movements.tenant_id', $this->tenantId())->where('stock_movements.store_id', $this->storeId())
             ->select('stock_movements.*', 'products.name as product_name')->latest('stock_movements.created_at')->take(12)->get();
         $productions = StockProduction::with(['ingredient', 'menu'])->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->latest()->take(10)->get();
+        $canEditOpening = auth()->user()->canManageOpeningStock();
 
-        return $this->view('inventory.index', compact('ingredientStocks', 'menuStocks', 'inventoryProducts', 'movements', 'productions'));
+        return $this->view('inventory.index', compact('ingredientStocks', 'menuStocks', 'inventoryProducts', 'movements', 'productions', 'canEditOpening'));
     }
 
     public function adjustStock(Request $request)
@@ -639,7 +681,7 @@ class WarungController extends Controller
         $data = $request->validate(['product_id' => 'required|integer', 'type' => ['required', Rule::in(['adjustment_in', 'adjustment_out', 'consumption'])], 'quantity' => 'required|numeric|min:0.001', 'notes' => 'required|string|max:255']);
         $product = Product::where('tenant_id', $this->tenantId())->findOrFail($data['product_id']);
         $stock = $product->product_type === 'menu'
-            ? DailyMenuStock::firstOrCreate(['tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id, 'stock_date' => today()], ['quantity' => 0])
+            ? $this->menuStockForDate($product->id)
             : ProductStock::firstOrCreate(['tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id], ['quantity' => 0]);
         $positive = $data['type'] === 'adjustment_in';
         $delta = $positive ? $data['quantity'] : -$data['quantity'];
@@ -654,6 +696,129 @@ class WarungController extends Controller
         return back()->with('success', 'Stok berhasil disesuaikan.');
     }
 
+    public function updateInventoryRow(Request $request, Product $product)
+    {
+        abort_unless($product->tenant_id === $this->tenantId(), 404);
+        $data = $request->validate([
+            'opening_quantity' => 'sometimes|numeric|min:0',
+            'used_quantity' => 'sometimes|numeric|min:0',
+            'notes' => 'sometimes|nullable|string|max:500',
+        ]);
+        abort_if($data === [], 422, 'Tidak ada perubahan stok yang dikirim.');
+        if (array_key_exists('opening_quantity', $data)) {
+            abort_unless(auth()->user()->canManageOpeningStock(), 403, 'Stok awal hanya dapat diubah Admin Operasional atau jenjang di atasnya.');
+        }
+        if (array_key_exists('used_quantity', $data)) {
+            abort_unless($product->product_type === 'ingredient', 422, 'Stok terpakai manual hanya berlaku untuk bahan baku.');
+        }
+
+        $result = DB::transaction(function () use ($product, $data) {
+            if ($product->product_type === 'menu') {
+                $this->menuStockForDate($product->id);
+                $stock = DailyMenuStock::where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())
+                    ->where('product_id', $product->id)->whereDate('stock_date', today())->lockForUpdate()->firstOrFail();
+            } else {
+                ProductStock::firstOrCreate(['tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id], ['quantity' => 0]);
+                $stock = ProductStock::where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())
+                    ->where('product_id', $product->id)->lockForUpdate()->firstOrFail();
+            }
+
+            $movementTotal = (float) DB::table('stock_movements')->where('tenant_id', $this->tenantId())
+                ->where('store_id', $this->storeId())->where('product_id', $product->id)->whereDate('created_at', today())->sum('quantity');
+            $record = $this->inventoryRecordFor($product, (float) $stock->quantity - $movementTotal);
+            $record = InventoryDailyRecord::lockForUpdate()->findOrFail($record->id);
+            $balance = (float) $stock->quantity;
+
+            if (array_key_exists('opening_quantity', $data)) {
+                $openingDelta = (float) $data['opening_quantity'] - (float) $record->opening_quantity;
+                abort_if($balance + $openingDelta < 0, 422, 'Koreksi stok awal membuat sisa stok negatif.');
+                $balance += $openingDelta;
+                $record->opening_quantity = $data['opening_quantity'];
+                $record->opening_is_manual = true;
+                if (abs($openingDelta) > 0.0005) {
+                    DB::table('stock_movements')->insert([
+                        'tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id,
+                        'user_id' => auth()->id(), 'type' => $openingDelta > 0 ? 'adjustment_in' : 'adjustment_out',
+                        'activity' => 'opening_reset', 'quantity' => $openingDelta, 'reference' => 'OPEN-'.today()->format('Ymd'),
+                        'notes' => 'Koreksi stok awal oleh Admin Operasional', 'created_at' => now(), 'updated_at' => now(),
+                    ]);
+                }
+            }
+
+            if (array_key_exists('used_quantity', $data)) {
+                $usedDelta = (float) $data['used_quantity'] - (float) $record->used_quantity;
+                abort_if($balance - $usedDelta < 0, 422, 'Stok terpakai melebihi sisa bahan baku.');
+                $balance -= $usedDelta;
+                $record->used_quantity = $data['used_quantity'];
+                if (abs($usedDelta) > 0.0005) {
+                    DB::table('stock_movements')->insert([
+                        'tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id,
+                        'user_id' => auth()->id(), 'type' => $usedDelta > 0 ? 'adjustment_out' : 'adjustment_in',
+                        'activity' => 'manual_usage', 'quantity' => -$usedDelta, 'reference' => 'USE-'.today()->format('Ymd'),
+                        'notes' => 'Live edit stok terpakai', 'created_at' => now(), 'updated_at' => now(),
+                    ]);
+                }
+            }
+
+            if (array_key_exists('notes', $data)) {
+                $record->notes = trim((string) ($data['notes'] ?? '')) ?: null;
+            }
+
+            $stock->quantity = $balance;
+            $stock->save();
+            $record->save();
+
+            return [
+                'quantity' => $balance,
+                'opening_quantity' => (float) $record->opening_quantity,
+                'used_quantity' => (float) $record->used_quantity,
+                'notes' => $record->notes,
+            ];
+        });
+
+        return $request->expectsJson()
+            ? response()->json(['ok' => true, 'message' => 'Perubahan stok tersimpan.', 'data' => $result])
+            : back()->with('success', 'Perubahan stok tersimpan.');
+    }
+
+    public function reprocessStock(Request $request)
+    {
+        $data = $request->validate([
+            'source_product_id' => 'required|integer|different:target_product_id',
+            'target_product_id' => 'required|integer',
+            'source_quantity' => 'required|numeric|min:0.001',
+            'output_quantity' => 'required|numeric|min:0.001',
+            'notes' => 'required|string|max:255',
+        ]);
+
+        DB::transaction(function () use ($data) {
+            $source = Product::where('tenant_id', $this->tenantId())->where('product_type', 'menu')->findOrFail($data['source_product_id']);
+            $target = Product::where('tenant_id', $this->tenantId())->where('product_type', 'menu')->findOrFail($data['target_product_id']);
+            $this->menuStockForDate($source->id);
+            $this->menuStockForDate($target->id);
+            $sourceStock = DailyMenuStock::where('store_id', $this->storeId())->where('product_id', $source->id)->whereDate('stock_date', today())->lockForUpdate()->firstOrFail();
+            $targetStock = DailyMenuStock::where('store_id', $this->storeId())->where('product_id', $target->id)->whereDate('stock_date', today())->lockForUpdate()->firstOrFail();
+            abort_if((float) $sourceStock->quantity < (float) $data['source_quantity'], 422, 'Stok olahan sumber tidak mencukupi.');
+
+            $sourceStock->decrement('quantity', $data['source_quantity']);
+            $targetStock->increment('quantity', $data['output_quantity']);
+            $reference = 'REPROC-'.now()->format('ymdHis').'-'.strtoupper(Str::random(2));
+            foreach ([
+                [$source, -(float) $data['source_quantity'], 'reprocess_out', 'Diproses ulang: '.$data['notes']],
+                [$target, (float) $data['output_quantity'], 'reprocess_in', 'Hasil proses ulang: '.$data['notes']],
+            ] as [$productRow, $quantity, $activity, $notes]) {
+                DB::table('stock_movements')->insert([
+                    'tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $productRow->id,
+                    'user_id' => auth()->id(), 'type' => $quantity > 0 ? 'adjustment_in' : 'adjustment_out',
+                    'activity' => $activity, 'quantity' => $quantity, 'reference' => $reference,
+                    'notes' => $notes, 'created_at' => now(), 'updated_at' => now(),
+                ]);
+            }
+        });
+
+        return back()->with('success', 'Proses ulang tersimpan; stok sumber dan hasil otomatis diperbarui.');
+    }
+
     public function storeProduction(Request $request)
     {
         $data = $request->validate([
@@ -665,7 +830,7 @@ class WarungController extends Controller
             $menu = Product::where('tenant_id', $this->tenantId())->where('product_type', 'menu')->findOrFail($data['menu_product_id']);
             $rawStock = ProductStock::where('store_id', $this->storeId())->where('product_id', $ingredient->id)->lockForUpdate()->firstOrFail();
             abort_if($rawStock->quantity < $data['ingredient_quantity'], 422, 'Stok bahan baku tidak mencukupi untuk produksi.');
-            $menuStock = DailyMenuStock::firstOrCreate(['tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $menu->id, 'stock_date' => today()], ['quantity' => 0]);
+            $menuStock = $this->menuStockForDate($menu->id);
             $rawStock->decrement('quantity', $data['ingredient_quantity']);
             $menuStock->increment('quantity', $data['output_quantity']);
             $production = StockProduction::create($data + ['tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'user_id' => auth()->id(), 'production_date' => today()]);
@@ -682,14 +847,31 @@ class WarungController extends Controller
         $data = $request->validate(['product_id' => 'required|integer', 'actual_quantity' => 'required|numeric|min:0', 'notes' => 'nullable|string|max:255']);
         $product = Product::where('tenant_id', $this->tenantId())->findOrFail($data['product_id']);
         $stock = $product->product_type === 'menu'
-            ? DailyMenuStock::where('store_id', $this->storeId())->where('product_id', $product->id)->whereDate('stock_date', today())->firstOrFail()
+            ? $this->menuStockForDate($product->id)
             : ProductStock::where('store_id', $this->storeId())->where('product_id', $product->id)->firstOrFail();
-        StockCount::updateOrCreate(
-            ['store_id' => $this->storeId(), 'product_id' => $product->id, 'count_date' => today()],
-            ['tenant_id' => $this->tenantId(), 'user_id' => auth()->id(), 'expected_quantity' => $stock->quantity, 'actual_quantity' => $data['actual_quantity'], 'notes' => $data['notes'] ?? null]
-        );
 
-        return back()->with('success', 'Stock opname tersimpan. Selisih sistem dan fisik kini terlihat.');
+        DB::transaction(function () use ($stock, $product, $data) {
+            $expected = (float) $stock->quantity;
+            $actual = (float) $data['actual_quantity'];
+            StockCount::updateOrCreate(
+                ['store_id' => $this->storeId(), 'product_id' => $product->id, 'count_date' => today()],
+                ['tenant_id' => $this->tenantId(), 'user_id' => auth()->id(), 'expected_quantity' => $expected, 'actual_quantity' => $actual, 'notes' => $data['notes'] ?? null]
+            );
+            $delta = $actual - $expected;
+            if (abs($delta) > 0.0005) {
+                $stock->quantity = $actual;
+                $stock->save();
+                DB::table('stock_movements')->insert([
+                    'tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id,
+                    'user_id' => auth()->id(), 'type' => $delta > 0 ? 'adjustment_in' : 'adjustment_out',
+                    'activity' => 'stock_opname', 'quantity' => $delta, 'reference' => 'SO-'.today()->format('Ymd'),
+                    'notes' => 'Reset sesuai stok fisik'.(! empty($data['notes']) ? ': '.$data['notes'] : ''),
+                    'created_at' => now(), 'updated_at' => now(),
+                ]);
+            }
+        });
+
+        return back()->with('success', 'Stock opname tersimpan dan saldo sistem direset ke stok fisik.');
     }
 
     public function purchases()
@@ -765,12 +947,13 @@ class WarungController extends Controller
     public function expenses()
     {
         $expenses = Expense::where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->latest('expense_date')->paginate(20);
-        return $this->view('expenses.index', compact('expenses'));
+        $categories = Expense::CATEGORIES;
+        return $this->view('expenses.index', compact('expenses', 'categories'));
     }
 
     public function storeExpense(Request $request)
     {
-        $data = $request->validate(['category' => 'required|string|max:60', 'description' => 'required|string|max:180', 'amount' => 'required|numeric|min:1', 'expense_date' => 'required|date']);
+        $data = $request->validate(['category' => ['required', Rule::in(Expense::CATEGORIES)], 'description' => 'required|string|max:180', 'amount' => 'required|numeric|min:1', 'expense_date' => 'required|date']);
         Expense::create($data + ['tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'user_id' => auth()->id(), 'report_type' => 'real']);
         return back()->with('success', 'Pengeluaran berhasil dicatat.');
     }
@@ -793,6 +976,43 @@ class WarungController extends Controller
             $memberSummary = ['count' => Member::where('tenant_id', $this->tenantId())->count(), 'deposit' => Member::where('tenant_id', $this->tenantId())->sum('deposit_balance')];
         }
         return $this->view('members.index', compact('members', 'availableCards', 'memberSummary', 'search'));
+    }
+
+    public function exportMembers()
+    {
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Database Member');
+        $headers = ['Kode Member', 'QR', 'Nama', 'No. Telepon', 'Email', 'Domisili', 'Tanggal Lahir', 'Diskon (%)', 'Saldo Deposit', 'Status', 'Tanggal Daftar'];
+        $sheet->fromArray($headers, null, 'A1');
+        $row = 2;
+        Member::where('tenant_id', $this->tenantId())->orderBy('name')->each(function (Member $member) use ($sheet, &$row) {
+            $sheet->setCellValueExplicit('A'.$row, $member->member_code, DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit('B'.$row, $member->qr_code, DataType::TYPE_STRING);
+            $sheet->setCellValue('C'.$row, $member->name);
+            $sheet->setCellValueExplicit('D'.$row, (string) $member->phone, DataType::TYPE_STRING);
+            $sheet->setCellValue('E'.$row, $member->email);
+            $sheet->setCellValue('F'.$row, $member->domicile);
+            $sheet->setCellValue('G'.$row, $member->birth_date?->format('Y-m-d'));
+            $sheet->setCellValue('H'.$row, (float) $member->discount_percent);
+            $sheet->setCellValue('I'.$row, (float) $member->deposit_balance);
+            $sheet->setCellValue('J'.$row, $member->is_active ? 'Aktif' : 'Nonaktif');
+            $sheet->setCellValue('K'.$row, $member->created_at?->format('Y-m-d H:i'));
+            $row++;
+        });
+        $sheet->getStyle('A1:K1')->getFont()->setBold(true);
+        $sheet->getStyle('I2:I'.max(2, $row - 1))->getNumberFormat()->setFormatCode('#,##0');
+        foreach (range('A', 'K') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            (new Xlsx($spreadsheet))->save('php://output');
+            $spreadsheet->disconnectWorksheets();
+        }, 'database-member-'.now()->format('Ymd').'.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'no-store, no-cache',
+        ]);
     }
 
     public function storeMember(Request $request)
@@ -865,7 +1085,7 @@ class WarungController extends Controller
             $transaction->load(['items', 'payments', 'member']);
             foreach ($transaction->items as $item) {
                 if (! $item->product_id) continue;
-                $stock = DailyMenuStock::firstOrCreate(['tenant_id' => $this->tenantId(), 'store_id' => $transaction->store_id, 'product_id' => $item->product_id, 'stock_date' => $transaction->transacted_at->toDateString()], ['quantity' => 0]);
+                $stock = $this->menuStockForDate($item->product_id, $transaction->transacted_at);
                 $stock->increment('quantity', $item->quantity);
                 DB::table('stock_movements')->insert(['tenant_id' => $this->tenantId(), 'store_id' => $transaction->store_id, 'product_id' => $item->product_id, 'user_id' => auth()->id(), 'type' => 'adjustment_in', 'activity' => 'void_reversal', 'quantity' => $item->quantity, 'reference' => $transaction->invoice_no, 'notes' => 'Pembatalan: '.$data['reason'], 'created_at' => now(), 'updated_at' => now()]);
             }

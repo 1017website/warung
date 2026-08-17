@@ -39,6 +39,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/member/find/{code}', [WarungController::class, 'findMember'])->name('members.find');
         Route::get('/member/card/{code}', [WarungController::class, 'findAvailableMemberCard'])->name('members.card');
         Route::get('/member', [WarungController::class, 'members'])->name('members');
+        Route::get('/member/export', [WarungController::class, 'exportMembers'])->name('members.export');
         Route::post('/member', [WarungController::class, 'storeMember'])->name('members.store');
         Route::post('/member/{member}/topup', [WarungController::class, 'topup'])->name('members.topup');
     });
@@ -61,7 +62,9 @@ Route::middleware('auth')->group(function () {
     Route::middleware('module:inventory')->group(function () {
         Route::get('/gudang', [WarungController::class, 'inventory'])->name('inventory');
         Route::post('/gudang/adjust', [WarungController::class, 'adjustStock'])->name('inventory.adjust');
+        Route::patch('/gudang/stock/{product}', [WarungController::class, 'updateInventoryRow'])->name('inventory.row.update');
         Route::post('/gudang/production', [WarungController::class, 'storeProduction'])->name('inventory.production');
+        Route::post('/gudang/reprocess', [WarungController::class, 'reprocessStock'])->name('inventory.reprocess');
         Route::post('/gudang/count', [WarungController::class, 'storeStockCount'])->name('inventory.count');
     });
 

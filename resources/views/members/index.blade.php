@@ -7,6 +7,7 @@
         <p>Alur kartu: cetak kartu lebih dulu, scan saat pendaftaran, lengkapi data, lalu serahkan ke member.</p>
     </div>
     <div class="actions">
+        <a class="btn btn-outline" href="{{ route('members.export') }}"><i class="bi bi-file-earmark-excel"></i> Download Excel</a>
         <button class="btn btn-soft" onclick="openModal('scan-member-modal');startMemberScanner()"><i class="bi bi-qr-code-scan"></i> Cari member</button>
         <button class="btn btn-primary" onclick="openRegistration()"><i class="bi bi-upc-scan"></i> Scan kartu & daftar</button>
     </div>

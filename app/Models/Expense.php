@@ -9,6 +9,18 @@ class Expense extends Model
 {
     use SoftDeletes;
 
+    public const CATEGORIES = [
+        'S&W',
+        'F&B',
+        'Snack (F)',
+        'Snack (B)',
+        'Talent',
+        'Marketing',
+        "Owner's Drawings",
+        'Waste',
+        'Others',
+    ];
+
     protected $guarded = [];
 
     protected $casts = ['expense_date' => 'date', 'amount' => 'decimal:2'];

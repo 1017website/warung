@@ -169,6 +169,17 @@ class User extends Authenticatable
         return (bool) $this->roleDefinition()?->is_supervisor;
     }
 
+    /** Stok awal hanya dapat dikoreksi oleh jenjang operasional yang berwenang. */
+    public function canManageOpeningStock(): bool
+    {
+        return in_array($this->role, [
+            self::DEVELOPER,
+            self::SUPERADMIN,
+            self::HEAD_OPS,
+            self::OPS_ADMIN,
+        ], true);
+    }
+
     public function canSeeRevenue(): bool
     {
         return (bool) $this->roleDefinition()?->canSeeRevenue();
