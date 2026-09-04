@@ -52,12 +52,23 @@ class TransactionReportExporter
         $paymentRows = $transactions->flatMap(function (Transaction $transaction) use ($factorForStore) {
             $rowFactor = $factorForStore($transaction->store_id);
             if ($transaction->payments->isNotEmpty()) {
-                return $transaction->payments->map(fn ($payment) => (object) [
-                    'method' => $payment->method,
-                    'provider' => $payment->provider,
-                    'amount' => (float) $payment->amount * $rowFactor,
-                    'transaction_id' => $transaction->id,
-                ]);
+                $changeRemaining = (float) $transaction->change_amount;
+
+                return $transaction->payments->map(function ($payment) use ($transaction, $rowFactor, &$changeRemaining) {
+                    $amount = (float) $payment->amount;
+                    if ($payment->method === 'cash' && $changeRemaining > 0) {
+                        $deduction = min($amount, $changeRemaining);
+                        $amount -= $deduction;
+                        $changeRemaining -= $deduction;
+                    }
+
+                    return (object) [
+                        'method' => $payment->method,
+                        'provider' => $payment->provider,
+                        'amount' => $amount * $rowFactor,
+                        'transaction_id' => $transaction->id,
+                    ];
+                })->filter(fn ($payment) => $payment->amount > 0);
             }
 
             return collect([(object) ['method' => $transaction->payment_method, 'provider' => null, 'amount' => (float) $transaction->total * $rowFactor, 'transaction_id' => $transaction->id]]);
@@ -80,6 +91,8 @@ class TransactionReportExporter
         ])->sortByDesc('quantity')->values();
         $newMembers = Member::where('tenant_id', $tenantId)->whereBetween('created_at', [$from, $to])->count();
         $topupRows = DB::table('deposit_transactions')->where('tenant_id', $tenantId)->where('type', 'credit')
+            ->whereNull('transaction_id')
+            ->where(fn ($query) => $query->whereIn('payment_method', ['cash', 'transfer'])->orWhereNull('payment_method'))
             ->when($storeId, fn ($query) => $query->where('store_id', $storeId))->whereBetween('created_at', [$from, $to])->get();
         $topups = $topupRows->groupBy(fn ($row) => $row->payment_method ?: 'cash')->map(fn (Collection $rows, string $method) => (object) [
             'method' => $method,

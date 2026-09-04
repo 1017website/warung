@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CashierClosing;
 use App\Models\Category;
 use App\Models\ConnectedDevice;
 use App\Models\DailyMenuStock;
@@ -27,9 +28,9 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class WarungController extends Controller
@@ -192,7 +193,76 @@ class WarungController extends Controller
             ->where('is_active', true)
             ->whereIn('role', $supervisorKeys)
             ->get()
-            ->first(fn (User $user) => $user->authorization_pin && Hash::check($pin, $user->authorization_pin));
+            ->first(fn (User $user) => $user->canAccessStore($this->storeId())
+                && $user->authorization_pin
+                && Hash::check($pin, $user->authorization_pin));
+    }
+
+    /** Nilai yang benar-benar masuk per kanal pembayaran (tunai sudah dikurangi kembalian). */
+    private function netPaymentRows(Transaction $transaction)
+    {
+        if ($transaction->payments->isEmpty()) {
+            return collect([(object) [
+                'method' => $transaction->payment_method,
+                'provider' => null,
+                'amount' => (float) $transaction->total,
+            ]]);
+        }
+
+        $changeRemaining = (float) $transaction->change_amount;
+
+        return $transaction->payments->map(function ($payment) use (&$changeRemaining) {
+            $amount = (float) $payment->amount;
+            if ($payment->method === 'cash' && $changeRemaining > 0) {
+                $deduction = min($amount, $changeRemaining);
+                $amount -= $deduction;
+                $changeRemaining -= $deduction;
+            }
+
+            return (object) ['method' => $payment->method, 'provider' => $payment->provider, 'amount' => $amount];
+        })->filter(fn ($payment) => $payment->amount > 0)->values();
+    }
+
+    private function cashierSummary(): array
+    {
+        $transactions = Transaction::with('payments')
+            ->where('tenant_id', $this->tenantId())
+            ->where('store_id', $this->storeId())
+            ->where('status', 'completed')
+            ->where('transaction_type', 'sale')
+            ->whereDate('transacted_at', today())
+            ->get();
+
+        $paymentRows = $transactions->flatMap(fn (Transaction $transaction) => $this->netPaymentRows($transaction));
+        $paymentSummary = $paymentRows
+            ->groupBy(fn ($row) => $row->method.'|'.($row->provider ?: '-'))
+            ->map(fn ($rows) => [
+                'method' => $rows->first()->method,
+                'provider' => $rows->first()->provider,
+                'total' => round($rows->sum('amount'), 2),
+            ])->values()->all();
+
+        $cashTopups = (float) DB::table('deposit_transactions')
+            ->where('tenant_id', $this->tenantId())
+            ->where('store_id', $this->storeId())
+            ->where('type', 'credit')
+            ->whereNull('transaction_id')
+            ->where(fn ($query) => $query->where('payment_method', 'cash')->orWhereNull('payment_method'))
+            ->whereDate('created_at', today())
+            ->sum('amount');
+        $cashExpenses = (float) Expense::where('tenant_id', $this->tenantId())
+            ->where('store_id', $this->storeId())
+            ->where('payment_method', 'cash')
+            ->whereDate('expense_date', today())
+            ->sum('amount');
+
+        return [
+            'transactions' => $transactions->count(),
+            'paymentSummary' => $paymentSummary,
+            'cashSales' => round($paymentRows->where('method', 'cash')->sum('amount'), 2),
+            'cashTopups' => round($cashTopups, 2),
+            'cashExpenses' => round($cashExpenses, 2),
+        ];
     }
 
     public function switchStore(Request $request)
@@ -475,14 +545,25 @@ class WarungController extends Controller
             $member = ! empty($data['member_id']) ? Member::where('tenant_id', $this->tenantId())->findOrFail($data['member_id']) : null;
             $subtotal = (float) $lines->sum('subtotal');
             [$discountType, $discountValue, $discount] = $this->discountFor($data, $subtotal, $member);
-            $trx = Transaction::create([
+            $trx = null;
+            if (! empty($data['pending_transaction_id'])) {
+                $trx = Transaction::where('tenant_id', $this->tenantId())
+                    ->where('store_id', $this->storeId())
+                    ->where('status', 'pending')
+                    ->lockForUpdate()
+                    ->findOrFail($data['pending_transaction_id']);
+                $trx->items()->delete();
+                $trx->payments()->delete();
+            }
+            $attributes = [
                 'tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'user_id' => auth()->id(), 'member_id' => $member?->id,
-                'invoice_no' => 'BILL-'.now()->format('ymd-His').'-'.strtoupper(Str::random(2)), 'status' => 'pending', 'transaction_type' => 'sale',
+                'invoice_no' => $trx?->invoice_no ?? 'BILL-'.now()->format('ymd-His').'-'.strtoupper(Str::random(2)), 'status' => 'pending', 'transaction_type' => 'sale',
                 'report_type' => 'real', 'service_type' => $data['service_type'], 'table_number' => $data['table_number'] ?? null,
                 'online_platform' => $data['online_platform'] ?? null, 'subtotal' => $subtotal, 'discount_type' => $discountType,
                 'discount_value' => $discountValue, 'discount' => $discount, 'total' => $subtotal - $discount,
                 'payment_method' => 'cash', 'paid_amount' => 0, 'change_amount' => 0, 'notes' => $data['notes'] ?? null, 'transacted_at' => now(),
-            ]);
+            ];
+            $trx ? $trx->update($attributes) : $trx = Transaction::create($attributes);
             foreach ($lines as $line) {
                 $trx->items()->create([
                     'product_id' => $line['product']?->id, 'product_name' => $line['name'], 'category_name' => $line['category'],
@@ -494,6 +575,21 @@ class WarungController extends Controller
         });
 
         return response()->json(['ok' => true, 'invoice' => $transaction->invoice_no]);
+    }
+
+    public function cancelPendingBill(Request $request, Transaction $transaction)
+    {
+        abort_unless($transaction->tenant_id === $this->tenantId() && $transaction->store_id === $this->storeId(), 404);
+        abort_unless($transaction->status === 'pending', 422, 'Hanya bill pending yang dapat dibatalkan.');
+        $data = $request->validate(['reason' => 'required|string|min:3|max:255']);
+        $transaction->update([
+            'status' => 'voided',
+            'cancel_reason' => $data['reason'],
+            'void_authorized_by' => auth()->id(),
+            'voided_at' => now(),
+        ]);
+
+        return back()->with('success', 'Bill pending dibatalkan tanpa mengubah stok atau saldo member.');
     }
 
     public function toggleCustomAmount(Request $request)
@@ -513,7 +609,57 @@ class WarungController extends Controller
             ->whereDate('transactions.transacted_at', today())->select('transaction_items.product_name', DB::raw("COALESCE(products.unit, 'item') as unit"), DB::raw('SUM(transaction_items.quantity) as quantity'))
             ->groupBy('transaction_items.product_name', 'products.unit')->orderBy('transaction_items.product_name')->get();
 
-        return view('pos.close', ['sales' => $sales, 'store' => $this->activeStoreRecord(), 'tenant' => auth()->user()->tenant]);
+        $summary = $this->cashierSummary();
+        $closing = CashierClosing::with(['user', 'authorizer'])
+            ->where('tenant_id', $this->tenantId())
+            ->where('store_id', $this->storeId())
+            ->whereDate('closing_date', today())
+            ->first();
+
+        return $this->view('pos.close', compact('sales', 'summary', 'closing'));
+    }
+
+    public function storeCashierClosing(Request $request)
+    {
+        $data = $request->validate([
+            'opening_cash' => 'required|numeric|min:0',
+            'actual_cash' => 'required|numeric|min:0',
+            'notes' => 'nullable|string|max:500',
+            'approval_pin' => 'nullable|string|min:4|max:12',
+        ]);
+        $authorizer = auth()->user()->isSupervisor()
+            ? auth()->user()
+            : $this->supervisorByPin($data['approval_pin'] ?? null);
+        abort_unless($authorizer, 422, 'PIN Manager/SPV cabang aktif diperlukan untuk tutup kasir.');
+
+        $summary = $this->cashierSummary();
+        $expected = (float) $data['opening_cash'] + $summary['cashSales'] + $summary['cashTopups'] - $summary['cashExpenses'];
+        $existing = CashierClosing::where('tenant_id', $this->tenantId())
+            ->where('store_id', $this->storeId())
+            ->whereDate('closing_date', today())
+            ->first();
+        abort_if($existing && ! auth()->user()->isSupervisor(), 422, 'Tutup kasir hari ini sudah tersimpan. Perubahan ulang harus dilakukan Manager/SPV.');
+
+        CashierClosing::updateOrCreate(
+            ['store_id' => $this->storeId(), 'closing_date' => today()->toDateString()],
+            [
+                'tenant_id' => $this->tenantId(),
+                'user_id' => auth()->id(),
+                'authorized_by' => $authorizer->id,
+                'opening_cash' => $data['opening_cash'],
+                'cash_sales' => $summary['cashSales'],
+                'cash_topups' => $summary['cashTopups'],
+                'cash_expenses' => $summary['cashExpenses'],
+                'expected_cash' => $expected,
+                'actual_cash' => $data['actual_cash'],
+                'difference' => (float) $data['actual_cash'] - $expected,
+                'payment_summary' => $summary['paymentSummary'],
+                'notes' => $data['notes'] ?? null,
+                'closed_at' => now(),
+            ]
+        );
+
+        return back()->with('success', 'Rekonsiliasi dan tutup kasir hari ini berhasil disimpan.');
     }
 
     public function products()
@@ -523,8 +669,12 @@ class WarungController extends Controller
             ->withSum(['dailyStocks as daily_stock' => fn ($q) => $q->where('store_id', $this->storeId())->whereDate('stock_date', today())], 'quantity')
             ->where('tenant_id', $this->tenantId())->latest()->paginate(20);
         $categories = Category::where('tenant_id', $this->tenantId())->orderBy('name')->get();
+        $archivedProducts = Product::onlyTrashed()->with('category')
+            ->where('tenant_id', $this->tenantId())->latest('deleted_at')->take(20)->get();
+        $archivedCategories = Category::onlyTrashed()->where('tenant_id', $this->tenantId())
+            ->latest('deleted_at')->take(20)->get();
 
-        return $this->view('products.index', compact('products', 'categories'));
+        return $this->view('products.index', compact('products', 'categories', 'archivedProducts', 'archivedCategories'));
     }
 
     private function productData(Request $request, ?Product $product = null): array
@@ -573,6 +723,55 @@ class WarungController extends Controller
         $product->delete();
 
         return back()->with('success', 'Produk dipindahkan ke arsip.');
+    }
+
+    public function restoreProduct(int $product)
+    {
+        $product = Product::withTrashed()->where('tenant_id', $this->tenantId())->findOrFail($product);
+        $product->restore();
+        $product->update(['is_active' => true]);
+
+        return back()->with('success', 'Produk '.$product->name.' berhasil dipulihkan.');
+    }
+
+    private function categoryData(Request $request, ?Category $category = null): array
+    {
+        return $request->validate([
+            'name' => ['required', 'string', 'max:80', Rule::unique('categories')->where('tenant_id', $this->tenantId())->ignore($category?->id)],
+            'color' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
+        ]);
+    }
+
+    public function storeCategory(Request $request)
+    {
+        Category::create($this->categoryData($request) + ['tenant_id' => $this->tenantId()]);
+
+        return back()->with('success', 'Kategori produk berhasil ditambahkan.');
+    }
+
+    public function updateCategory(Request $request, Category $category)
+    {
+        abort_unless($category->tenant_id === $this->tenantId(), 404);
+        $category->update($this->categoryData($request, $category));
+
+        return back()->with('success', 'Kategori produk berhasil diperbarui.');
+    }
+
+    public function destroyCategory(Category $category)
+    {
+        abort_unless($category->tenant_id === $this->tenantId(), 404);
+        abort_if($category->products()->where('is_active', true)->exists(), 422, 'Kategori masih digunakan produk aktif. Pindahkan produknya terlebih dahulu.');
+        $category->delete();
+
+        return back()->with('success', 'Kategori dipindahkan ke arsip.');
+    }
+
+    public function restoreCategory(int $category)
+    {
+        $category = Category::withTrashed()->where('tenant_id', $this->tenantId())->findOrFail($category);
+        $category->restore();
+
+        return back()->with('success', 'Kategori '.$category->name.' berhasil dipulihkan.');
     }
 
     public function exportProducts()
@@ -651,6 +850,7 @@ class WarungController extends Controller
                 $stock->used = $record->used_quantity;
                 $stock->processed = abs($moves->where('activity', 'production')->where('quantity', '<', 0)->sum('quantity'));
                 $stock->inventory_notes = $record->notes;
+
                 return $stock;
             });
         $menuStocks = DailyMenuStock::with('product.category')->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->whereDate('stock_date', today())
@@ -664,6 +864,7 @@ class WarungController extends Controller
                 $stock->reprocessed = abs($moves->where('activity', 'reprocess_out')->sum('quantity'));
                 $stock->inventory_notes = $record->notes;
                 $stock->count = $counts->get($stock->product_id);
+
                 return $stock;
             });
         $inventoryProducts = Product::where('tenant_id', $this->tenantId())->where('is_active', true)->orderBy('product_type')->orderBy('name')->get();
@@ -910,6 +1111,55 @@ class WarungController extends Controller
         return back()->with('success', 'Pembelian berhasil dicatat.');
     }
 
+    public function updatePurchase(Request $request, Purchase $purchase)
+    {
+        abort_unless($purchase->tenant_id === $this->tenantId(), 404);
+        $this->assertStoreAccess($purchase->store_id);
+        $data = $request->validate([
+            'supplier_name' => 'required|string|max:120', 'product_id' => 'required|integer', 'quantity' => 'required|numeric|min:0.001',
+            'unit_cost' => 'required|numeric|min:0', 'purchased_at' => 'required|date', 'status' => ['required', Rule::in(['received', 'not_received'])],
+            'payment_status' => ['required', Rule::in(['paid', 'dp', 'unpaid'])], 'dp_amount' => 'nullable|numeric|min:0', 'notes' => 'nullable|string|max:255',
+        ]);
+        $product = Product::where('tenant_id', $this->tenantId())->where('product_type', 'ingredient')->findOrFail($data['product_id']);
+        $total = (float) $data['quantity'] * (float) $data['unit_cost'];
+        abort_if(($data['dp_amount'] ?? 0) > $total, 422, 'DP tidak boleh melebihi total pembelian.');
+
+        DB::transaction(function () use ($purchase, $product, $data, $total) {
+            $locked = Purchase::where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())
+                ->lockForUpdate()->findOrFail($purchase->id);
+            $locked->load('items');
+            $wasReceived = (bool) $locked->received_at;
+            if ($wasReceived) {
+                $this->applyPurchaseStock($locked, -1);
+            }
+
+            $locked->items()->firstOrFail()->update([
+                'product_id' => $product->id,
+                'product_name' => $product->name,
+                'quantity' => $data['quantity'],
+                'unit_cost' => $data['unit_cost'],
+                'subtotal' => $total,
+            ]);
+            $willBeReceived = $data['status'] === 'received';
+            $locked->update([
+                'supplier_name' => $data['supplier_name'],
+                'total' => $total,
+                'status' => $willBeReceived ? 'received' : 'draft',
+                'payment_status' => $data['payment_status'],
+                'dp_amount' => $data['payment_status'] === 'dp' ? ($data['dp_amount'] ?? 0) : ($data['payment_status'] === 'paid' ? $total : 0),
+                'received_at' => $willBeReceived ? ($locked->received_at ?? now()) : null,
+                'purchased_at' => $data['purchased_at'],
+                'notes' => $data['notes'] ?? null,
+            ]);
+            if ($willBeReceived) {
+                $locked->load('items');
+                $this->applyPurchaseStock($locked, 1);
+            }
+        });
+
+        return back()->with('success', 'Data pembelian dan dampak stok berhasil dikoreksi.');
+    }
+
     private function applyPurchaseStock(Purchase $purchase, int $direction): void
     {
         foreach ($purchase->items as $item) {
@@ -948,13 +1198,22 @@ class WarungController extends Controller
     {
         $expenses = Expense::where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->latest('expense_date')->paginate(20);
         $categories = Expense::CATEGORIES;
+
         return $this->view('expenses.index', compact('expenses', 'categories'));
     }
 
     public function storeExpense(Request $request)
     {
-        $data = $request->validate(['category' => ['required', Rule::in(Expense::CATEGORIES)], 'description' => 'required|string|max:180', 'amount' => 'required|numeric|min:1', 'expense_date' => 'required|date']);
+        $data = $request->validate([
+            'category' => ['required', Rule::in(Expense::CATEGORIES)],
+            'description' => 'required|string|max:180',
+            'amount' => 'required|numeric|min:1',
+            'payment_method' => ['nullable', Rule::in(['cash', 'transfer', 'qris', 'debit'])],
+            'expense_date' => 'required|date',
+        ]);
+        $data['payment_method'] = $data['payment_method'] ?? 'cash';
         Expense::create($data + ['tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'user_id' => auth()->id(), 'report_type' => 'real']);
+
         return back()->with('success', 'Pengeluaran berhasil dicatat.');
     }
 
@@ -963,6 +1222,7 @@ class WarungController extends Controller
         abort_unless($expense->tenant_id === $this->tenantId(), 404);
         $this->assertStoreAccess($expense->store_id);
         $expense->delete();
+
         return back()->with('success', 'Pengeluaran dipindahkan ke arsip.');
     }
 
@@ -975,6 +1235,7 @@ class WarungController extends Controller
         if (auth()->user()->canManageSystem()) {
             $memberSummary = ['count' => Member::where('tenant_id', $this->tenantId())->count(), 'deposit' => Member::where('tenant_id', $this->tenantId())->sum('deposit_balance')];
         }
+
         return $this->view('members.index', compact('members', 'availableCards', 'memberSummary', 'search'));
     }
 
@@ -1031,6 +1292,31 @@ class WarungController extends Controller
         return back()->with('success', 'Kartu '.$member->member_code.' aktif dan data member berhasil disimpan.');
     }
 
+    public function updateMember(Request $request, Member $member)
+    {
+        abort_unless($member->tenant_id === $this->tenantId(), 404);
+        $data = $request->validate([
+            'name' => 'required|string|max:120',
+            'phone' => 'nullable|string|max:30',
+            'email' => 'nullable|email|max:120',
+            'domicile' => 'nullable|string|max:120',
+            'birth_date' => 'nullable|date',
+            'discount_percent' => 'required|numeric|min:0|max:100',
+        ]);
+        $member->update($data);
+
+        return back()->with('success', 'Data member '.$member->member_code.' berhasil diperbarui.');
+    }
+
+    public function updateMemberStatus(Request $request, Member $member)
+    {
+        abort_unless($member->tenant_id === $this->tenantId(), 404);
+        $data = $request->validate(['is_active' => 'required|boolean']);
+        $member->update(['is_active' => (bool) $data['is_active']]);
+
+        return back()->with('success', 'Status member berhasil diperbarui.');
+    }
+
     public function topup(Request $request, Member $member)
     {
         abort_unless($member->tenant_id === $this->tenantId(), 404);
@@ -1040,12 +1326,45 @@ class WarungController extends Controller
             $locked->increment('deposit_balance', $data['amount']);
             DB::table('deposit_transactions')->insert(['tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'member_id' => $locked->id, 'user_id' => auth()->id(), 'transaction_id' => null, 'type' => 'credit', 'payment_method' => $data['payment_method'] ?? 'cash', 'amount' => $data['amount'], 'balance_after' => $locked->fresh()->deposit_balance, 'description' => 'Top up deposit', 'created_at' => now(), 'updated_at' => now()]);
         });
+
         return back()->with('success', 'Deposit berhasil ditambahkan.');
+    }
+
+    public function adjustMemberDeposit(Request $request, Member $member)
+    {
+        abort_unless($member->tenant_id === $this->tenantId(), 404);
+        $data = $request->validate([
+            'type' => ['required', Rule::in(['credit', 'debit'])],
+            'amount' => 'required|numeric|min:1',
+            'reason' => 'required|string|min:5|max:255',
+            'approval_pin' => 'nullable|string|min:4|max:12',
+        ]);
+        $authorizer = auth()->user()->isSupervisor()
+            ? auth()->user()
+            : $this->supervisorByPin($data['approval_pin'] ?? null);
+        abort_unless($authorizer, 422, 'PIN Manager/SPV cabang aktif diperlukan untuk koreksi deposit.');
+
+        DB::transaction(function () use ($member, $data, $authorizer) {
+            $locked = Member::where('tenant_id', $this->tenantId())->lockForUpdate()->findOrFail($member->id);
+            $amount = (float) $data['amount'];
+            abort_if($data['type'] === 'debit' && (float) $locked->deposit_balance < $amount, 422, 'Koreksi debit melebihi saldo deposit member.');
+            $data['type'] === 'credit' ? $locked->increment('deposit_balance', $amount) : $locked->decrement('deposit_balance', $amount);
+            DB::table('deposit_transactions')->insert([
+                'tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'member_id' => $locked->id,
+                'user_id' => auth()->id(), 'transaction_id' => null, 'type' => $data['type'], 'payment_method' => 'adjustment',
+                'amount' => $amount, 'balance_after' => $locked->fresh()->deposit_balance,
+                'description' => 'Koreksi deposit oleh '.$authorizer->name.': '.$data['reason'], 'created_at' => now(), 'updated_at' => now(),
+            ]);
+        });
+
+        return back()->with('success', 'Koreksi deposit berhasil disimpan dalam audit trail.');
     }
 
     public function findMember(string $code)
     {
-        $member = Member::where('tenant_id', $this->tenantId())->where(fn ($q) => $q->where('qr_code', $code)->orWhere('member_code', $code))->firstOrFail();
+        $member = Member::where('tenant_id', $this->tenantId())->where('is_active', true)
+            ->where(fn ($q) => $q->where('qr_code', $code)->orWhere('member_code', $code))->firstOrFail();
+
         return response()->json($member->only('id', 'name', 'member_code', 'deposit_balance', 'discount_percent'));
     }
 
@@ -1061,6 +1380,7 @@ class WarungController extends Controller
     {
         $transactions = Transaction::with(['member', 'user', 'payments', 'voidAuthorizer'])->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->get('status')))->latest('transacted_at')->paginate(20)->withQueryString();
+
         return $this->view('transactions.index', compact('transactions'));
     }
 
@@ -1069,6 +1389,7 @@ class WarungController extends Controller
         abort_unless($transaction->tenant_id === $this->tenantId(), 404);
         $this->assertStoreAccess($transaction->store_id);
         $transaction->load(['items.product', 'member', 'user', 'store', 'payments']);
+
         return view('transactions.print', ['transaction' => $transaction, 'tenant' => auth()->user()->tenant, 'receiptStore' => $transaction->store]);
     }
 
@@ -1084,13 +1405,19 @@ class WarungController extends Controller
         DB::transaction(function () use ($transaction, $data, $authorizer) {
             $transaction->load(['items', 'payments', 'member']);
             foreach ($transaction->items as $item) {
-                if (! $item->product_id) continue;
-                $stock = $this->menuStockForDate($item->product_id, $transaction->transacted_at);
+                if (! $item->product_id) {
+                    continue;
+                }
+                // Saldo operasional berjalan ada pada record hari ini. Mengubah record tanggal
+                // transaksi lama tidak akan mengembalikan stok yang sedang dipakai kasir.
+                $stock = $this->menuStockForDate($item->product_id);
                 $stock->increment('quantity', $item->quantity);
                 DB::table('stock_movements')->insert(['tenant_id' => $this->tenantId(), 'store_id' => $transaction->store_id, 'product_id' => $item->product_id, 'user_id' => auth()->id(), 'type' => 'adjustment_in', 'activity' => 'void_reversal', 'quantity' => $item->quantity, 'reference' => $transaction->invoice_no, 'notes' => 'Pembatalan: '.$data['reason'], 'created_at' => now(), 'updated_at' => now()]);
             }
             $deposit = $transaction->payments->where('method', 'deposit')->sum('amount');
-            if ($deposit <= 0 && $transaction->payment_method === 'deposit') $deposit = $transaction->total;
+            if ($deposit <= 0 && $transaction->payment_method === 'deposit') {
+                $deposit = $transaction->total;
+            }
             if ($deposit > 0 && $transaction->member) {
                 $transaction->member->increment('deposit_balance', $deposit);
                 DB::table('deposit_transactions')->insert(['tenant_id' => $this->tenantId(), 'store_id' => $transaction->store_id, 'member_id' => $transaction->member->id, 'user_id' => auth()->id(), 'transaction_id' => $transaction->id, 'type' => 'credit', 'payment_method' => 'deposit', 'amount' => $deposit, 'balance_after' => $transaction->member->fresh()->deposit_balance, 'description' => 'Refund pembatalan '.$transaction->invoice_no, 'created_at' => now(), 'updated_at' => now()]);
@@ -1125,6 +1452,7 @@ class WarungController extends Controller
         $data = $exporter->data($this->tenantId(), $this->isConsolidated() ? null : $this->storeId(), $from, $to, $factor);
         $spreadsheet = $exporter->workbook($data, auth()->user()->tenant, $store, $from, $to, $type, $factor);
         $filename = 'laporan-transaksi-'.str_replace('_', '-', $type).'-'.$from->format('Ymd').'-'.$to->format('Ymd').'.xlsx';
+
         return response()->streamDownload(function () use ($spreadsheet) {
             (new Xlsx($spreadsheet))->save('php://output');
             $spreadsheet->disconnectWorksheets();
@@ -1138,20 +1466,33 @@ class WarungController extends Controller
 
     public function settings()
     {
-        $users = User::where('tenant_id', $this->tenantId())->orderBy('name')->get();
-        $roles = $this->roles();
-        $userCountPerRole = User::where('tenant_id', $this->tenantId())->selectRaw('role, count(*) as total')->groupBy('role')->pluck('total', 'role');
+        $canManageSystem = auth()->user()->canManageSystem();
+        $settingPermissions = collect(array_keys(Role::SETTINGS_PERMISSIONS))
+            ->mapWithKeys(fn ($permission) => [$permission => auth()->user()->canManageSetting($permission)]);
+        $users = $canManageSystem
+            ? User::withTrashed()->where('tenant_id', $this->tenantId())->orderBy('name')->get()
+            : collect();
+        $roles = $canManageSystem ? $this->roles() : collect();
+        $userCountPerRole = $canManageSystem
+            ? User::where('tenant_id', $this->tenantId())->selectRaw('role, count(*) as total')->groupBy('role')->pluck('total', 'role')
+            : collect();
         // Developer/Superadmin dapat membuat akun, tetapi tidak dapat menugaskan role sistem.
-        $creatableRoles = auth()->user()->canManageSystem()
+        $creatableRoles = $canManageSystem
             ? $roles->where('is_system', false)->pluck('name', 'key')
             : collect();
         $settingsStore = $this->activeStoreRecord();
-        $devices = ConnectedDevice::where('tenant_id', $this->tenantId())->with('store')
-            ->where(fn ($query) => $query->whereNull('store_id')->orWhere('store_id', $settingsStore->id))
-            ->get();
-        $cards = MemberCard::where('tenant_id', $this->tenantId())->where('status', 'available')->latest()->take(20)->get();
+        $devices = $settingPermissions['devices']
+            ? ConnectedDevice::where('tenant_id', $this->tenantId())->with('store')
+                ->where(fn ($query) => $query->whereNull('store_id')->orWhere('store_id', $settingsStore->id))->get()
+            : collect();
+        $cards = $settingPermissions['member_cards']
+            ? MemberCard::where('tenant_id', $this->tenantId())->where('status', 'available')->latest()->take(20)->get()
+            : collect();
+        $stores = ($settingPermissions['branches'] || $settingPermissions['devices'] || $canManageSystem)
+            ? Store::where('tenant_id', $this->tenantId())->orderBy('name')->get()
+            : collect();
 
-        return $this->view('settings.index', ['tenant' => auth()->user()->tenant, 'settingsStore' => $settingsStore, 'stores' => $this->stores(), 'users' => $users, 'roles' => $roles, 'userCountPerRole' => $userCountPerRole, 'creatableRoles' => $creatableRoles, 'canManageRoles' => auth()->user()->canManageSystem(), 'devices' => $devices, 'cards' => $cards]);
+        return $this->view('settings.index', ['tenant' => auth()->user()->tenant, 'settingsStore' => $settingsStore, 'stores' => $stores, 'users' => $users, 'roles' => $roles, 'userCountPerRole' => $userCountPerRole, 'creatableRoles' => $creatableRoles, 'canManageRoles' => $canManageSystem, 'settingPermissions' => $settingPermissions, 'devices' => $devices, 'cards' => $cards]);
     }
 
     private function roleData(Request $request, ?Role $role = null): array
@@ -1161,6 +1502,8 @@ class WarungController extends Controller
             'summary' => ['nullable', 'string', 'max:120'],
             'modules' => ['required', 'array', 'min:1'],
             'modules.*' => [Rule::in(array_keys(Role::MODULES))],
+            'settings_permissions' => ['nullable', 'array'],
+            'settings_permissions.*' => [Rule::in(array_keys(Role::SETTINGS_PERMISSIONS))],
             'can_see_non_real' => ['nullable', 'boolean'],
             'is_supervisor' => ['nullable', 'boolean'],
         ]);
@@ -1169,6 +1512,9 @@ class WarungController extends Controller
             'name' => $data['name'],
             'summary' => $data['summary'] ?? null,
             'modules' => Role::sanitizeModules($data['modules']),
+            'settings_permissions' => in_array('settings', $data['modules'], true)
+                ? Role::sanitizeSettingsPermissions($data['settings_permissions'] ?? [])
+                : [],
             'can_see_non_real' => $request->boolean('can_see_non_real'),
             'is_supervisor' => $request->boolean('is_supervisor'),
             // Akses lintas warung tidak dibuka lewat form; lihat catatan pada view Pengaturan.
@@ -1216,26 +1562,33 @@ class WarungController extends Controller
 
     public function updateBrand(Request $request)
     {
+        abort_unless(auth()->user()->canManageSetting('branding'), 403);
         $store = $this->requestedSettingsStore($request);
         $data = $request->validate(['business_name' => 'required|string|max:120', 'logo' => 'nullable|image|max:2048']);
-        if ($request->hasFile('logo')) $data['logo_path'] = $request->file('logo')->store('branding', 'public');
+        if ($request->hasFile('logo')) {
+            $data['logo_path'] = $request->file('logo')->store('branding', 'public');
+        }
         unset($data['logo']);
         $store->update($data);
+
         return back()->with('success', 'Identitas '.$store->name.' berhasil diperbarui.');
     }
 
     public function updateReceiptSettings(Request $request)
     {
+        abort_unless(auth()->user()->canManageSetting('receipt'), 403);
         $store = $this->requestedSettingsStore($request);
         $data = $request->validate(['receipt_header' => 'nullable|string|max:120', 'receipt_footer' => 'nullable|string|max:180']);
         $data['receipt_show_logo'] = $request->boolean('receipt_show_logo');
         $data['receipt_sort_by_category'] = $request->boolean('receipt_sort_by_category');
         $store->update($data);
+
         return back()->with('success', 'Tampilan struk '.$store->name.' berhasil diperbarui.');
     }
 
     public function updateBusinessRules(Request $request)
     {
+        abort_unless(auth()->user()->canManageSetting('business_rules'), 403);
         $store = $this->requestedSettingsStore($request);
         $data = $request->validate([
             'non_real_percentage' => 'required|numeric|min:0|max:100',
@@ -1248,6 +1601,7 @@ class WarungController extends Controller
 
     public function storeBranch(Request $request)
     {
+        abort_unless(auth()->user()->canManageSetting('branches'), 403);
         $data = $request->validate(['name' => 'required|string|max:120', 'code' => ['required', 'string', 'max:20', Rule::unique('stores')->where('tenant_id', $this->tenantId())], 'address' => 'nullable|string|max:255', 'phone' => 'nullable|string|max:30']);
         $source = $this->activeStoreRecord();
         Store::create($data + [
@@ -1263,25 +1617,72 @@ class WarungController extends Controller
             'receipt_show_logo' => $source->receipt_show_logo,
             'receipt_sort_by_category' => $source->receipt_sort_by_category,
         ]);
+
         return back()->with('success', 'Cabang baru berhasil ditambahkan.');
+    }
+
+    public function updateBranch(Request $request, Store $store)
+    {
+        abort_unless(auth()->user()->canManageSetting('branches'), 403);
+        abort_unless($store->tenant_id === $this->tenantId(), 404);
+        $this->assertStoreAccess($store->id);
+        $data = $request->validate([
+            'name' => 'required|string|max:120',
+            'code' => ['required', 'string', 'max:20', Rule::unique('stores')->where('tenant_id', $this->tenantId())->ignore($store->id)],
+            'address' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:30',
+        ]);
+        $store->update($data);
+
+        return back()->with('success', 'Data cabang berhasil diperbarui.');
+    }
+
+    public function updateBranchStatus(Request $request, Store $store)
+    {
+        abort_unless(auth()->user()->canManageSetting('branches'), 403);
+        abort_unless($store->tenant_id === $this->tenantId(), 404);
+        $this->assertStoreAccess($store->id);
+        $isActive = (bool) $request->validate(['is_active' => 'required|boolean'])['is_active'];
+        if (! $isActive) {
+            abort_if(User::where('tenant_id', $this->tenantId())->where('store_id', $store->id)->where('is_active', true)->exists(), 422, 'Cabang masih memiliki pengguna aktif. Pindahkan atau nonaktifkan akun terlebih dahulu.');
+            abort_if(Store::where('tenant_id', $this->tenantId())->where('is_active', true)->count() <= 1, 422, 'Cabang aktif terakhir tidak dapat dinonaktifkan.');
+        }
+        $store->update(['is_active' => $isActive]);
+
+        return back()->with('success', 'Status cabang berhasil diperbarui.');
     }
 
     public function storeDevice(Request $request)
     {
+        abort_unless(auth()->user()->canManageSetting('devices'), 403);
         $data = $request->validate(['name' => 'required|string|max:120', 'type' => ['required', Rule::in(['receipt_printer', 'cash_drawer', 'barcode_scanner', 'customer_display', 'other'])], 'connection' => 'nullable|string|max:120', 'store_id' => 'nullable|integer']);
         if (! empty($data['store_id'])) {
-            abort_unless(Store::where('tenant_id', $this->tenantId())->whereKey($data['store_id'])->exists(), 422);
+            abort_unless(Store::where('tenant_id', $this->tenantId())->where('is_active', true)->whereKey($data['store_id'])->exists(), 422);
             $this->assertStoreAccess((int) $data['store_id']);
         }
         ConnectedDevice::create($data + ['tenant_id' => $this->tenantId(), 'status' => 'active']);
+
         return back()->with('success', 'Perangkat berhasil ditambahkan.');
     }
 
     public function destroyDevice(ConnectedDevice $device)
     {
+        abort_unless(auth()->user()->canManageSetting('devices'), 403);
         abort_unless($device->tenant_id === $this->tenantId(), 404);
         $device->delete();
+
         return back()->with('success', 'Perangkat dilepas.');
+    }
+
+    public function testDevice(ConnectedDevice $device)
+    {
+        abort_unless(auth()->user()->canManageSetting('devices'), 403);
+        abort_unless($device->tenant_id === $this->tenantId(), 404);
+        $this->assertStoreAccess($device->store_id ?: $this->storeId());
+        abort_unless(filled($device->connection), 422, 'Alamat/koneksi perangkat belum diisi.');
+        $device->update(['last_tested_at' => now(), 'status' => 'active']);
+
+        return back()->with('success', 'Konfigurasi perangkat valid dan waktu pengecekan dicatat. Koneksi fisik tetap perlu diuji dari komputer kasir.');
     }
 
     public function storeUser(Request $request)
@@ -1290,17 +1691,69 @@ class WarungController extends Controller
         // Role diambil dari master, kecuali role sistem yang tidak boleh ditugaskan ke akun baru.
         $assignable = Role::where('tenant_id', $this->tenantId())->where('is_system', false)->pluck('key')->all();
         $data = $request->validate(['name' => 'required|string|max:120', 'email' => 'required|email|unique:users,email', 'role' => ['required', Rule::in($assignable)], 'store_id' => 'required|integer', 'password' => 'required|string|min:8', 'authorization_pin' => 'nullable|digits_between:4,8']);
-        abort_unless(Store::where('tenant_id', $this->tenantId())->whereKey($data['store_id'])->exists(), 422);
-        if (! empty($data['authorization_pin'])) $data['authorization_pin'] = Hash::make($data['authorization_pin']);
+        abort_unless(Store::where('tenant_id', $this->tenantId())->where('is_active', true)->whereKey($data['store_id'])->exists(), 422);
+        if (! empty($data['authorization_pin'])) {
+            $data['authorization_pin'] = Hash::make($data['authorization_pin']);
+        }
         User::create($data + ['tenant_id' => $this->tenantId(), 'password' => Hash::make($data['password']), 'is_active' => true]);
+
         return back()->with('success', 'Pengguna baru berhasil ditambahkan.');
+    }
+
+    public function updateUser(Request $request, User $user)
+    {
+        abort_unless(auth()->user()->canManageSystem() && $user->tenant_id === $this->tenantId(), 403);
+        abort_if($user->role === User::DEVELOPER && ! auth()->user()->isDeveloper(), 403);
+        $assignable = Role::where('tenant_id', $this->tenantId())->where('is_system', false)->pluck('key')->all();
+        if ($user->role === User::DEVELOPER && auth()->user()->isDeveloper()) {
+            $assignable[] = User::DEVELOPER;
+        }
+        $data = $request->validate([
+            'name' => 'required|string|max:120',
+            'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
+            'role' => ['required', Rule::in($assignable)],
+            'store_id' => 'required|integer',
+            'password' => 'nullable|string|min:8',
+            'authorization_pin' => 'nullable|digits_between:4,8',
+        ]);
+        abort_unless(Store::where('tenant_id', $this->tenantId())->where('is_active', true)->whereKey($data['store_id'])->exists(), 422);
+        if (blank($data['password'] ?? null)) {
+            unset($data['password']);
+        }
+        if (filled($data['authorization_pin'] ?? null)) {
+            $data['authorization_pin'] = Hash::make($data['authorization_pin']);
+        } else {
+            unset($data['authorization_pin']);
+        }
+        $user->update($data);
+
+        return back()->with('success', 'Akun pengguna berhasil diperbarui.');
+    }
+
+    public function updateUserStatus(Request $request, int $user)
+    {
+        $user = User::withTrashed()->where('tenant_id', $this->tenantId())->findOrFail($user);
+        abort_unless(auth()->user()->canManageSystem() && $user->id !== auth()->id(), 403);
+        abort_if($user->role === User::DEVELOPER && ! auth()->user()->isDeveloper(), 403);
+        $isActive = (bool) $request->validate(['is_active' => 'required|boolean'])['is_active'];
+        if ($isActive) {
+            $user->restore();
+            $user->update(['is_active' => true]);
+        } else {
+            $user->update(['is_active' => false]);
+            $user->delete();
+        }
+
+        return back()->with('success', 'Status akun pengguna berhasil diperbarui.');
     }
 
     public function destroyUser(User $user)
     {
         abort_unless(auth()->user()->canManageSystem() && $user->tenant_id === $this->tenantId() && $user->id !== auth()->id(), 403);
         abort_if($user->role === User::DEVELOPER && ! auth()->user()->isDeveloper(), 403);
+        $user->update(['is_active' => false]);
         $user->delete();
+
         return back()->with('success', 'Akun pengguna dinonaktifkan.');
     }
 
@@ -1317,12 +1770,13 @@ class WarungController extends Controller
 
     public function precreateMemberCards(Request $request)
     {
-        abort_unless(auth()->user()->canManageSystem(), 403);
+        abort_unless(auth()->user()->canManageSetting('member_cards'), 403);
         $count = $request->validate(['count' => 'required|integer|min:1|max:100'])['count'];
         for ($i = 0; $i < $count; $i++) {
             $next = (MemberCard::where('tenant_id', $this->tenantId())->max('id') ?? 0) + 1;
             MemberCard::create(['tenant_id' => $this->tenantId(), 'member_code' => 'MBR-P'.str_pad($next, 5, '0', STR_PAD_LEFT), 'qr_code' => (string) Str::uuid(), 'status' => 'available']);
         }
+
         return back()->with('success', $count.' kartu QR siap dicetak dan diaktivasi saat customer mendaftar.');
     }
 
@@ -1336,14 +1790,20 @@ class WarungController extends Controller
             'storage_link' => ['command' => 'storage:link', 'parameters' => [], 'label' => 'Hubungkan storage'],
         ];
         $selected = $commands[$data['command']];
-        if ($data['command'] === 'storage_link' && File::exists(public_path('storage'))) return back()->with('success', 'Storage publik sudah terhubung.')->with('maintenance_output', 'Tautan public/storage sudah tersedia. Tidak ada perubahan yang diperlukan.');
+        if ($data['command'] === 'storage_link' && File::exists(public_path('storage'))) {
+            return back()->with('success', 'Storage publik sudah terhubung.')->with('maintenance_output', 'Tautan public/storage sudah tersedia. Tidak ada perubahan yang diperlukan.');
+        }
         try {
             $exitCode = Artisan::call($selected['command'], $selected['parameters']);
             $output = trim(Artisan::output()) ?: 'Perintah selesai tanpa keluaran tambahan.';
-            if ($exitCode !== 0) return back()->withErrors(['maintenance' => $selected['label'].' gagal dijalankan.'])->with('maintenance_output', $output);
+            if ($exitCode !== 0) {
+                return back()->withErrors(['maintenance' => $selected['label'].' gagal dijalankan.'])->with('maintenance_output', $output);
+            }
+
             return back()->with('success', $selected['label'].' berhasil dijalankan.')->with('maintenance_output', $output);
         } catch (\Throwable $exception) {
             report($exception);
+
             return back()->withErrors(['maintenance' => $selected['label'].' gagal dijalankan. Periksa log aplikasi.']);
         }
     }

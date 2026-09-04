@@ -16,7 +16,7 @@
 @endphp
 <div class="app-shell">
     <aside class="sidebar">
-        <a class="brand" href="{{ route('dashboard') }}">
+        <a class="brand" href="{{ route($nav[0][0] ?? 'pos') }}">
             <span class="brand-mark">
                 @if($activeStore?->logo_path)
                     <img src="{{ asset('storage/'.$activeStore->logo_path) }}" alt="Logo">

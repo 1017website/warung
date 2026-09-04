@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Route;
  * perubahan hak akses di Pengaturan benar-benar mengatur setiap URL.
  */
 Route::get('/login', [AuthController::class, 'create'])->name('login');
-Route::post('/login', [AuthController::class, 'store'])->name('login.store');
+Route::post('/login', [AuthController::class, 'store'])->middleware('throttle:10,1')->name('login.store');
 Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
 
 Route::middleware('auth')->group(function () {
@@ -25,8 +25,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/kasir', [WarungController::class, 'pos'])->name('pos');
         Route::post('/kasir/checkout', [WarungController::class, 'checkout'])->name('pos.checkout');
         Route::post('/kasir/pending', [WarungController::class, 'holdBill'])->name('pos.pending');
+        Route::delete('/kasir/pending/{transaction}', [WarungController::class, 'cancelPendingBill'])->name('pos.pending.cancel');
         Route::post('/kasir/custom-amount', [WarungController::class, 'toggleCustomAmount'])->name('pos.custom-amount');
         Route::get('/kasir/tutup-harian', [WarungController::class, 'closeCashier'])->name('pos.close');
+        Route::post('/kasir/tutup-harian', [WarungController::class, 'storeCashierClosing'])->middleware('throttle:10,1')->name('pos.close.store');
     });
 
     Route::middleware('module:transactions')->group(function () {
@@ -41,7 +43,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/member', [WarungController::class, 'members'])->name('members');
         Route::get('/member/export', [WarungController::class, 'exportMembers'])->name('members.export');
         Route::post('/member', [WarungController::class, 'storeMember'])->name('members.store');
+        Route::put('/member/{member}', [WarungController::class, 'updateMember'])->name('members.update');
+        Route::patch('/member/{member}/status', [WarungController::class, 'updateMemberStatus'])->name('members.status');
         Route::post('/member/{member}/topup', [WarungController::class, 'topup'])->name('members.topup');
+        Route::post('/member/{member}/deposit-adjustment', [WarungController::class, 'adjustMemberDeposit'])->middleware('throttle:10,1')->name('members.deposit-adjustment');
     });
 
     Route::middleware('module:products')->group(function () {
@@ -49,6 +54,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/produk', [WarungController::class, 'storeProduct'])->name('products.store');
         Route::put('/produk/{product}', [WarungController::class, 'updateProduct'])->name('products.update');
         Route::delete('/produk/{product}', [WarungController::class, 'destroyProduct'])->name('products.destroy');
+        Route::post('/produk/{product}/restore', [WarungController::class, 'restoreProduct'])->name('products.restore');
+        Route::post('/produk/kategori', [WarungController::class, 'storeCategory'])->name('products.categories.store');
+        Route::put('/produk/kategori/{category}', [WarungController::class, 'updateCategory'])->name('products.categories.update');
+        Route::delete('/produk/kategori/{category}', [WarungController::class, 'destroyCategory'])->name('products.categories.destroy');
+        Route::post('/produk/kategori/{category}/restore', [WarungController::class, 'restoreCategory'])->name('products.categories.restore');
         Route::get('/produk/export', [WarungController::class, 'exportProducts'])->name('products.export');
         Route::post('/produk/import', [WarungController::class, 'importProducts'])->name('products.import');
     });
@@ -56,6 +66,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('module:purchases')->group(function () {
         Route::get('/pembelian', [WarungController::class, 'purchases'])->name('purchases');
         Route::post('/pembelian', [WarungController::class, 'storePurchase'])->name('purchases.store');
+        Route::put('/pembelian/{purchase}', [WarungController::class, 'updatePurchase'])->name('purchases.update');
         Route::patch('/pembelian/{purchase}/status', [WarungController::class, 'updatePurchaseStatus'])->name('purchases.status');
     });
 
@@ -85,12 +96,17 @@ Route::middleware('auth')->group(function () {
         Route::post('/pengaturan/receipt', [WarungController::class, 'updateReceiptSettings'])->name('settings.receipt');
         Route::post('/pengaturan/aturan-bisnis', [WarungController::class, 'updateBusinessRules'])->name('settings.business-rules');
         Route::post('/pengaturan/cabang', [WarungController::class, 'storeBranch'])->name('settings.branch');
+        Route::put('/pengaturan/cabang/{store}', [WarungController::class, 'updateBranch'])->name('settings.branch.update');
+        Route::patch('/pengaturan/cabang/{store}/status', [WarungController::class, 'updateBranchStatus'])->name('settings.branch.status');
         Route::post('/pengaturan/perangkat', [WarungController::class, 'storeDevice'])->name('settings.device');
+        Route::post('/pengaturan/perangkat/{device}/test', [WarungController::class, 'testDevice'])->name('settings.device.test');
         Route::delete('/pengaturan/perangkat/{device}', [WarungController::class, 'destroyDevice'])->name('settings.device.destroy');
         Route::post('/pengaturan/role', [WarungController::class, 'storeRole'])->name('settings.role');
         Route::put('/pengaturan/role/{role}', [WarungController::class, 'updateRole'])->name('settings.role.update');
         Route::delete('/pengaturan/role/{role}', [WarungController::class, 'destroyRole'])->name('settings.role.destroy');
         Route::post('/pengaturan/pengguna', [WarungController::class, 'storeUser'])->name('settings.user');
+        Route::put('/pengaturan/pengguna/{user}', [WarungController::class, 'updateUser'])->name('settings.user.update');
+        Route::patch('/pengaturan/pengguna/{user}/status', [WarungController::class, 'updateUserStatus'])->name('settings.user.status');
         Route::patch('/pengaturan/pengguna/{user}/pin', [WarungController::class, 'updateUserPin'])->name('settings.user.pin');
         Route::delete('/pengaturan/pengguna/{user}', [WarungController::class, 'destroyUser'])->name('settings.user.destroy');
         Route::post('/pengaturan/member-card', [WarungController::class, 'precreateMemberCards'])->name('settings.member-card');

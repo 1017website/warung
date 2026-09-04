@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Schema;
 
 class Role extends Model
 {
@@ -13,6 +14,7 @@ class Role extends Model
 
     protected $casts = [
         'modules' => 'array',
+        'settings_permissions' => 'array',
         'can_access_all_stores' => 'boolean',
         'can_see_non_real' => 'boolean',
         'is_supervisor' => 'boolean',
@@ -36,6 +38,16 @@ class Role extends Model
     /** Modul yang memperlihatkan omzet; dipakai untuk label "gaboleh lihat omset". */
     public const REVENUE_MODULES = ['dashboard', 'reports'];
 
+    /** Sub-permission untuk aksi konfigurasi; akun sistem selalu memiliki semuanya. */
+    public const SETTINGS_PERMISSIONS = [
+        'business_rules' => 'Aturan laporan & membership',
+        'branding' => 'Identitas warung',
+        'receipt' => 'Tampilan struk',
+        'devices' => 'Perangkat',
+        'member_cards' => 'Kartu member pra-cetak',
+        'branches' => 'Cabang',
+    ];
+
     /**
      * Data awal master role, disalin dari tabel TIERING AKSES pada POINT REVISION.docx.
      * Dipakai migrasi dan seeder; setelah itu Developer/Superadmin dapat mengubahnya lewat Pengaturan.
@@ -46,6 +58,7 @@ class Role extends Model
             'name' => 'Developer',
             'summary' => 'Semua fitur & pemeliharaan sistem',
             'modules' => ['dashboard', 'pos', 'transactions', 'products', 'inventory', 'purchases', 'expenses', 'members', 'reports', 'settings'],
+            'settings_permissions' => ['business_rules', 'branding', 'receipt', 'devices', 'member_cards', 'branches'],
             'can_access_all_stores' => true,
             'can_see_non_real' => true,
             'is_supervisor' => true,
@@ -56,6 +69,7 @@ class Role extends Model
             'name' => 'Superadmin',
             'summary' => 'Semua fitur & akun',
             'modules' => ['dashboard', 'pos', 'transactions', 'products', 'inventory', 'purchases', 'expenses', 'members', 'reports', 'settings'],
+            'settings_permissions' => ['business_rules', 'branding', 'receipt', 'devices', 'member_cards', 'branches'],
             'can_access_all_stores' => true,
             'can_see_non_real' => true,
             'is_supervisor' => true,
@@ -66,6 +80,7 @@ class Role extends Model
             'name' => 'Head of Ops',
             'summary' => 'Operasional lengkap + laporan',
             'modules' => ['dashboard', 'pos', 'transactions', 'products', 'inventory', 'purchases', 'expenses', 'members', 'reports'],
+            'settings_permissions' => [],
             'can_access_all_stores' => true,
             'can_see_non_real' => false,
             'is_supervisor' => true,
@@ -76,6 +91,7 @@ class Role extends Model
             'name' => 'Ops Admin',
             'summary' => 'Operasional tanpa omzet',
             'modules' => ['pos', 'transactions', 'products', 'inventory', 'purchases', 'expenses', 'members'],
+            'settings_permissions' => [],
             'can_access_all_stores' => false,
             'can_see_non_real' => false,
             'is_supervisor' => false,
@@ -86,6 +102,7 @@ class Role extends Model
             'name' => 'Outlet Manager',
             'summary' => 'Kasir, transaksi, member, stok, pengeluaran',
             'modules' => ['pos', 'transactions', 'inventory', 'expenses', 'members'],
+            'settings_permissions' => [],
             'can_access_all_stores' => false,
             'can_see_non_real' => false,
             'is_supervisor' => true,
@@ -96,6 +113,7 @@ class Role extends Model
             'name' => 'SPV',
             'summary' => 'Kasir, transaksi, member, stok, pengeluaran',
             'modules' => ['pos', 'transactions', 'inventory', 'expenses', 'members'],
+            'settings_permissions' => [],
             'can_access_all_stores' => false,
             'can_see_non_real' => false,
             'is_supervisor' => true,
@@ -106,6 +124,7 @@ class Role extends Model
             'name' => 'Kasir',
             'summary' => 'Kasir, transaksi, member, stok, pengeluaran',
             'modules' => ['pos', 'transactions', 'inventory', 'expenses', 'members'],
+            'settings_permissions' => [],
             'can_access_all_stores' => false,
             'can_see_non_real' => false,
             'is_supervisor' => false,
@@ -117,6 +136,9 @@ class Role extends Model
     public static function provisionDefaults(int $tenantId): void
     {
         foreach (self::DEFAULTS as $position => $role) {
+            if (! Schema::hasColumn('roles', 'settings_permissions')) {
+                unset($role['settings_permissions']);
+            }
             self::withTrashed()->updateOrCreate(
                 ['tenant_id' => $tenantId, 'key' => $role['key']],
                 $role + ['position' => $position, 'deleted_at' => null]
@@ -150,6 +172,14 @@ class Role extends Model
         return array_values(array_filter(
             array_keys(self::MODULES),
             fn (string $module) => in_array($module, $modules, true)
+        ));
+    }
+
+    public static function sanitizeSettingsPermissions(array $permissions): array
+    {
+        return array_values(array_filter(
+            array_keys(self::SETTINGS_PERMISSIONS),
+            fn (string $permission) => in_array($permission, $permissions, true)
         ));
     }
 }

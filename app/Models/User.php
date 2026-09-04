@@ -134,6 +134,18 @@ class User extends Authenticatable
         return in_array($this->role, [self::DEVELOPER, self::SUPERADMIN], true);
     }
 
+    public function canManageSetting(string $permission): bool
+    {
+        abort_unless(array_key_exists($permission, Role::SETTINGS_PERMISSIONS), 500, "Sub-permission pengaturan [{$permission}] tidak dikenal.");
+
+        if ($this->canManageSystem()) {
+            return true;
+        }
+
+        return $this->canAccess('settings')
+            && in_array($permission, $this->roleDefinition()?->settings_permissions ?? [], true);
+    }
+
     public function canRunMaintenance(): bool
     {
         if ($this->isDeveloper()) {
