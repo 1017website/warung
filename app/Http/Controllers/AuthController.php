@@ -16,10 +16,10 @@ class AuthController extends Controller
         return redirect()->route($this->landingRoute());
     }
 
-    /** Ringkasan hanya untuk pemegang akses omset; sisanya langsung ke kasir. */
+    /** Gunakan modul pertama yang diizinkan untuk role akun. */
     private function landingRoute(): string
     {
-        return Auth::user()->canAccess('dashboard') ? 'dashboard' : 'pos';
+        return Auth::user()->landingRoute();
     }
 
     public function store(Request $request)
@@ -33,7 +33,7 @@ class AuthController extends Controller
 
         // Role yang tidak ada di master (sisa role lama atau role terhapus) ditolak eksplisit,
         // bukan dibiarkan lolos lalu 403 di setiap halaman.
-        if (! $request->user()->roleDefinition()) {
+        if (! $request->user()->roleDefinition() || empty($request->user()->menu())) {
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();

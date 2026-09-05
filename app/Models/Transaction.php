@@ -31,7 +31,7 @@ class Transaction extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->withTrashed();
     }
 
     public function store()
@@ -46,6 +46,6 @@ class Transaction extends Model
 
     public function voidAuthorizer()
     {
-        return $this->belongsTo(User::class, 'void_authorized_by');
+        return $this->belongsTo(User::class, 'void_authorized_by')->withTrashed();
     }
 }

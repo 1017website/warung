@@ -202,6 +202,15 @@ class User extends Authenticatable
         return (bool) $this->roleDefinition()?->can_see_non_real;
     }
 
+    /** First permitted module, including custom roles without dashboard/POS access. */
+    public function landingRoute(): string
+    {
+        $menu = $this->menu();
+        abort_if(empty($menu), 403, 'Akun belum memiliki akses modul. Hubungi Superadmin.');
+
+        return $menu[0][0];
+    }
+
     public function roleLabel(): string
     {
         return $this->roleDefinition()?->name ?? str_replace('_', ' ', (string) $this->role);

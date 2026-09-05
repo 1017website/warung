@@ -14,7 +14,7 @@ Route::post('/login', [AuthController::class, 'store'])->middleware('throttle:10
 Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/', fn () => redirect()->route(auth()->user()->canAccess('dashboard') ? 'dashboard' : 'pos'));
+    Route::get('/', fn () => redirect()->route(auth()->user()->landingRoute()));
     Route::post('/switch-store', [WarungController::class, 'switchStore'])->name('stores.switch');
 
     Route::middleware('module:dashboard')->group(function () {
@@ -31,14 +31,16 @@ Route::middleware('auth')->group(function () {
         Route::post('/kasir/tutup-harian', [WarungController::class, 'storeCashierClosing'])->middleware('throttle:10,1')->name('pos.close.store');
     });
 
+    // Read-only POS dependencies remain available to custom cashier roles.
+    Route::get('/transaksi/{transaction}/print', [WarungController::class, 'print'])->middleware('module:transactions,pos,reports')->name('transactions.print');
+    Route::get('/member/find/{code}', [WarungController::class, 'findMember'])->middleware('module:members,pos')->name('members.find');
+
     Route::middleware('module:transactions')->group(function () {
         Route::get('/transaksi', [WarungController::class, 'transactions'])->name('transactions');
-        Route::get('/transaksi/{transaction}/print', [WarungController::class, 'print'])->name('transactions.print');
         Route::delete('/transaksi/{transaction}', [WarungController::class, 'destroyTransaction'])->name('transactions.destroy');
     });
 
     Route::middleware('module:members')->group(function () {
-        Route::get('/member/find/{code}', [WarungController::class, 'findMember'])->name('members.find');
         Route::get('/member/card/{code}', [WarungController::class, 'findAvailableMemberCard'])->name('members.card');
         Route::get('/member', [WarungController::class, 'members'])->name('members');
         Route::get('/member/export', [WarungController::class, 'exportMembers'])->name('members.export');

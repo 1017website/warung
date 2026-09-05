@@ -28,11 +28,11 @@ class CashierClosing extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->withTrashed();
     }
 
     public function authorizer()
     {
-        return $this->belongsTo(User::class, 'authorized_by');
+        return $this->belongsTo(User::class, 'authorized_by')->withTrashed();
     }
 }

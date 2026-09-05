@@ -13,9 +13,9 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class EnsureModuleAccess
 {
-    public function handle(Request $request, Closure $next, string $module): Response
+    public function handle(Request $request, Closure $next, string ...$modules): Response
     {
-        abort_unless($request->user() && $request->user()->canAccess($module), 403);
+        abort_unless($request->user() && collect($modules)->contains(fn ($module) => $request->user()->canAccess($module)), 403);
 
         return $next($request);
     }

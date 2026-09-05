@@ -47,7 +47,7 @@ class WarungController extends Controller
             'stock_date' => $stockDate,
         ];
 
-        if ($stock = DailyMenuStock::where($attributes)->first()) {
+        if ($stock = DailyMenuStock::where($attributes)->lockForUpdate()->first()) {
             return $stock;
         }
 
@@ -363,7 +363,7 @@ class WarungController extends Controller
     {
         return $request->validate([
             'items' => ['required', 'array', 'min:1'],
-            'items.*.id' => ['nullable', 'integer'],
+            'items.*.id' => ['nullable', 'integer', 'distinct'],
             'items.*.qty' => ['required', 'numeric', 'min:0.001'],
             'items.*.name' => ['nullable', 'string', 'max:120'],
             'items.*.price' => ['nullable', 'numeric', 'min:0'],
@@ -391,7 +391,8 @@ class WarungController extends Controller
     {
         $allowCustom = (bool) $this->activeStoreRecord()->allow_custom_amount;
 
-        return collect($data['items'])->map(function ($line) use ($data, $checkStock, $allowCustom) {
+        // Every checkout acquires product locks in the same order, regardless of cart order.
+        return collect($data['items'])->sortBy(fn ($line) => (int) ($line['id'] ?? 0))->map(function ($line) use ($data, $checkStock, $allowCustom) {
             if (empty($line['id'])) {
                 abort_unless($allowCustom && ! empty($line['name']) && isset($line['price']), 422, 'Custom amount sedang nonaktif atau datanya belum lengkap.');
 
@@ -402,9 +403,10 @@ class WarungController extends Controller
                 ];
             }
 
-            $product = Product::with('category')->where('tenant_id', $this->tenantId())->where('product_type', 'menu')->lockForUpdate()->findOrFail($line['id']);
+            $product = Product::with('category')->where('tenant_id', $this->tenantId())->where('product_type', 'menu')->where('is_active', true)->lockForUpdate()->findOrFail($line['id']);
             $stock = $this->menuStockForDate($product->id);
-            $stock->refresh();
+            // A normal refresh can read an older MySQL repeatable-read snapshot.
+            $stock = DailyMenuStock::whereKey($stock->id)->lockForUpdate()->firstOrFail();
             if ($checkStock) {
                 abort_if($stock->quantity < $line['qty'], 422, "Stok {$product->name} tidak mencukupi.");
             }
@@ -467,7 +469,7 @@ class WarungController extends Controller
         $data = $this->validateOrder($request);
         $transaction = DB::transaction(function () use ($data) {
             $lines = $this->orderLines($data);
-            $member = ! empty($data['member_id']) ? Member::where('tenant_id', $this->tenantId())->lockForUpdate()->findOrFail($data['member_id']) : null;
+            $member = ! empty($data['member_id']) ? Member::where('tenant_id', $this->tenantId())->where('is_active', true)->lockForUpdate()->findOrFail($data['member_id']) : null;
             $subtotal = (float) $lines->sum('subtotal');
             [$discountType, $discountValue, $discount] = $this->discountFor($data, $subtotal, $member);
             $transactionType = $data['transaction_type'] ?? 'sale';
@@ -532,7 +534,7 @@ class WarungController extends Controller
             }
 
             return $trx;
-        });
+        }, 3);
 
         return response()->json(['ok' => true, 'invoice' => $transaction->invoice_no, 'print_url' => route('transactions.print', $transaction)]);
     }
@@ -542,7 +544,7 @@ class WarungController extends Controller
         $data = $this->validateOrder($request);
         $transaction = DB::transaction(function () use ($data) {
             $lines = $this->orderLines($data, false);
-            $member = ! empty($data['member_id']) ? Member::where('tenant_id', $this->tenantId())->findOrFail($data['member_id']) : null;
+            $member = ! empty($data['member_id']) ? Member::where('tenant_id', $this->tenantId())->where('is_active', true)->findOrFail($data['member_id']) : null;
             $subtotal = (float) $lines->sum('subtotal');
             [$discountType, $discountValue, $discount] = $this->discountFor($data, $subtotal, $member);
             $trx = null;
@@ -572,7 +574,7 @@ class WarungController extends Controller
             }
 
             return $trx;
-        });
+        }, 3);
 
         return response()->json(['ok' => true, 'invoice' => $transaction->invoice_no]);
     }
@@ -880,19 +882,22 @@ class WarungController extends Controller
     public function adjustStock(Request $request)
     {
         $data = $request->validate(['product_id' => 'required|integer', 'type' => ['required', Rule::in(['adjustment_in', 'adjustment_out', 'consumption'])], 'quantity' => 'required|numeric|min:0.001', 'notes' => 'required|string|max:255']);
-        $product = Product::where('tenant_id', $this->tenantId())->findOrFail($data['product_id']);
-        $stock = $product->product_type === 'menu'
-            ? $this->menuStockForDate($product->id)
-            : ProductStock::firstOrCreate(['tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id], ['quantity' => 0]);
-        $positive = $data['type'] === 'adjustment_in';
-        $delta = $positive ? $data['quantity'] : -$data['quantity'];
-        abort_if($stock->quantity + $delta < 0, 422, 'Stok tidak boleh menjadi negatif.');
-        $stock->increment('quantity', $delta);
-        DB::table('stock_movements')->insert([
-            'tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id, 'user_id' => auth()->id(),
-            'type' => $positive ? 'adjustment_in' : 'adjustment_out', 'activity' => $data['type'] === 'consumption' ? 'consumption' : 'adjustment',
-            'quantity' => $delta, 'notes' => $data['notes'], 'created_at' => now(), 'updated_at' => now(),
-        ]);
+        DB::transaction(function () use ($data) {
+            $product = Product::where('tenant_id', $this->tenantId())->lockForUpdate()->findOrFail($data['product_id']);
+            $stock = $product->product_type === 'menu'
+                ? $this->menuStockForDate($product->id)
+                : ProductStock::firstOrCreate(['tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id], ['quantity' => 0]);
+            $stock = $stock->newQuery()->whereKey($stock->id)->lockForUpdate()->firstOrFail();
+            $positive = $data['type'] === 'adjustment_in';
+            $delta = $positive ? $data['quantity'] : -$data['quantity'];
+            abort_if($stock->quantity + $delta < 0, 422, 'Stok tidak boleh menjadi negatif.');
+            $stock->increment('quantity', $delta);
+            DB::table('stock_movements')->insert([
+                'tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id, 'user_id' => auth()->id(),
+                'type' => $positive ? 'adjustment_in' : 'adjustment_out', 'activity' => $data['type'] === 'consumption' ? 'consumption' : 'adjustment',
+                'quantity' => $delta, 'notes' => $data['notes'], 'created_at' => now(), 'updated_at' => now(),
+            ]);
+        }, 3);
 
         return back()->with('success', 'Stok berhasil disesuaikan.');
     }
@@ -1397,14 +1402,15 @@ class WarungController extends Controller
     {
         abort_unless($transaction->tenant_id === $this->tenantId() && $transaction->store_id === $this->storeId(), 404);
         $data = $request->validate(['reason' => 'required|string|min:5|max:255', 'approval_pin' => 'nullable|string|max:12']);
-        abort_unless($transaction->status === 'completed', 422, 'Hanya transaksi selesai yang dapat dibatalkan.');
-        $needsApproval = $transaction->transacted_at->diffInSeconds(now()) > 30;
-        $authorizer = $needsApproval ? $this->supervisorByPin($data['approval_pin'] ?? null) : auth()->user();
-        abort_if($needsApproval && ! $authorizer, 422, 'Transaksi lebih dari 30 detik memerlukan PIN Manager/SPV yang valid.');
-
-        DB::transaction(function () use ($transaction, $data, $authorizer) {
+        DB::transaction(function () use ($transaction, $data) {
+            // Re-read after acquiring the lock: route binding may predate another refund.
+            $transaction = Transaction::whereKey($transaction->id)->lockForUpdate()->firstOrFail();
+            abort_unless($transaction->status === 'completed', 422, 'Hanya transaksi selesai yang dapat dibatalkan.');
+            $needsApproval = $transaction->transacted_at->diffInSeconds(now()) > 30;
+            $authorizer = $needsApproval ? $this->supervisorByPin($data['approval_pin'] ?? null) : auth()->user();
+            abort_if($needsApproval && ! $authorizer, 422, 'Transaksi lebih dari 30 detik memerlukan PIN Manager/SPV yang valid.');
             $transaction->load(['items', 'payments', 'member']);
-            foreach ($transaction->items as $item) {
+            foreach ($transaction->items->sortBy('product_id') as $item) {
                 if (! $item->product_id) {
                     continue;
                 }
@@ -1419,11 +1425,12 @@ class WarungController extends Controller
                 $deposit = $transaction->total;
             }
             if ($deposit > 0 && $transaction->member) {
+                $transaction->setRelation('member', Member::whereKey($transaction->member_id)->lockForUpdate()->firstOrFail());
                 $transaction->member->increment('deposit_balance', $deposit);
                 DB::table('deposit_transactions')->insert(['tenant_id' => $this->tenantId(), 'store_id' => $transaction->store_id, 'member_id' => $transaction->member->id, 'user_id' => auth()->id(), 'transaction_id' => $transaction->id, 'type' => 'credit', 'payment_method' => 'deposit', 'amount' => $deposit, 'balance_after' => $transaction->member->fresh()->deposit_balance, 'description' => 'Refund pembatalan '.$transaction->invoice_no, 'created_at' => now(), 'updated_at' => now()]);
             }
             $transaction->update(['status' => 'voided', 'cancel_reason' => $data['reason'], 'void_authorized_by' => $authorizer?->id, 'voided_at' => now()]);
-        });
+        }, 3);
 
         return back()->with('success', 'Transaksi dibatalkan, stok dan deposit terkait telah dipulihkan.');
     }
@@ -1489,7 +1496,9 @@ class WarungController extends Controller
             ? MemberCard::where('tenant_id', $this->tenantId())->where('status', 'available')->latest()->take(20)->get()
             : collect();
         $stores = ($settingPermissions['branches'] || $settingPermissions['devices'] || $canManageSystem)
-            ? Store::where('tenant_id', $this->tenantId())->orderBy('name')->get()
+            ? Store::where('tenant_id', $this->tenantId())
+                ->unless(auth()->user()->canAccessAllStores(), fn ($query) => $query->whereKey($this->storeId()))
+                ->orderBy('name')->get()
             : collect();
 
         return $this->view('settings.index', ['tenant' => auth()->user()->tenant, 'settingsStore' => $settingsStore, 'stores' => $stores, 'users' => $users, 'roles' => $roles, 'userCountPerRole' => $userCountPerRole, 'creatableRoles' => $creatableRoles, 'canManageRoles' => $canManageSystem, 'settingPermissions' => $settingPermissions, 'devices' => $devices, 'cards' => $cards]);
@@ -1660,6 +1669,7 @@ class WarungController extends Controller
             abort_unless(Store::where('tenant_id', $this->tenantId())->where('is_active', true)->whereKey($data['store_id'])->exists(), 422);
             $this->assertStoreAccess((int) $data['store_id']);
         }
+        $this->assertStoreAccess(isset($data['store_id']) ? (int) $data['store_id'] : null);
         ConnectedDevice::create($data + ['tenant_id' => $this->tenantId(), 'status' => 'active']);
 
         return back()->with('success', 'Perangkat berhasil ditambahkan.');
@@ -1669,6 +1679,7 @@ class WarungController extends Controller
     {
         abort_unless(auth()->user()->canManageSetting('devices'), 403);
         abort_unless($device->tenant_id === $this->tenantId(), 404);
+        $this->assertStoreAccess($device->store_id);
         $device->delete();
 
         return back()->with('success', 'Perangkat dilepas.');
@@ -1678,7 +1689,7 @@ class WarungController extends Controller
     {
         abort_unless(auth()->user()->canManageSetting('devices'), 403);
         abort_unless($device->tenant_id === $this->tenantId(), 404);
-        $this->assertStoreAccess($device->store_id ?: $this->storeId());
+        $this->assertStoreAccess($device->store_id);
         abort_unless(filled($device->connection), 422, 'Alamat/koneksi perangkat belum diisi.');
         $device->update(['last_tested_at' => now(), 'status' => 'active']);
 
