@@ -118,7 +118,7 @@ class August17RevisionTest extends TestCase
         $export->assertOk()->assertDownload('database-member-'.now()->format('Ymd').'.xlsx');
         $this->assertStringStartsWith('PK', $export->streamedContent());
         $this->actingAs($admin)->withSession(['store_id' => $store->id])->get('/kasir')->assertOk()->assertSeeText('Pilih bank / provider');
-        $this->actingAs($owner)->withSession(['store_id' => $store->id])->get('/pengaturan')->assertOk()->assertSeeText('Preview struk 80 mm');
+        $this->actingAs($owner)->withSession(['store_id' => $store->id])->get('/pengaturan')->assertOk()->assertSeeText('Preview struk customer 58 mm');
     }
 
     public function test_replacement_transaction_requires_manager_or_supervisor_pin(): void

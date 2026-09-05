@@ -103,7 +103,7 @@
 .inventory-live-input.is-saving,.inventory-live-notes.is-saving{opacity:.55;border-color:#91a4c7}
 .inventory-live-input.is-saved,.inventory-live-notes.is-saved{border-color:#78978a;background:#f2f7f4}
 .receipt-preview-wrap{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);display:grid;justify-items:center;gap:8px}
-.receipt-preview{width:245px;background:#fff;border:1px solid #d9dde3;box-shadow:0 8px 22px rgba(35,48,72,.08);padding:18px 15px;text-align:center;color:#1e2634;font:10px/1.5 "Courier New",monospace;display:grid;gap:3px}
+.receipt-preview{width:58mm;background:#fff;border:1px solid #d9dde3;box-shadow:0 8px 22px rgba(35,48,72,.08);padding:18px 15px;text-align:center;color:#1e2634;font:10px/1.5 "Courier New",monospace;display:grid;gap:3px}
 .receipt-preview hr{width:100%;border:0;border-top:1px dashed #707784;margin:7px 0}
 .receipt-preview-logo{width:36px;height:36px;border:1px solid #333;border-radius:6px;margin:0 auto 4px;display:grid;place-items:center;font-weight:700;overflow:hidden}
 .receipt-preview-logo img{width:100%;height:100%;object-fit:cover}

@@ -88,7 +88,49 @@ function renderCart(){const box=document.getElementById('cart-items');box.innerH
 function renderPayment(){const member=!!document.getElementById('member-id').value,replacement=document.getElementById('replacement-mode').checked;document.getElementById('deposit-field').hidden=!member||replacement;document.getElementById('provider-field').hidden=!['qris','transfer','debit'].includes(payment)||replacement;document.getElementById('paid-field').hidden=payment!=='cash'||replacement;}
 function showMemberBalance(){const option=document.getElementById('member-id').selectedOptions[0],el=document.getElementById('member-balance');if(option.value){el.style.display='block';el.textContent='Saldo deposit Rp '+money(option.dataset.balance)+' · Diskon '+Number(option.dataset.discount||0)+'%';document.getElementById('deposit-field').hidden=false;if(Number(option.dataset.discount)>0){document.getElementById('discount-type').value='member';setMoneyInputValue(document.getElementById('discount'),option.dataset.discount)}}else{el.style.display='none';setMoneyInputValue(document.getElementById('deposit-amount'),0);if(document.getElementById('discount-type').value==='member')document.getElementById('discount-type').value='amount'}renderCart()}
 function orderPayload(){const t=totals(),deposit=Math.min(moneyValue(document.getElementById('deposit-amount')),t.total),remaining=t.total-deposit,payments=[];if(deposit>0)payments.push({method:'deposit',amount:deposit});if(remaining>0){payments.push({method:payment==='deposit'?'cash':payment,provider:document.getElementById('payment-provider').value.trim()||null,amount:(payment==='cash'&&deposit<t.total)?Math.max(remaining,moneyValue(document.getElementById('paid-amount'))):remaining})}return{items:[...cart.values()].map(i=>({id:i.id,qty:i.qty,name:i.custom?i.name:null,price:i.custom?i.price:null})),member_id:document.getElementById('member-id').value||null,discount_type:t.type,discount_value:t.value,payments,service_type:serviceType,table_number:serviceType==='dine_in'?document.getElementById('table-number').value.trim():null,online_platform:serviceType==='online'?document.getElementById('online-platform').value:null,pending_transaction_id:pendingId,transaction_type:document.getElementById('replacement-mode').checked?'replacement':'sale',approval_pin:document.getElementById('approval-pin').value||null}}
-async function submitOrder(url,hold=false){if(!cart.size)return alert('Tambahkan produk ke keranjang.');if(!hold&&payment==='deposit'&&!document.getElementById('member-id').value)return alert('Pilih atau scan member untuk pembayaran deposit.');const payload=orderPayload();if(serviceType==='dine_in'&&!payload.table_number)return alert('Masukkan nomor meja.');if(serviceType==='online'&&!payload.online_platform)return alert('Pilih platform online.');const providerPayment=payload.payments.find(p=>['qris','transfer','debit'].includes(p.method));if(!hold&&providerPayment&&!providerPayment.provider)return alert('Isi bank/provider penerima.');const btn=hold?document.getElementById('hold-btn'):document.getElementById('checkout-btn');btn.disabled=true;try{const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content},body:JSON.stringify(payload)}),data=await response.json();if(!response.ok)throw new Error(data.message||Object.values(data.errors||{})[0]?.[0]||'Transaksi gagal.');if(data.print_url)window.open(data.print_url,'_blank','width=420,height=720');alert((hold?'Bill ':'Transaksi ')+data.invoice+' berhasil.');location.reload()}catch(error){alert(error.message)}finally{btn.disabled=false}}
+async function submitOrder(url, hold = false) {
+    if (!cart.size) return alert('Tambahkan produk ke keranjang.');
+    if (!hold && payment === 'deposit' && !document.getElementById('member-id').value) return alert('Pilih atau scan member untuk pembayaran deposit.');
+    const payload = orderPayload();
+    if (serviceType === 'dine_in' && !payload.table_number) return alert('Masukkan nomor meja.');
+    if (serviceType === 'online' && !payload.online_platform) return alert('Pilih platform online.');
+    const providerPayment = payload.payments.find(p => ['qris', 'transfer', 'debit'].includes(p.method));
+    if (!hold && providerPayment && !providerPayment.provider) return alert('Isi bank/provider penerima.');
+    const btn = hold ? document.getElementById('hold-btn') : document.getElementById('checkout-btn');
+    btn.disabled = true;
+    // Open during the click gesture so the payment request does not trigger a popup blocker.
+    const printWindow = hold ? null : window.open('about:blank', '_blank', 'width=420,height=720');
+    if (printWindow) printWindow.document.body.textContent = 'Menyiapkan struk…';
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content},
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || Object.values(data.errors || {})[0]?.[0] || 'Transaksi gagal.');
+        if (data.print_url) {
+            const printUrl = new URL(data.print_url, location.origin);
+            printUrl.searchParams.set('autoprint', '1');
+            if (printWindow && !printWindow.closed) {
+                printWindow.location.replace(printUrl.href);
+            } else {
+                // Payment is saved: show its receipt here when the popup was blocked or closed.
+                location.assign(printUrl.href);
+                return;
+            }
+        } else if (printWindow) {
+            printWindow.close();
+        }
+        if (hold) alert('Bill ' + data.invoice + ' berhasil.');
+        location.reload();
+    } catch (error) {
+        if (printWindow && !printWindow.closed) printWindow.close();
+        alert(error.message);
+    } finally {
+        btn.disabled = false;
+    }
+}
 document.getElementById('checkout-btn').addEventListener('click',()=>submitOrder('{{ route('pos.checkout') }}'));document.getElementById('hold-btn').addEventListener('click',()=>submitOrder('{{ route('pos.pending') }}',true));
 function loadPending(id){const bill=pendingBills.find(row=>row.id===id);cart.clear();bill.items.forEach((item,index)=>{const p=item.id?byId(item.id):null,key=item.id?'p'+item.id:'pending'+index;cart.set(key,{key,id:item.id,name:item.name,price:item.price,qty:item.qty,stock:p?.stock||999999,unit:p?.unit||'item',step:p?.step||1,increment:p?.increment||1,custom:item.custom})});pendingId=bill.id;document.getElementById('bill-title').textContent='Lanjutkan open bill';document.getElementById('bill-reference').textContent=bill.invoice;document.getElementById('member-id').value=bill.member_id||'';document.getElementById('discount-type').value=bill.discount_type||'amount';setMoneyInputValue(document.getElementById('discount'),bill.discount_value||0);document.getElementById('table-number').value=bill.table_number||'';document.getElementById('online-platform').value=bill.online_platform||'';document.querySelector(`.service-option[data-service="${bill.service_type}"]`).click();showMemberBalance();closeModal('pending-modal');renderCart()}
 async function findMember(code){if(!code)return;const status=document.getElementById('scanner-status');status.textContent='Mencari member…';try{const r=await fetch('/member/find/'+encodeURIComponent(code),{headers:{Accept:'application/json'}});if(!r.ok)throw new Error();const m=await r.json();document.getElementById('member-id').value=m.id;showMemberBalance();stopScanner();alert('Member '+m.name+' ditemukan.')}catch(e){status.textContent='Member tidak ditemukan.'}}
