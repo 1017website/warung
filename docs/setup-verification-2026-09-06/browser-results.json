@@ -1,0 +1,81 @@
+{
+  "renders": [
+    {
+      "step": 1,
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "step": 1,
+      "width": 1024,
+      "passed": true
+    },
+    {
+      "step": 1,
+      "width": 768,
+      "passed": true
+    },
+    {
+      "step": 1,
+      "width": 390,
+      "passed": true
+    },
+    {
+      "step": 1,
+      "width": 360,
+      "passed": true
+    },
+    {
+      "step": 2,
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "step": 2,
+      "width": 1024,
+      "passed": true
+    },
+    {
+      "step": 2,
+      "width": 768,
+      "passed": true
+    },
+    {
+      "step": 2,
+      "width": 390,
+      "passed": true
+    },
+    {
+      "step": 2,
+      "width": 360,
+      "passed": true
+    },
+    {
+      "step": 3,
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "step": 3,
+      "width": 1024,
+      "passed": true
+    },
+    {
+      "step": 3,
+      "width": 768,
+      "passed": true
+    },
+    {
+      "step": 3,
+      "width": 390,
+      "passed": true
+    },
+    {
+      "step": 3,
+      "width": 360,
+      "passed": true
+    }
+  ],
+  "flow": "login ? identity ? reload/resume ? product ? finish ? dashboard ? POS",
+  "errors": []
+}

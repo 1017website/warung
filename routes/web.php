@@ -14,6 +14,11 @@ Route::post('/login', [AuthController::class, 'store'])->middleware('throttle:10
 Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/setup', [\App\Http\Controllers\SetupController::class, 'show'])->name('setup');
+    Route::post('/setup', [\App\Http\Controllers\SetupController::class, 'save'])->name('setup.save');
+});
+
+Route::middleware(['auth', \App\Http\Middleware\EnsureInitialSetup::class])->group(function () {
     Route::get('/', fn () => redirect()->route(auth()->user()->landingRoute()));
     Route::post('/switch-store', [WarungController::class, 'switchStore'])->name('stores.switch');
 

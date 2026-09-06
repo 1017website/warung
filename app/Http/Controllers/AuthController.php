@@ -19,6 +19,9 @@ class AuthController extends Controller
     /** Gunakan modul pertama yang diizinkan untuk role akun. */
     private function landingRoute(): string
     {
+        if (app(\App\Services\InitialSetup::class)->required(Auth::user())) {
+            return 'setup';
+        }
         return Auth::user()->landingRoute();
     }
 
@@ -33,7 +36,8 @@ class AuthController extends Controller
 
         // Role yang tidak ada di master (sisa role lama atau role terhapus) ditolak eksplisit,
         // bukan dibiarkan lolos lalu 403 di setiap halaman.
-        if (! $request->user()->roleDefinition() || empty($request->user()->menu())) {
+        $needsSetup = app(\App\Services\InitialSetup::class)->required($request->user());
+        if (! $needsSetup && (! $request->user()->roleDefinition() || empty($request->user()->menu()))) {
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -43,6 +47,11 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
         $request->session()->put('store_id', $request->user()->store_id);
+
+        if ($needsSetup) {
+            $request->session()->forget('url.intended');
+            return redirect()->route('setup');
+        }
 
         return redirect()->intended(route($this->landingRoute()));
     }
