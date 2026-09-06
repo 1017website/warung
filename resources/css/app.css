@@ -283,7 +283,6 @@ input:focus, select:focus, textarea:focus { border-color: #8094bc; box-shadow: 0
 .login-card > p { color: var(--muted); font-size: 13px; margin: 0 0 30px; }
 .login-card .field { margin-bottom: 15px; }
 .login-card .btn { width: 100%; margin-top: 9px; min-height: 48px; }
-.demo-box { margin-top: 20px; background: #edf1f8; border-radius: 11px; padding: 12px 14px; color: #56647e; font-size: 11px; line-height: 1.6; }
 
 .mobile-nav { display: none; }
 .pagination { margin-top: 16px; display: flex; justify-content: flex-end; }
@@ -422,7 +421,5 @@ input:focus, select:focus, textarea:focus { border-color: #8094bc; box-shadow: 0
 .membership-steps .service-option{cursor:default;justify-content:flex-start;gap:10px}
 .membership-steps .service-option b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#476c5c;color:#fff}
 #member-data-fields:disabled{opacity:.5}
-.demo-account{border:1px solid #d8e1dc;background:#fff;border-radius:8px;padding:6px 9px;text-align:left;color:#35564a;cursor:pointer;font:inherit;font-size:12px}
-.demo-account:hover{background:#edf5f0;border-color:#88a89a}
 .qty input{border:1px solid #d7dfda;border-radius:7px;padding:3px 5px}
 @media(max-width:720px){.membership-steps{grid-template-columns:1fr 1fr}}
