@@ -6,6 +6,10 @@ Cabang: Cabang akun. Pemegang otorisasi: tidak. Edit stok awal: ya.
 
 Ikuti cabang akun; gunakan sidebar desktop atau navigasi bawah mobile. Tombol Keluar mobile berada pada baris akun di bawah header. Screenshot menggunakan data demo setelah perbaikan.
 
+## Setup awal (wizard)
+
+Pada instalasi baru, halaman Warung belum siap digunakan muncul sampai Developer atau Superadmin menyelesaikan wizard Setup awal. Masuk kembali setelah setup selesai.
+
 ## Kasir dan tutup kasir
 
 Mencatat pesanan, menerima pembayaran, melanjutkan open bill, mencetak struk, dan melakukan rekonsiliasi kas harian.

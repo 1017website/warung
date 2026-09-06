@@ -6,6 +6,53 @@ Cabang: Seluruh cabang. Pemegang otorisasi: ya. Edit stok awal: ya.
 
 Ikuti cabang akun; gunakan sidebar desktop atau navigasi bawah mobile. Tombol Keluar mobile berada pada baris akun di bawah header. Screenshot menggunakan data demo setelah perbaikan.
 
+## Setup awal (wizard)
+
+Menyiapkan usaha, cabang pertama, menu perdana, dan hak akses bawaan sebelum aplikasi dipakai berjualan. Wizard hanya tampil selama data awal belum lengkap.
+
+Wizard aktif bila tenant belum ada, kolom setup_step tenant belum kosong, belum ada cabang aktif, atau belum ada role pada tenant. Selama itu seluruh URL lain dialihkan ke /setup dan permintaan JSON dijawab kode 409 beserta alamat pengalihan, sehingga tidak ada menu yang bisa dilewati.
+
+![Langkah 1 setup awal](../setup-verification-2026-09-06/step-1-768.png)
+![Langkah 2 setup awal](../setup-verification-2026-09-06/step-2-768.png)
+![Langkah 3 setup awal](../setup-verification-2026-09-06/step-3-768.png)
+
+### Langkah 1 - Usaha dan cabang
+
+1. Masuk memakai akun Developer atau Superadmin. Role lain hanya melihat halaman "Warung belum siap digunakan" dan permintaan simpannya ditolak 403.
+2. Isi nama usaha. Nama ini menaungi seluruh cabang dan dipakai sebagai identitas usaha pada cabang pertama.
+3. Isi nama cabang pertama beserta alamatnya. Nomor telepon boleh dikosongkan.
+4. Isi diskon member 0 sampai 100 persen. Isi 0 bila belum memakai diskon member; nilainya dapat diubah kemudian melalui Pengaturan.
+5. Isi pesan penutup struk bila perlu, lalu klik Simpan dan lanjutkan.
+6. Sistem membuat usaha, cabang aktif pertama, dan tujuh role bawaan; akun Anda diikat ke cabang tersebut. Role bawaan yang pernah diarsipkan dipulihkan, sedangkan role yang sudah disesuaikan tidak ditimpa.
+
+### Langkah 2 - Menu pertama
+
+1. Isi kategori menu, misalnya Makanan. Kategori yang sudah ada dipakai ulang, dan kategori yang diarsipkan dipulihkan.
+2. Isi nama menu, harga jual minimal Rp1, dan satuan seperti porsi atau gram.
+3. Isi stok siap jual hari ini, minimal 0,001 dan maksimal tiga angka di belakang koma. Isi jumlah yang benar-benar tersedia.
+4. Klik Simpan dan periksa kesiapan. Menu dibuat sebagai produk jenis menu dengan SKU otomatis berawalan MENU-, stok harian tercatat untuk tanggal hari ini, dan pergerakan stok masuk tersimpan dengan referensi SETUP.
+5. Menu berikutnya, bahan baku, dan stok produksi tidak dimasukkan di sini. Tambahkan melalui Produk dan Gudang setelah setup selesai.
+
+### Langkah 3 - Periksa dan selesaikan
+
+1. Periksa rangkuman usaha, cabang, hak akses, dan daftar menu siap jual beserta harga dan satuannya.
+2. Centang pernyataan kesiapan. Tanpa centang, sistem menolak dengan pesan agar pernyataan kesiapan dicentang lebih dulu.
+3. Klik Selesai dan masuk POS Warung. Sistem memeriksa ulang bahwa ada menu aktif berharga di atas nol serta hak akses akun sudah terbaca sebelum setup ditutup.
+4. Setelah setup ditutup, halaman /setup mengalihkan ke menu pertama akun Anda dan wizard tidak muncul lagi.
+
+### Melanjutkan setup yang terputus
+
+1. Progres tersimpan pada setiap langkah. Menutup browser atau keluar tidak mengulang dari awal; setelah masuk kembali wizard melanjutkan pada langkah terakhir.
+2. Mengirim ulang formulir yang sama atau memakai tab lama tidak menggandakan data. Langkah yang sudah selesai diabaikan sistem.
+3. Data tidak disimpan sebagian ketika ada isian yang salah. Perbaiki isian yang ditandai lalu simpan ulang.
+4. Bila cabang aktif tidak ditemukan saat langkah 2, wizard kembali ke langkah 1 disertai pesan agar data usaha dan cabang dilengkapi lagi.
+
+Hasil: Usaha, cabang pertama, tujuh role bawaan, satu menu siap jual, dan stok hari pertama tersimpan. Kolom setup_step dikosongkan sehingga seluruh menu sesuai hak akses terbuka dan kasir dapat mulai berjualan.
+
+- Wizard hanya menyiapkan data minimum. Cabang tambahan, akun staf, bahan baku, perangkat, dan tampilan struk diatur setelahnya melalui Pengaturan, Produk, dan Gudang.
+- Akun bukan Developer atau Superadmin tidak dapat menyelesaikan setup. Minta pengelola sistem menyelesaikannya lebih dulu, lalu masuk kembali.
+- Pesan kesalahan wizard tampil dalam Bahasa Indonesia, misalnya Kolom nama usaha wajib diisi.
+
 ## Ringkasan
 
 Memantau kondisi cabang hari ini melalui penjualan, rata-rata transaksi, pengeluaran, stok rendah, tren tujuh hari, dan transaksi terbaru.

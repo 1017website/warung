@@ -82,6 +82,50 @@ class InitialSetupTest extends TestCase
         $this->assertDatabaseHas('tenants', ['setup_step'=>2]);
     }
 
+    public function test_validation_errors_are_readable_indonesian_not_raw_keys(): void
+    {
+        $this->actingAs($this->admin())->from('/setup')->post('/setup', ['step' => 1]);
+        $messages = session('errors')->all();
+        $this->assertNotEmpty($messages);
+        $this->assertEmpty(array_filter($messages, fn ($message) => str_starts_with($message, 'validation.')));
+        $this->get('/setup')->assertOk()->assertSee('Kolom nama usaha wajib diisi.');
+    }
+
+    public function test_step_one_restores_soft_deleted_default_roles(): void
+    {
+        $user = $this->admin();
+        $this->actingAs($user)->post('/setup', $this->identity());
+        $tenant = Tenant::whereKey($user->fresh()->tenant_id)->firstOrFail();
+        Role::where('tenant_id', $tenant->id)->delete();
+        $tenant->update(['setup_step' => 1]);
+        $this->post('/setup', $this->identity())->assertRedirect('/setup');
+        $this->assertSame(7, Role::where('tenant_id', $tenant->id)->count());
+        $this->assertSame(7, Role::withTrashed()->where('tenant_id', $tenant->id)->count());
+    }
+
+    public function test_step_two_recovers_from_a_stale_store_reference(): void
+    {
+        $user = $this->admin();
+        $this->actingAs($user)->post('/setup', $this->identity());
+        $store = Store::where('tenant_id', $user->fresh()->tenant_id)->firstOrFail();
+        $user->fresh()->update(['store_id' => null]);
+        $this->post('/setup', $this->product())->assertRedirect('/setup');
+        $this->assertSame($store->id, $user->fresh()->store_id);
+        $this->assertDatabaseHas('daily_menu_stocks', ['store_id' => $store->id, 'quantity' => 12.5]);
+    }
+
+    public function test_step_two_without_an_active_branch_returns_to_step_one(): void
+    {
+        $user = $this->admin();
+        $this->actingAs($user)->post('/setup', $this->identity());
+        $tenant = Tenant::whereKey($user->fresh()->tenant_id)->firstOrFail();
+        Store::where('tenant_id', $tenant->id)->update(['is_active' => false]);
+        $this->post('/setup', $this->product())->assertRedirect('/setup')->assertSessionHasErrors('setup');
+        $this->assertDatabaseCount('products', 0);
+        $this->assertSame(1, (int) $tenant->fresh()->setup_step);
+        $this->get('/setup')->assertOk()->assertSee('Identitas usaha');
+    }
+
     public function test_existing_configured_business_is_not_forced_through_setup(): void
     {
         $tenant = Tenant::create(['name'=>'Existing', 'slug'=>'existing']);

@@ -29,7 +29,8 @@ class SetupController extends Controller
         abort_unless($request->user()->canManageSystem(), 403);
         $request->validate(['step' => ['required', 'integer', 'between:1,3']]);
 
-        DB::transaction(function () use ($request, $setup) {
+        $bounced = null;
+        DB::transaction(function () use ($request, $setup, &$bounced) {
             $user = User::whereKey($request->user()->id)->lockForUpdate()->firstOrFail();
             $tenant = Tenant::whereKey($user->tenant_id)->lockForUpdate()->first();
             if (! $setup->required($user)) {
@@ -61,8 +62,11 @@ class SetupController extends Controller
                     $store = Store::create($values + ['tenant_id' => $tenant->id, 'code' => 'CB-'.Str::upper(Str::random(8)), 'is_active' => true]);
                 }
                 // Only supply missing defaults; existing role customizations are preserved.
+                // A soft-deleted default is restored, otherwise firstOrCreate would keep
+                // matching the trashed row and setup could never satisfy InitialSetup.
                 foreach (Role::DEFAULTS as $position => $role) {
-                    Role::withTrashed()->firstOrCreate(['tenant_id' => $tenant->id, 'key' => $role['key']], $role + ['position' => $position]);
+                    $definition = Role::withTrashed()->firstOrCreate(['tenant_id' => $tenant->id, 'key' => $role['key']], $role + ['position' => $position]);
+                    if ($definition->trashed()) $definition->restore();
                 }
                 $user->update(['tenant_id' => $tenant->id, 'store_id' => $store->id]);
                 $request->session()->put('store_id', $store->id);
@@ -74,7 +78,22 @@ class SetupController extends Controller
                     'selling_price' => ['required', 'numeric', 'min:1', 'max:999999999999'],
                     'quantity' => ['required', 'numeric', 'min:0.001', 'max:999999999', 'decimal:0,3'],
                 ]);
-                $store = Store::where('tenant_id', $tenant->id)->whereKey($user->store_id)->where('is_active', true)->firstOrFail();
+                // A stale store_id (account created before setup, branch deactivated)
+                // must not turn the wizard into a 404; fall back to the branch the
+                // review screen already shows, and rebind the account to it.
+                $stores = Store::where('tenant_id', $tenant->id)->where('is_active', true);
+                $store = (clone $stores)->whereKey($user->store_id)->first() ?: $stores->first();
+                if (! $store) {
+                    // Without a branch the menu has nowhere to live; send the wizard back
+                    // to step 1 instead of leaving it stuck on a form that cannot save.
+                    $tenant->update(['setup_step' => 1]);
+                    $bounced = 'Cabang aktif tidak ditemukan. Lengkapi kembali data usaha dan cabang.';
+                    return;
+                }
+                if ($user->store_id !== $store->id) {
+                    $user->update(['store_id' => $store->id]);
+                    $request->session()->put('store_id', $store->id);
+                }
                 $category = Category::withTrashed()->firstOrCreate(['tenant_id' => $tenant->id, 'name' => $data['category']]);
                 if ($category->trashed()) $category->restore();
                 $product = Product::create(['tenant_id' => $tenant->id, 'category_id' => $category->id, 'sku' => 'MENU-'.Str::upper(Str::random(12)), 'name' => $data['product_name'], 'product_type' => 'menu', 'unit' => $data['unit'], 'selling_price' => $data['selling_price'], 'online_selling_price' => $data['selling_price'], 'is_active' => true]);
@@ -90,8 +109,8 @@ class SetupController extends Controller
             }
         });
         $request->user()->refresh()->forgetRoleDefinition();
-        return redirect()->route('setup');
+        return $bounced
+            ? redirect()->route('setup')->withErrors(['setup' => $bounced])
+            : redirect()->route('setup');
     }
 }
-
-

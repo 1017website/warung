@@ -6,6 +6,10 @@ Cabang: Seluruh cabang. Pemegang otorisasi: ya. Edit stok awal: ya.
 
 Ikuti cabang akun; gunakan sidebar desktop atau navigasi bawah mobile. Tombol Keluar mobile berada pada baris akun di bawah header. Screenshot menggunakan data demo setelah perbaikan.
 
+## Setup awal (wizard)
+
+Pada instalasi baru, halaman Warung belum siap digunakan muncul sampai Developer atau Superadmin menyelesaikan wizard Setup awal. Masuk kembali setelah setup selesai.
+
 ## Ringkasan
 
 Memantau kondisi cabang hari ini melalui penjualan, rata-rata transaksi, pengeluaran, stok rendah, tren tujuh hari, dan transaksi terbaru.
