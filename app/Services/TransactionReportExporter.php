@@ -134,7 +134,7 @@ class TransactionReportExporter
             ->setCreator($tenant->name)
             ->setTitle('Laporan transaksi '.$store->name)
             ->setSubject('Laporan '.($type === 'non_real' ? 'non-riil' : 'riil'))
-            ->setDescription('Laporan transaksi dan pengeluaran WarungKita');
+            ->setDescription('Laporan transaksi dan pengeluaran POS Warung');
 
         $summary = $spreadsheet->getActiveSheet();
         $summary->setTitle('Ringkasan');

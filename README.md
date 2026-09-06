@@ -1,4 +1,4 @@
-# WarungKita — POS Multi Warung
+# POS Warung — POS Multi Warung
 
 Sistem operasional warung makan berbasis Laravel 12 dan MySQL. Mencakup kasir, menu, stok gudang, pembelian, pengeluaran, membership deposit dengan QR, laporan riil/non-riil otomatis, multi-cabang, role pengguna, branding, soft delete, dan cetak POS 80 mm.
 

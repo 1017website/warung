@@ -24,7 +24,7 @@
             </span>
             <span class="brand-copy">
                 <span class="brand-name">{{ $activeStore?->brandName() ?? auth()->user()->tenant->name }}</span>
-                <span class="brand-sub">Warung OS</span>
+                <span class="brand-sub">POS Warung</span>
             </span>
         </a>
         <div class="nav-label">Operasional</div>

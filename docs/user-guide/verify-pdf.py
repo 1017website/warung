@@ -10,7 +10,7 @@ for file in sorted((root / 'pdf').glob('*.pdf')):
     reader = PdfReader(file)
     texts = [page.extract_text() or '' for page in reader.pages]
     assert len(reader.pages) > 5, file
-    assert all('WarungKita' in text for text in texts), file
+    assert all('POS Warung' in text for text in texts), file
     assert 'Jika proses tidak berhasil' in texts[-1], file
     images = sum(len(page.images) for page in reader.pages)
     assert images > 0, file
