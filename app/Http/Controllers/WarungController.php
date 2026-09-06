@@ -1503,7 +1503,8 @@ class WarungController extends Controller
 
     private function roles()
     {
-        return Role::where('tenant_id', $this->tenantId())->orderBy('position')->orderBy('name')->get();
+        return Role::where('tenant_id', $this->tenantId())->where('key', '!=', User::DEVELOPER)
+            ->orderBy('position')->orderBy('name')->get();
     }
 
     public function settings()
@@ -1512,11 +1513,11 @@ class WarungController extends Controller
         $settingPermissions = collect(array_keys(Role::SETTINGS_PERMISSIONS))
             ->mapWithKeys(fn ($permission) => [$permission => auth()->user()->canManageSetting($permission)]);
         $users = $canManageSystem
-            ? User::withTrashed()->where('tenant_id', $this->tenantId())->orderBy('name')->get()
+            ? User::withTrashed()->where('tenant_id', $this->tenantId())->where('role', '!=', User::DEVELOPER)->orderBy('name')->get()
             : collect();
         $roles = $canManageSystem ? $this->roles() : collect();
         $userCountPerRole = $canManageSystem
-            ? User::where('tenant_id', $this->tenantId())->selectRaw('role, count(*) as total')->groupBy('role')->pluck('total', 'role')
+            ? User::where('tenant_id', $this->tenantId())->where('role', '!=', User::DEVELOPER)->selectRaw('role, count(*) as total')->groupBy('role')->pluck('total', 'role')
             : collect();
         // Developer/Superadmin dapat membuat akun, tetapi tidak dapat menugaskan role sistem.
         $creatableRoles = $canManageSystem

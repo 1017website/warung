@@ -268,6 +268,37 @@ class RoleMasterTest extends TestCase
             ->assertSeeText('Master role & hak akses menu', false)
             ->assertSeeText('Tambah role')
             ->assertSee('name="modules[]"', false)
-            ->assertViewHas('roles', fn ($roles) => $roles->count() === 7);
+            ->assertViewHas('roles', fn ($roles) => $roles->count() === 6 && ! $roles->contains('key', User::DEVELOPER));
+    }
+
+    public function test_developer_accounts_and_role_are_hidden_from_user_management_for_all_admins(): void
+    {
+        ['tenant' => $tenant, 'store' => $store, 'superadmin' => $superadmin] = $this->setupWarung();
+        $developer = User::create([
+            'tenant_id' => $tenant->id, 'store_id' => $store->id, 'name' => 'Developer Internal',
+            'email' => 'hidden-developer@master.test', 'role' => User::DEVELOPER,
+            'is_active' => true, 'password' => 'password',
+        ]);
+        $archived = User::create([
+            'tenant_id' => $tenant->id, 'store_id' => $store->id, 'name' => 'Developer Archived',
+            'email' => 'archived-developer@master.test', 'role' => User::DEVELOPER,
+            'is_active' => false, 'password' => 'password',
+        ]);
+        $archived->delete();
+        foreach ([$superadmin, $developer] as $viewer) {
+            $this->actingAs($viewer)->get('/pengaturan')->assertOk()
+                ->assertViewHas('users', fn ($users) => ! $users->contains('role', User::DEVELOPER) && $users->contains('id', $superadmin->id))
+                ->assertViewHas('roles', fn ($roles) => ! $roles->contains('key', User::DEVELOPER))
+                ->assertViewHas('userCountPerRole', fn ($counts) => ! $counts->has(User::DEVELOPER))
+                ->assertViewHas('creatableRoles', fn ($roles) => ! $roles->has(User::DEVELOPER))
+                ->assertDontSee('hidden-developer@master.test')
+                ->assertDontSee('archived-developer@master.test');
+        }
+        $this->actingAs($developer)->get('/dashboard')->assertOk();
+        $this->assertTrue($developer->canRunMaintenance());
+        $this->assertTrue($developer->canSeeNonRealReport());
+        $this->assertCount(10, $developer->menu());
+        $this->actingAs($superadmin)->patch('/pengaturan/pengguna/'.$developer->id.'/status', ['is_active' => 0])->assertForbidden();
+        $this->assertDatabaseHas('users', ['id' => $developer->id, 'role' => User::DEVELOPER, 'is_active' => true, 'deleted_at' => null]);
     }
 }
