@@ -1,0 +1,466 @@
+{
+  "fixture": {
+    "tenant": 140,
+    "store": 172,
+    "other": 173,
+    "user": 183,
+    "emails": {
+      "superadmin": "superadmin@load-20260906080346-88fbff.test",
+      "cashier": "cashier@load-20260906080346-88fbff.test",
+      "head_ops": "head_ops@load-20260906080346-88fbff.test"
+    },
+    "products": {
+      "stock": 66,
+      "deposit": 67,
+      "void": 68,
+      "adjust": 69,
+      "reverse_a": 70,
+      "reverse_b": 71
+    },
+    "member": 16,
+    "transaction": 28
+  },
+  "scenarios": [
+    {
+      "name": "stock",
+      "responses": [
+        {
+          "status": 200,
+          "ms": 545,
+          "message": ""
+        },
+        {
+          "status": 422,
+          "ms": 629,
+          "message": "Stok Audit stock tidak mencukupi."
+        },
+        {
+          "status": 200,
+          "ms": 590,
+          "message": ""
+        },
+        {
+          "status": 422,
+          "ms": 584,
+          "message": "Stok Audit stock tidak mencukupi."
+        },
+        {
+          "status": 422,
+          "ms": 651,
+          "message": "Stok Audit stock tidak mencukupi."
+        },
+        {
+          "status": 422,
+          "ms": 687,
+          "message": "Stok Audit stock tidak mencukupi."
+        },
+        {
+          "status": 422,
+          "ms": 702,
+          "message": "Stok Audit stock tidak mencukupi."
+        },
+        {
+          "status": 200,
+          "ms": 267,
+          "message": ""
+        },
+        {
+          "status": 422,
+          "ms": 617,
+          "message": "Stok Audit stock tidak mencukupi."
+        },
+        {
+          "status": 200,
+          "ms": 480,
+          "message": ""
+        },
+        {
+          "status": 200,
+          "ms": 449,
+          "message": ""
+        },
+        {
+          "status": 200,
+          "ms": 416,
+          "message": ""
+        },
+        {
+          "status": 422,
+          "ms": 677,
+          "message": "Stok Audit stock tidak mencukupi."
+        },
+        {
+          "status": 422,
+          "ms": 671,
+          "message": "Stok Audit stock tidak mencukupi."
+        },
+        {
+          "status": 200,
+          "ms": 361,
+          "message": ""
+        },
+        {
+          "status": 422,
+          "ms": 657,
+          "message": "Stok Audit stock tidak mencukupi."
+        },
+        {
+          "status": 200,
+          "ms": 514,
+          "message": ""
+        },
+        {
+          "status": 200,
+          "ms": 612,
+          "message": ""
+        },
+        {
+          "status": 422,
+          "ms": 656,
+          "message": "Stok Audit stock tidak mencukupi."
+        },
+        {
+          "status": 200,
+          "ms": 390,
+          "message": ""
+        }
+      ],
+      "state": {
+        "stocks": {
+          "66": "0.000",
+          "67": "40.000",
+          "68": "0.000",
+          "69": "5.000",
+          "70": "40.000",
+          "71": "40.000"
+        },
+        "balance": "50000.00",
+        "completed": 11,
+        "voided": 0,
+        "refunds": 0,
+        "movements": 10
+      }
+    },
+    {
+      "name": "deposit",
+      "responses": [
+        {
+          "status": 422,
+          "ms": 426,
+          "message": "Saldo deposit member tidak mencukupi."
+        },
+        {
+          "status": 200,
+          "ms": 409,
+          "message": ""
+        },
+        {
+          "status": 422,
+          "ms": 411,
+          "message": "Saldo deposit member tidak mencukupi."
+        },
+        {
+          "status": 422,
+          "ms": 483,
+          "message": "Saldo deposit member tidak mencukupi."
+        },
+        {
+          "status": 200,
+          "ms": 374,
+          "message": ""
+        },
+        {
+          "status": 422,
+          "ms": 462,
+          "message": "Saldo deposit member tidak mencukupi."
+        },
+        {
+          "status": 200,
+          "ms": 268,
+          "message": ""
+        },
+        {
+          "status": 422,
+          "ms": 439,
+          "message": "Saldo deposit member tidak mencukupi."
+        },
+        {
+          "status": 200,
+          "ms": 234,
+          "message": ""
+        },
+        {
+          "status": 422,
+          "ms": 478,
+          "message": "Saldo deposit member tidak mencukupi."
+        },
+        {
+          "status": 422,
+          "ms": 444,
+          "message": "Saldo deposit member tidak mencukupi."
+        },
+        {
+          "status": 200,
+          "ms": 336,
+          "message": ""
+        }
+      ],
+      "state": {
+        "stocks": {
+          "66": "0.000",
+          "67": "35.000",
+          "68": "0.000",
+          "69": "5.000",
+          "70": "40.000",
+          "71": "40.000"
+        },
+        "balance": "0.00",
+        "completed": 16,
+        "voided": 0,
+        "refunds": 0,
+        "movements": 15
+      }
+    },
+    {
+      "name": "reverse_order",
+      "responses": [
+        {
+          "status": 200,
+          "ms": 689,
+          "message": ""
+        },
+        {
+          "status": 200,
+          "ms": 686,
+          "message": ""
+        },
+        {
+          "status": 200,
+          "ms": 379,
+          "message": ""
+        },
+        {
+          "status": 200,
+          "ms": 491,
+          "message": ""
+        },
+        {
+          "status": 200,
+          "ms": 257,
+          "message": ""
+        },
+        {
+          "status": 200,
+          "ms": 460,
+          "message": ""
+        },
+        {
+          "status": 200,
+          "ms": 745,
+          "message": ""
+        },
+        {
+          "status": 200,
+          "ms": 567,
+          "message": ""
+        },
+        {
+          "status": 200,
+          "ms": 600,
+          "message": ""
+        },
+        {
+          "status": 200,
+          "ms": 648,
+          "message": ""
+        },
+        {
+          "status": 200,
+          "ms": 781,
+          "message": ""
+        },
+        {
+          "status": 200,
+          "ms": 317,
+          "message": ""
+        }
+      ],
+      "state": {
+        "stocks": {
+          "66": "0.000",
+          "67": "35.000",
+          "68": "0.000",
+          "69": "5.000",
+          "70": "28.000",
+          "71": "28.000"
+        },
+        "balance": "0.00",
+        "completed": 28,
+        "voided": 0,
+        "refunds": 0,
+        "movements": 39
+      }
+    },
+    {
+      "name": "void",
+      "responses": [
+        {
+          "status": 422,
+          "ms": 253,
+          "message": "Hanya transaksi selesai yang dapat dibatalkan."
+        },
+        {
+          "status": 422,
+          "ms": 306,
+          "message": "Hanya transaksi selesai yang dapat dibatalkan."
+        },
+        {
+          "status": 422,
+          "ms": 287,
+          "message": "Hanya transaksi selesai yang dapat dibatalkan."
+        },
+        {
+          "status": 422,
+          "ms": 234,
+          "message": "Hanya transaksi selesai yang dapat dibatalkan."
+        },
+        {
+          "status": 302,
+          "ms": 233,
+          "message": ""
+        },
+        {
+          "status": 422,
+          "ms": 267,
+          "message": "Hanya transaksi selesai yang dapat dibatalkan."
+        },
+        {
+          "status": 422,
+          "ms": 305,
+          "message": "Hanya transaksi selesai yang dapat dibatalkan."
+        },
+        {
+          "status": 422,
+          "ms": 305,
+          "message": "Hanya transaksi selesai yang dapat dibatalkan."
+        },
+        {
+          "status": 422,
+          "ms": 326,
+          "message": "Hanya transaksi selesai yang dapat dibatalkan."
+        },
+        {
+          "status": 422,
+          "ms": 308,
+          "message": "Hanya transaksi selesai yang dapat dibatalkan."
+        },
+        {
+          "status": 422,
+          "ms": 275,
+          "message": "Hanya transaksi selesai yang dapat dibatalkan."
+        },
+        {
+          "status": 422,
+          "ms": 335,
+          "message": "Hanya transaksi selesai yang dapat dibatalkan."
+        }
+      ],
+      "state": {
+        "stocks": {
+          "66": "0.000",
+          "67": "35.000",
+          "68": "1.000",
+          "69": "5.000",
+          "70": "28.000",
+          "71": "28.000"
+        },
+        "balance": "10000.00",
+        "completed": 27,
+        "voided": 1,
+        "refunds": 1,
+        "movements": 40
+      }
+    },
+    {
+      "name": "adjust",
+      "responses": [
+        {
+          "status": 302,
+          "ms": 162,
+          "message": ""
+        },
+        {
+          "status": 302,
+          "ms": 173,
+          "message": ""
+        },
+        {
+          "status": 302,
+          "ms": 195,
+          "message": ""
+        },
+        {
+          "status": 422,
+          "ms": 256,
+          "message": "Stok tidak boleh menjadi negatif."
+        },
+        {
+          "status": 422,
+          "ms": 229,
+          "message": "Stok tidak boleh menjadi negatif."
+        },
+        {
+          "status": 422,
+          "ms": 218,
+          "message": "Stok tidak boleh menjadi negatif."
+        },
+        {
+          "status": 422,
+          "ms": 268,
+          "message": "Stok tidak boleh menjadi negatif."
+        },
+        {
+          "status": 302,
+          "ms": 227,
+          "message": ""
+        },
+        {
+          "status": 422,
+          "ms": 251,
+          "message": "Stok tidak boleh menjadi negatif."
+        },
+        {
+          "status": 302,
+          "ms": 194,
+          "message": ""
+        },
+        {
+          "status": 422,
+          "ms": 284,
+          "message": "Stok tidak boleh menjadi negatif."
+        },
+        {
+          "status": 422,
+          "ms": 214,
+          "message": "Stok tidak boleh menjadi negatif."
+        }
+      ],
+      "state": {
+        "stocks": {
+          "66": "0.000",
+          "67": "35.000",
+          "68": "1.000",
+          "69": "0.000",
+          "70": "28.000",
+          "71": "28.000"
+        },
+        "balance": "10000.00",
+        "completed": 27,
+        "voided": 1,
+        "refunds": 1,
+        "movements": 45
+      }
+    }
+  ],
+  "passed": true
+}

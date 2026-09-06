@@ -5,13 +5,15 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE || 'C:/Users/M.Zulfi/.cac
 const fixture=JSON.parse(fs.readFileSync('storage/app/fix-verification/fixture.json','utf8').replace(/^\uFEFF/,''));
 const base=process.env.WARUNG_BASE_URL||'http://127.0.0.1:8017';
 const out=path.resolve('docs/fix-verification-2026-09-06');fs.mkdirSync(path.join(out,'screenshots'),{recursive:true});
-const result={scenarios:[],renders:[],roles:[],errors:[]};
+const result=process.env.RESUME_ROLE_CHECKS ? JSON.parse(fs.readFileSync(path.join(out,'browser-results.json'),'utf8')) : {scenarios:[],renders:[],roles:[],errors:[]};
 const save=()=>fs.writeFileSync(path.join(out,'browser-results.json'),JSON.stringify(result,null,2));
 (async()=>{
  const browser=await chromium.launch({channel:'msedge',headless:true});
  async function session(role,width=390){const ctx=await browser.newContext({viewport:{width,height:900}}),p=await ctx.newPage();p.on('pageerror',e=>result.errors.push(e.message));await p.goto(base+'/login');await p.locator('[name=email]').fill(fixture.emails[role]);await p.locator('[name=password]').fill('password');await Promise.all([p.waitForURL(u=>u.pathname!=='/login'),p.locator('button.btn-primary').click()]);return {ctx,p};}
- async function shot(p,name){await p.screenshot({path:path.join(out,'screenshots',name+'.png'),fullPage:true});}
- let {ctx,p}=await session('cashier');
+ async function shot(p,name){fs.writeFileSync(path.join(out,'screenshots',name+'.png'),await p.screenshot({fullPage:true}));}
+ let ctx,p;
+ if(!process.env.RESUME_ROLE_CHECKS){
+ ({ctx,p}=await session('cashier'));
  assert.match(await p.locator(`.product-card[data-id="${fixture.menu}"]`).innerText(),/Stok 7 pcs/);
  await shot(p,'B03-first-pos-stock');result.scenarios.push({id:'B03',passed:true,stockBeforeInventory:7});save();
  await p.locator(`.product-card[data-id="${fixture.menu}"]`).click();await p.locator('[data-service=takeaway]').click();
@@ -58,13 +60,16 @@ const save=()=>fs.writeFileSync(path.join(out,'browser-results.json'),JSON.strin
  }
  for(const width of [768,390,360]){await p.setViewportSize({width,height:900});await p.goto(base+'/kasir');await p.locator('.mobile-account button').click();assert.equal(new URL(p.url()).pathname,'/login');assert.equal((await p.goto(base+'/kasir')).url(),base+'/login');await ctx.close();({ctx,p}=await session('superadmin',width));}
  result.scenarios.push({id:'B04',passed:true,logoutWidths:[768,390,360]});save();await ctx.close();
+ }
+ const urls=['dashboard','kasir','transaksi','produk','gudang','pembelian','pengeluaran','member','laporan','pengaturan'];
  const permissions={developer:urls.slice(0,10),superadmin:urls.slice(0,10),head_ops:urls.slice(0,9),ops_admin:['kasir','transaksi','produk','gudang','pembelian','pengeluaran','member'],outlet_manager:['kasir','transaksi','gudang','pengeluaran','member'],spv:['kasir','transaksi','gudang','pengeluaran','member'],cashier:['kasir','transaksi','gudang','pengeluaran','member'],transactions_only:['transaksi'],dashboard_only:['dashboard']};
  for(const [role,allowed] of Object.entries(permissions)){
+  if(result.roles.some(row=>row.role===role))continue;
   ({ctx,p}=await session(role,768));const statuses=[];
   for(const url of urls.slice(0,10)){const res=await p.goto(base+'/'+url);assert.equal(res.status(),allowed.includes(url)?200:403,role+' '+url);statuses.push({url,status:res.status()});if(res.status()===200)await shot(p,`role-${role}-${url}`);}
   if(role==='transactions_only'){await p.goto(base+'/transaksi');assert.equal(await p.getByRole('link',{name:'Transaksi baru'}).count(),0);}
   if(role==='dashboard_only'){await p.goto(base+'/dashboard');for(const name of ['Buka kasir','Lihat semua','Semua transaksi'])assert.equal(await p.getByRole('link',{name,exact:true}).count(),0);}
   result.roles.push({role,statuses});save();await ctx.close();console.log('Verified role '+role);
  }
- result.scenarios.push({id:'B06',passed:true,customRoles:['transactions_only','dashboard_only']});assert.deepEqual(result.errors,[]);result.passed=true;save();await browser.close();console.log('All browser checks passed');
+ result.scenarios.push({id:'B06',passed:true,customRoles:['transactions_only','dashboard_only']});assert.deepEqual(result.errors,[]);delete result.failure;result.passed=true;save();await browser.close();console.log('All browser checks passed');
 })().catch(e=>{result.failure=e.stack;save();console.error(e);process.exit(1)});

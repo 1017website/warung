@@ -1,5 +1,7 @@
 # Audit flow, hak akses, tablet & mobile
 
+> Arsip kondisi sebelum perbaikan. Ketujuh temuan sudah ditangani; lihat [hasil tes ulang](../fix-verification-2026-09-06/HASIL-TES.md) dan [user guide](../user-guide/index.html).
+
 Audit lokal 6 September 2026 · commit c146e56 · Laravel/PHP + MySQL · Microsoft Edge headless. Ditemukan 7 bug/miss flow: 2 prioritas tinggi (P1) dan 5 prioritas menengah (P2). User guide final ditunda sesuai syarat pengguna karena masih ada bug terbuka. Kode aplikasi belum diubah.
 
 ## Validasi dan batas pemeriksaan

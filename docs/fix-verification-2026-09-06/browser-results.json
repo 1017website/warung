@@ -53,6 +53,14 @@
         390,
         360
       ]
+    },
+    {
+      "id": "B06",
+      "passed": true,
+      "customRoles": [
+        "transactions_only",
+        "dashboard_only"
+      ]
     }
   ],
   "renders": [
@@ -477,8 +485,323 @@
           "status": 200
         }
       ]
+    },
+    {
+      "role": "head_ops",
+      "statuses": [
+        {
+          "url": "dashboard",
+          "status": 200
+        },
+        {
+          "url": "kasir",
+          "status": 200
+        },
+        {
+          "url": "transaksi",
+          "status": 200
+        },
+        {
+          "url": "produk",
+          "status": 200
+        },
+        {
+          "url": "gudang",
+          "status": 200
+        },
+        {
+          "url": "pembelian",
+          "status": 200
+        },
+        {
+          "url": "pengeluaran",
+          "status": 200
+        },
+        {
+          "url": "member",
+          "status": 200
+        },
+        {
+          "url": "laporan",
+          "status": 200
+        },
+        {
+          "url": "pengaturan",
+          "status": 403
+        }
+      ]
+    },
+    {
+      "role": "ops_admin",
+      "statuses": [
+        {
+          "url": "dashboard",
+          "status": 403
+        },
+        {
+          "url": "kasir",
+          "status": 200
+        },
+        {
+          "url": "transaksi",
+          "status": 200
+        },
+        {
+          "url": "produk",
+          "status": 200
+        },
+        {
+          "url": "gudang",
+          "status": 200
+        },
+        {
+          "url": "pembelian",
+          "status": 200
+        },
+        {
+          "url": "pengeluaran",
+          "status": 200
+        },
+        {
+          "url": "member",
+          "status": 200
+        },
+        {
+          "url": "laporan",
+          "status": 403
+        },
+        {
+          "url": "pengaturan",
+          "status": 403
+        }
+      ]
+    },
+    {
+      "role": "outlet_manager",
+      "statuses": [
+        {
+          "url": "dashboard",
+          "status": 403
+        },
+        {
+          "url": "kasir",
+          "status": 200
+        },
+        {
+          "url": "transaksi",
+          "status": 200
+        },
+        {
+          "url": "produk",
+          "status": 403
+        },
+        {
+          "url": "gudang",
+          "status": 200
+        },
+        {
+          "url": "pembelian",
+          "status": 403
+        },
+        {
+          "url": "pengeluaran",
+          "status": 200
+        },
+        {
+          "url": "member",
+          "status": 200
+        },
+        {
+          "url": "laporan",
+          "status": 403
+        },
+        {
+          "url": "pengaturan",
+          "status": 403
+        }
+      ]
+    },
+    {
+      "role": "spv",
+      "statuses": [
+        {
+          "url": "dashboard",
+          "status": 403
+        },
+        {
+          "url": "kasir",
+          "status": 200
+        },
+        {
+          "url": "transaksi",
+          "status": 200
+        },
+        {
+          "url": "produk",
+          "status": 403
+        },
+        {
+          "url": "gudang",
+          "status": 200
+        },
+        {
+          "url": "pembelian",
+          "status": 403
+        },
+        {
+          "url": "pengeluaran",
+          "status": 200
+        },
+        {
+          "url": "member",
+          "status": 200
+        },
+        {
+          "url": "laporan",
+          "status": 403
+        },
+        {
+          "url": "pengaturan",
+          "status": 403
+        }
+      ]
+    },
+    {
+      "role": "cashier",
+      "statuses": [
+        {
+          "url": "dashboard",
+          "status": 403
+        },
+        {
+          "url": "kasir",
+          "status": 200
+        },
+        {
+          "url": "transaksi",
+          "status": 200
+        },
+        {
+          "url": "produk",
+          "status": 403
+        },
+        {
+          "url": "gudang",
+          "status": 200
+        },
+        {
+          "url": "pembelian",
+          "status": 403
+        },
+        {
+          "url": "pengeluaran",
+          "status": 200
+        },
+        {
+          "url": "member",
+          "status": 200
+        },
+        {
+          "url": "laporan",
+          "status": 403
+        },
+        {
+          "url": "pengaturan",
+          "status": 403
+        }
+      ]
+    },
+    {
+      "role": "transactions_only",
+      "statuses": [
+        {
+          "url": "dashboard",
+          "status": 403
+        },
+        {
+          "url": "kasir",
+          "status": 403
+        },
+        {
+          "url": "transaksi",
+          "status": 200
+        },
+        {
+          "url": "produk",
+          "status": 403
+        },
+        {
+          "url": "gudang",
+          "status": 403
+        },
+        {
+          "url": "pembelian",
+          "status": 403
+        },
+        {
+          "url": "pengeluaran",
+          "status": 403
+        },
+        {
+          "url": "member",
+          "status": 403
+        },
+        {
+          "url": "laporan",
+          "status": 403
+        },
+        {
+          "url": "pengaturan",
+          "status": 403
+        }
+      ]
+    },
+    {
+      "role": "dashboard_only",
+      "statuses": [
+        {
+          "url": "dashboard",
+          "status": 200
+        },
+        {
+          "url": "kasir",
+          "status": 403
+        },
+        {
+          "url": "transaksi",
+          "status": 403
+        },
+        {
+          "url": "produk",
+          "status": 403
+        },
+        {
+          "url": "gudang",
+          "status": 403
+        },
+        {
+          "url": "pembelian",
+          "status": 403
+        },
+        {
+          "url": "pengeluaran",
+          "status": 403
+        },
+        {
+          "url": "member",
+          "status": 403
+        },
+        {
+          "url": "laporan",
+          "status": 403
+        },
+        {
+          "url": "pengaturan",
+          "status": 403
+        }
+      ]
     }
   ],
   "errors": [],
-  "failure": "Error: UNKNOWN: unknown error, open 'D:\\Project\\1017website 2026\\warung\\docs\\fix-verification-2026-09-06\\screenshots\\role-head_ops-produk.png'\n    at async open (node:internal/fs/promises:639:25)\n    at async Object.writeFile (node:internal/fs/promises:1216:14)\n    at async _Page.screenshot (C:\\Users\\M.Zulfi\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\node_modules\\playwright-core\\lib\\coreBundle.js:61393:11)\n    at async shot (D:\\Project\\1017website 2026\\warung\\tests\\browser\\audit-fixes.cjs:13:30)\n    at async D:\\Project\\1017website 2026\\warung\\tests\\browser\\audit-fixes.cjs:64:208"
+  "passed": true
 }

@@ -26,17 +26,26 @@ Buka `http://localhost:8000`.
 
 | Role | Email | Password |
 |---|---|---|
-| Owner | admin@warungkita.id | password |
 | Superadmin | superadmin@warungkita.id | password |
-| Admin/Manager | manager@warungkita.id | password |
-| Kasir | kasir@warungkita.id | password |
-| Gudang | gudang@warungkita.id | password |
+| Head of Ops | headops@warungkita.id | password |
+| Ops Admin | opsadmin@warungkita.id | password |
+| Outlet Manager | manager.melati@warungkita.id | password |
+| SPV | spv.melati@warungkita.id | password |
+| Kasir | kasir.melati@warungkita.id | password |
+
+Daftar ini mengikuti seeder demo. Developer adalah role sistem tersendiri; akun Developer tidak dibuat oleh seeder demo ini. Hak akses aktual dibaca dari master role dan sub-izin Pengaturan.
+
+## Panduan dan hasil pengujian
+
+- [User guide per menu dan tujuh hak akses, dengan screenshot](docs/user-guide/index.html)
+- [Hasil perbaikan dan tes ulang 6 September 2026](docs/fix-verification-2026-09-06/HASIL-TES.md)
+- [Arsip audit sebelum perbaikan](docs/audit-2026-09-06/index.html)
 
 ## Catatan desain data
 
 Semua data bisnis membawa `tenant_id`, sedangkan data operasional cabang juga membawa `store_id`. Produk, transaksi, pembelian, pengeluaran, member, tenant, cabang, dan pengguna memakai soft delete. Transaksi yang diarsipkan tidak mengembalikan stok otomatis agar jejak audit tidak berubah diam-diam.
 
-Transaksi kasir selalu masuk sebagai data riil. Hanya role `owner` dan `superadmin` yang dapat membuka laporan non-riil, yang dihitung otomatis sebesar 50% dari omzet, HPP, pengeluaran, dan keuntungan riil. Role pegawai tidak menerima kontrol klasifikasi dan tidak dapat menemukan tampilan laporan non-riil meskipun mencoba URL-nya secara langsung.
+Transaksi kasir masuk sebagai data riil. Akses non-riil mengikuti izin master role; default tersedia untuk Developer dan Superadmin. Persentase laporan mengikuti pengaturan masing-masing cabang. Akun tanpa izin tidak menerima kontrol non-riil dan permintaan laporannya dibatasi server.
 
 Halaman laporan menyediakan ekspor Excel sesuai periode dan jenis laporan aktif. Workbook berisi tiga sheet: ringkasan dengan formula, rincian transaksi, dan rincian pengeluaran. Permintaan ekspor non-riil dari role pegawai otomatis dipaksa menjadi laporan riil.
 
