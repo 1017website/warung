@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Transaksi')
 @section('content')
-<div class="page-head"><div><h1>Riwayat transaksi</h1><p>Transaksi tidak dihapus sebagai “arsip”; pembatalan disimpan sebagai audit lengkap dengan alasan dan pemberi ACC.</p></div><a class="btn btn-primary" href="{{ route('pos') }}"><i class="bi bi-plus-circle"></i> Transaksi baru</a></div>
+<div class="page-head"><div><h1>Riwayat transaksi</h1><p>Transaksi tidak dihapus sebagai “arsip”; pembatalan disimpan sebagai audit lengkap dengan alasan dan pemberi ACC.</p></div>@if(auth()->user()->canAccess('pos'))<a class="btn btn-primary" href="{{ route('pos') }}"><i class="bi bi-plus-circle"></i> Transaksi baru</a>@endif</div>
 <div class="card card-pad">
     <div class="card-title"><div><h2>{{ $transactions->total() }} transaksi</h2><p>Cabang {{ $activeStore->name }}</p></div><div class="actions"><div class="report-tabs"><a class="{{ !request('status') ? 'active' : '' }}" href="{{ route('transactions') }}">Semua</a><a class="{{ request('status')==='pending' ? 'active' : '' }}" href="{{ route('transactions',['status'=>'pending']) }}">Pending</a><a class="{{ request('status')==='voided' ? 'active' : '' }}" href="{{ route('transactions',['status'=>'voided']) }}">Dibatalkan</a></div><div class="search" style="max-width:240px"><input placeholder="Cari invoice…" oninput="filterTransactions(this.value)"></div></div></div>
     <div class="table-wrap"><table id="trx-table"><thead><tr><th>Invoice</th><th>Waktu</th><th>Pesanan</th><th>Kasir / member</th><th>Pembayaran detail</th><th>Total</th><th>Status / aksi</th></tr></thead><tbody>

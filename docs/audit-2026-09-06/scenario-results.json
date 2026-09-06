@@ -1,0 +1,422 @@
+{
+  "scenarios": [
+    {
+      "name": "day_carryover",
+      "before": "Umum\nAudit stok kemarin\nRp 10.000 / pcs\nHabis",
+      "after": "Umum\nAudit stok kemarin\nRp 10.000 / pcs\nStok 7 pcs"
+    },
+    {
+      "name": "cash_underpayment",
+      "typed": 1000,
+      "payload": {
+        "items": [
+          {
+            "id": 3,
+            "qty": 1,
+            "name": null,
+            "price": null
+          }
+        ],
+        "member_id": null,
+        "discount_type": "amount",
+        "discount_value": 0,
+        "payments": [
+          {
+            "method": "cash",
+            "provider": null,
+            "amount": 25000
+          }
+        ],
+        "service_type": "takeaway",
+        "table_number": null,
+        "online_platform": null,
+        "pending_transaction_id": null,
+        "transaction_type": "sale",
+        "approval_pin": null
+      },
+      "status": 200
+    },
+    {
+      "name": "purchase_metadata_after_consumption",
+      "status": 422,
+      "message": "Status tidak dapat diubah karena stok sudah terpakai."
+    },
+    {
+      "name": "purchase_dp_format",
+      "typed": 5000,
+      "displayAfterReload": "5"
+    }
+  ],
+  "roles": [
+    {
+      "role": "developer",
+      "landing": "/dashboard",
+      "pages": [
+        {
+          "url": "dashboard",
+          "status": 200
+        },
+        {
+          "url": "kasir",
+          "status": 200
+        },
+        {
+          "url": "transaksi",
+          "status": 200
+        },
+        {
+          "url": "produk",
+          "status": 200
+        },
+        {
+          "url": "gudang",
+          "status": 200
+        },
+        {
+          "url": "pembelian",
+          "status": 200
+        },
+        {
+          "url": "pengeluaran",
+          "status": 200
+        },
+        {
+          "url": "member",
+          "status": 200
+        },
+        {
+          "url": "laporan",
+          "status": 200
+        },
+        {
+          "url": "pengaturan",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "role": "superadmin",
+      "landing": "/dashboard",
+      "pages": [
+        {
+          "url": "dashboard",
+          "status": 200
+        },
+        {
+          "url": "kasir",
+          "status": 200
+        },
+        {
+          "url": "transaksi",
+          "status": 200
+        },
+        {
+          "url": "produk",
+          "status": 200
+        },
+        {
+          "url": "gudang",
+          "status": 200
+        },
+        {
+          "url": "pembelian",
+          "status": 200
+        },
+        {
+          "url": "pengeluaran",
+          "status": 200
+        },
+        {
+          "url": "member",
+          "status": 200
+        },
+        {
+          "url": "laporan",
+          "status": 200
+        },
+        {
+          "url": "pengaturan",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "role": "head_ops",
+      "landing": "/dashboard",
+      "pages": [
+        {
+          "url": "dashboard",
+          "status": 200
+        },
+        {
+          "url": "kasir",
+          "status": 200
+        },
+        {
+          "url": "transaksi",
+          "status": 200
+        },
+        {
+          "url": "produk",
+          "status": 200
+        },
+        {
+          "url": "gudang",
+          "status": 200
+        },
+        {
+          "url": "pembelian",
+          "status": 200
+        },
+        {
+          "url": "pengeluaran",
+          "status": 200
+        },
+        {
+          "url": "member",
+          "status": 200
+        },
+        {
+          "url": "laporan",
+          "status": 200
+        },
+        {
+          "url": "pengaturan",
+          "status": 403
+        }
+      ]
+    },
+    {
+      "role": "ops_admin",
+      "landing": "/kasir",
+      "pages": [
+        {
+          "url": "dashboard",
+          "status": 403
+        },
+        {
+          "url": "kasir",
+          "status": 200
+        },
+        {
+          "url": "transaksi",
+          "status": 200
+        },
+        {
+          "url": "produk",
+          "status": 200
+        },
+        {
+          "url": "gudang",
+          "status": 200
+        },
+        {
+          "url": "pembelian",
+          "status": 200
+        },
+        {
+          "url": "pengeluaran",
+          "status": 200
+        },
+        {
+          "url": "member",
+          "status": 200
+        },
+        {
+          "url": "laporan",
+          "status": 403
+        },
+        {
+          "url": "pengaturan",
+          "status": 403
+        }
+      ]
+    },
+    {
+      "role": "outlet_manager",
+      "landing": "/kasir",
+      "pages": [
+        {
+          "url": "dashboard",
+          "status": 403
+        },
+        {
+          "url": "kasir",
+          "status": 200
+        },
+        {
+          "url": "transaksi",
+          "status": 200
+        },
+        {
+          "url": "produk",
+          "status": 403
+        },
+        {
+          "url": "gudang",
+          "status": 200
+        },
+        {
+          "url": "pembelian",
+          "status": 403
+        },
+        {
+          "url": "pengeluaran",
+          "status": 200
+        },
+        {
+          "url": "member",
+          "status": 200
+        },
+        {
+          "url": "laporan",
+          "status": 403
+        },
+        {
+          "url": "pengaturan",
+          "status": 403
+        }
+      ]
+    },
+    {
+      "role": "spv",
+      "landing": "/kasir",
+      "pages": [
+        {
+          "url": "dashboard",
+          "status": 403
+        },
+        {
+          "url": "kasir",
+          "status": 200
+        },
+        {
+          "url": "transaksi",
+          "status": 200
+        },
+        {
+          "url": "produk",
+          "status": 403
+        },
+        {
+          "url": "gudang",
+          "status": 200
+        },
+        {
+          "url": "pembelian",
+          "status": 403
+        },
+        {
+          "url": "pengeluaran",
+          "status": 200
+        },
+        {
+          "url": "member",
+          "status": 200
+        },
+        {
+          "url": "laporan",
+          "status": 403
+        },
+        {
+          "url": "pengaturan",
+          "status": 403
+        }
+      ]
+    },
+    {
+      "role": "cashier",
+      "landing": "/kasir",
+      "pages": [
+        {
+          "url": "dashboard",
+          "status": 403
+        },
+        {
+          "url": "kasir",
+          "status": 200
+        },
+        {
+          "url": "transaksi",
+          "status": 200
+        },
+        {
+          "url": "produk",
+          "status": 403
+        },
+        {
+          "url": "gudang",
+          "status": 200
+        },
+        {
+          "url": "pembelian",
+          "status": 403
+        },
+        {
+          "url": "pengeluaran",
+          "status": 200
+        },
+        {
+          "url": "member",
+          "status": 200
+        },
+        {
+          "url": "laporan",
+          "status": 403
+        },
+        {
+          "url": "pengaturan",
+          "status": 403
+        }
+      ]
+    },
+    {
+      "role": "transactions_only",
+      "landing": "/transaksi",
+      "pages": [
+        {
+          "url": "dashboard",
+          "status": 403
+        },
+        {
+          "url": "kasir",
+          "status": 403
+        },
+        {
+          "url": "transaksi",
+          "status": 200
+        },
+        {
+          "url": "produk",
+          "status": 403
+        },
+        {
+          "url": "gudang",
+          "status": 403
+        },
+        {
+          "url": "pembelian",
+          "status": 403
+        },
+        {
+          "url": "pengeluaran",
+          "status": 403
+        },
+        {
+          "url": "member",
+          "status": 403
+        },
+        {
+          "url": "laporan",
+          "status": 403
+        },
+        {
+          "url": "pengaturan",
+          "status": 403
+        }
+      ],
+      "forbiddenCta": 1,
+      "ctaPage": "403\nFORBIDDEN"
+    }
+  ]
+}

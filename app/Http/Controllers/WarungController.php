@@ -37,12 +37,13 @@ class WarungController extends Controller
 {
     private ?Store $activeStoreRecord = null;
 
-    private function menuStockForDate(int $productId, Carbon|string|null $date = null): DailyMenuStock
+    private function menuStockForDate(int $productId, Carbon|string|null $date = null, ?int $storeId = null): DailyMenuStock
     {
+        $storeId ??= $this->storeId();
         $stockDate = $date instanceof Carbon ? $date->toDateString() : Carbon::parse($date ?? today())->toDateString();
         $attributes = [
             'tenant_id' => $this->tenantId(),
-            'store_id' => $this->storeId(),
+            'store_id' => $storeId,
             'product_id' => $productId,
             'stock_date' => $stockDate,
         ];
@@ -52,13 +53,23 @@ class WarungController extends Controller
         }
 
         $carryOver = (float) (DailyMenuStock::where('tenant_id', $this->tenantId())
-            ->where('store_id', $this->storeId())
+            ->where('store_id', $storeId)
             ->where('product_id', $productId)
             ->whereDate('stock_date', '<', $stockDate)
             ->latest('stock_date')
             ->value('quantity') ?? 0);
 
         return DailyMenuStock::firstOrCreate($attributes, ['quantity' => $carryOver]);
+    }
+
+    /** Every stock screen uses the same carryover, regardless of which menu opens first. */
+    private function prepareDailyMenuStocks(?array $storeIds = null): void
+    {
+        foreach ($storeIds ?? [$this->storeId()] as $storeId) {
+            Product::where('tenant_id', $this->tenantId())->where('product_type', 'menu')
+                ->whereDoesntHave('dailyStocks', fn ($query) => $query->where('store_id', $storeId)->whereDate('stock_date', today()))
+                ->pluck('id')->each(fn ($productId) => $this->menuStockForDate($productId, null, $storeId));
+        }
     }
 
     private function inventoryRecordFor(Product $product, float $opening): InventoryDailyRecord
@@ -285,6 +296,7 @@ class WarungController extends Controller
 
     public function dashboard()
     {
+        $this->prepareDailyMenuStocks($this->isConsolidated() ? $this->stores()->pluck('id')->all() : null);
         $today = today();
         $transactions = Transaction::where('tenant_id', $this->tenantId())
             ->where('status', 'completed')->where('transaction_type', 'sale')->whereDate('transacted_at', $today);
@@ -322,6 +334,7 @@ class WarungController extends Controller
 
     public function pos()
     {
+        $this->prepareDailyMenuStocks();
         $products = Product::with(['category', 'dailyStocks' => fn ($q) => $q->where('store_id', $this->storeId())->whereDate('stock_date', today())])
             ->where('tenant_id', $this->tenantId())->where('product_type', 'menu')->where('is_active', true)->orderBy('name')->get();
         $categories = Category::where('tenant_id', $this->tenantId())->whereHas('products', fn ($q) => $q->where('product_type', 'menu'))->orderBy('name')->get();
@@ -666,6 +679,7 @@ class WarungController extends Controller
 
     public function products()
     {
+        $this->prepareDailyMenuStocks();
         $products = Product::with('category')
             ->withSum(['stocks as warehouse_stock' => fn ($q) => $q->where('store_id', $this->storeId())], 'quantity')
             ->withSum(['dailyStocks as daily_stock' => fn ($q) => $q->where('store_id', $this->storeId())->whereDate('stock_date', today())], 'quantity')
@@ -1134,8 +1148,19 @@ class WarungController extends Controller
                 ->lockForUpdate()->findOrFail($purchase->id);
             $locked->load('items');
             $wasReceived = (bool) $locked->received_at;
+            $willBeReceived = $data['status'] === 'received';
+            $stockDeltas = [];
             if ($wasReceived) {
-                $this->applyPurchaseStock($locked, -1);
+                foreach ($locked->items as $item) {
+                    $stockDeltas[$item->product_id] = ($stockDeltas[$item->product_id] ?? 0) - (float) $item->quantity;
+                }
+            }
+            if ($willBeReceived) {
+                $stockDeltas[$product->id] = ($stockDeltas[$product->id] ?? 0) + (float) $data['quantity'];
+            }
+            ksort($stockDeltas);
+            foreach ($stockDeltas as $productId => $delta) {
+                $this->applyPurchaseStockDelta($locked, $productId, $delta);
             }
 
             $locked->items()->firstOrFail()->update([
@@ -1145,7 +1170,6 @@ class WarungController extends Controller
                 'unit_cost' => $data['unit_cost'],
                 'subtotal' => $total,
             ]);
-            $willBeReceived = $data['status'] === 'received';
             $locked->update([
                 'supplier_name' => $data['supplier_name'],
                 'total' => $total,
@@ -1156,10 +1180,6 @@ class WarungController extends Controller
                 'purchased_at' => $data['purchased_at'],
                 'notes' => $data['notes'] ?? null,
             ]);
-            if ($willBeReceived) {
-                $locked->load('items');
-                $this->applyPurchaseStock($locked, 1);
-            }
         });
 
         return back()->with('success', 'Data pembelian dan dampak stok berhasil dikoreksi.');
@@ -1168,12 +1188,26 @@ class WarungController extends Controller
     private function applyPurchaseStock(Purchase $purchase, int $direction): void
     {
         foreach ($purchase->items as $item) {
-            $stock = ProductStock::firstOrCreate(['tenant_id' => $this->tenantId(), 'store_id' => $purchase->store_id, 'product_id' => $item->product_id], ['quantity' => 0]);
-            $delta = $direction * $item->quantity;
-            abort_if($stock->quantity + $delta < 0, 422, 'Status tidak dapat diubah karena stok sudah terpakai.');
-            $stock->increment('quantity', $delta);
-            DB::table('stock_movements')->insert(['tenant_id' => $this->tenantId(), 'store_id' => $purchase->store_id, 'product_id' => $item->product_id, 'user_id' => auth()->id(), 'type' => $direction > 0 ? 'purchase' : 'adjustment_out', 'activity' => $direction > 0 ? 'purchase' : 'purchase_reversal', 'quantity' => $delta, 'reference' => $purchase->purchase_no, 'notes' => $direction > 0 ? 'Penerimaan pembelian' : 'Pembelian belum diterima', 'created_at' => now(), 'updated_at' => now()]);
+            $this->applyPurchaseStockDelta($purchase, $item->product_id, $direction * (float) $item->quantity);
         }
+    }
+
+    private function applyPurchaseStockDelta(Purchase $purchase, int $productId, float $delta): void
+    {
+        if (abs($delta) < 0.0005) {
+            return;
+        }
+        $stock = ProductStock::firstOrCreate(['tenant_id' => $this->tenantId(), 'store_id' => $purchase->store_id, 'product_id' => $productId], ['quantity' => 0]);
+        $stock = ProductStock::whereKey($stock->id)->lockForUpdate()->firstOrFail();
+        abort_if((float) $stock->quantity + $delta < -0.0005, 422, 'Status tidak dapat diubah karena stok sudah terpakai.');
+        $stock->increment('quantity', $delta);
+        DB::table('stock_movements')->insert([
+            'tenant_id' => $this->tenantId(), 'store_id' => $purchase->store_id, 'product_id' => $productId,
+            'user_id' => auth()->id(), 'type' => $delta > 0 ? 'purchase' : 'adjustment_out',
+            'activity' => $delta > 0 ? 'purchase' : 'purchase_reversal', 'quantity' => $delta,
+            'reference' => $purchase->purchase_no, 'notes' => 'Perubahan stok pembelian',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
     }
 
     public function updatePurchaseStatus(Request $request, Purchase $purchase)
@@ -1183,6 +1217,7 @@ class WarungController extends Controller
         $data = $request->validate(['status' => ['required', Rule::in(['received', 'not_received'])], 'payment_status' => ['required', Rule::in(['paid', 'dp', 'unpaid'])], 'dp_amount' => 'nullable|numeric|min:0']);
         abort_if(($data['dp_amount'] ?? 0) > $purchase->total, 422, 'DP tidak boleh melebihi total pembelian.');
         DB::transaction(function () use ($purchase, $data) {
+            $purchase = Purchase::whereKey($purchase->id)->lockForUpdate()->firstOrFail();
             if ($data['status'] === 'received' && ! $purchase->received_at) {
                 $this->applyPurchaseStock($purchase, 1);
                 $purchase->received_at = now();

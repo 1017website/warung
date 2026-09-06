@@ -1,0 +1,14 @@
+﻿{
+    "checks": {
+        "only_two_valid_checkouts_saved": true,
+        "cash_received_30000_change_5000": true,
+        "split_deposit_5000_cash_20000": true,
+        "deposit_balance_95000": true,
+        "stock_only_decreased_by_two": true,
+        "dp_one_million_preserved": true,
+        "metadata_updated": true,
+        "purchase_total_unchanged": true,
+        "raw_stock_unchanged": true
+    },
+    "passed": true
+}

@@ -73,6 +73,11 @@
                 </div>
             @endif
         </header>
+        <form class="mobile-account" method="POST" action="{{ route('logout') }}">
+            @csrf
+            <span>{{ auth()->user()->name }} · {{ $roleLabel }}</span>
+            <button type="submit" aria-label="Keluar dari akun"><i class="bi bi-box-arrow-right"></i> Keluar</button>
+        </form>
         <div class="page">
             @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
             @if($errors->any())<div class="alert alert-error">{{ $errors->first() }}</div>@endif

@@ -1,0 +1,965 @@
+{
+  "results": [
+    {
+      "url": "/dashboard",
+      "status": 200,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "logoutVisible": true,
+      "headings": [
+        "Selamat pagi, Sistem!",
+        " Tren penjualan 7 hari",
+        " Perhatian stok",
+        "Transaksi terbaru"
+      ],
+      "overflow": [],
+      "screenshot": "1440-dashboard.png"
+    },
+    {
+      "url": "/kasir",
+      "status": 200,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "logoutVisible": true,
+      "headings": [
+        " Kasir Cabang Melati",
+        "Pesanan baru",
+        "Custom amount",
+        "Open bill",
+        "Scan QR member"
+      ],
+      "overflow": [],
+      "screenshot": "1440-kasir.png"
+    },
+    {
+      "url": "/transaksi",
+      "status": 200,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "logoutVisible": true,
+      "headings": [
+        "Riwayat transaksi",
+        "0 transaksi",
+        "Batalkan transaksi"
+      ],
+      "overflow": [],
+      "screenshot": "1440-transaksi.png"
+    },
+    {
+      "url": "/produk",
+      "status": 200,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "logoutVisible": true,
+      "headings": [
+        "Daftar produk",
+        "5 produk",
+        "Kelola kategori",
+        "Tambah produk",
+        "Edit produk",
+        "Import produk dari Excel"
+      ],
+      "overflow": [],
+      "screenshot": "1440-produk.png"
+    },
+    {
+      "url": "/gudang",
+      "status": 200,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "logoutVisible": true,
+      "headings": [
+        " Stok bahan baku & olahan",
+        "Stok bahan baku",
+        "Stok olahan hari ini",
+        "Produksi terbaru",
+        "Pergerakan terbaru",
+        "Catat produksi olahan",
+        "Catat proses ulang",
+        "Penyesuaian stok",
+        "Stock opname akhir hari"
+      ],
+      "overflow": [],
+      "screenshot": "1440-gudang.png"
+    },
+    {
+      "url": "/pembelian",
+      "status": 200,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "logoutVisible": true,
+      "headings": [
+        "Pembelian stok",
+        "Riwayat pembelian",
+        "Catat pembelian",
+        "Koreksi pembelian"
+      ],
+      "overflow": [],
+      "screenshot": "1440-pembelian.png"
+    },
+    {
+      "url": "/pengeluaran",
+      "status": 200,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "logoutVisible": true,
+      "headings": [
+        "Pengeluaran operasional",
+        "Riwayat pengeluaran",
+        "Catat pengeluaran"
+      ],
+      "overflow": [],
+      "screenshot": "1440-pengeluaran.png"
+    },
+    {
+      "url": "/member",
+      "status": 200,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "logoutVisible": true,
+      "headings": [
+        " Membership & deposit",
+        "Alur aktivasi kartu",
+        "0 data member",
+        "Scan kartu lalu isi data",
+        "Top up deposit",
+        "Edit data member",
+        "Koreksi deposit",
+        "Kartu membership",
+        "Scan / cari member aktif"
+      ],
+      "overflow": [],
+      "screenshot": "1440-member.png"
+    },
+    {
+      "url": "/laporan",
+      "status": 200,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "logoutVisible": true,
+      "headings": [
+        "Laporan Cabang Melati",
+        "Penjualan harian",
+        "Metode pembayaran",
+        "Produk terjual",
+        "Membership & deposit baru",
+        " Detail transaksi"
+      ],
+      "overflow": [],
+      "screenshot": "1440-laporan.png"
+    },
+    {
+      "url": "/pengaturan",
+      "status": 200,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "logoutVisible": true,
+      "headings": [
+        "Pengaturan sistem",
+        " Aturan laporan & membership",
+        "Identitas warung",
+        "Tampilan struk",
+        "Perangkat terhubung",
+        "Kartu member pra-cetak",
+        "Master role & hak akses menu",
+        "Tiering akses & akun",
+        "Cabang",
+        "Pemeliharaan",
+        "Tambah perangkat",
+        "Tambah akun",
+        "Edit akun",
+        "Atur PIN otorisasi",
+        "Tambah role",
+        "Tambah cabang",
+        "Edit cabang",
+        "Kartu pra-cetak"
+      ],
+      "overflow": [],
+      "screenshot": "1440-pengaturan.png"
+    },
+    {
+      "url": "/kasir/tutup-harian",
+      "status": 200,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "logoutVisible": true,
+      "headings": [
+        "Rekonsiliasi kas harian",
+        "Hitung kas fisik",
+        "Rincian pembayaran",
+        "Produk terjual"
+      ],
+      "overflow": [],
+      "screenshot": "1440-kasir-tutup-harian.png"
+    },
+    {
+      "url": "/dashboard",
+      "status": 200,
+      "width": 1024,
+      "scrollWidth": 1024,
+      "logoutVisible": true,
+      "headings": [
+        "Selamat pagi, Sistem!",
+        " Tren penjualan 7 hari",
+        " Perhatian stok",
+        "Transaksi terbaru"
+      ],
+      "overflow": [],
+      "screenshot": "1024-dashboard.png"
+    },
+    {
+      "url": "/kasir",
+      "status": 200,
+      "width": 1024,
+      "scrollWidth": 1024,
+      "logoutVisible": true,
+      "headings": [
+        " Kasir Cabang Melati",
+        "Pesanan baru",
+        "Custom amount",
+        "Open bill",
+        "Scan QR member"
+      ],
+      "overflow": [],
+      "screenshot": "1024-kasir.png"
+    },
+    {
+      "url": "/transaksi",
+      "status": 200,
+      "width": 1024,
+      "scrollWidth": 1024,
+      "logoutVisible": true,
+      "headings": [
+        "Riwayat transaksi",
+        "0 transaksi",
+        "Batalkan transaksi"
+      ],
+      "overflow": [],
+      "screenshot": "1024-transaksi.png"
+    },
+    {
+      "url": "/produk",
+      "status": 200,
+      "width": 1024,
+      "scrollWidth": 1024,
+      "logoutVisible": true,
+      "headings": [
+        "Daftar produk",
+        "5 produk",
+        "Kelola kategori",
+        "Tambah produk",
+        "Edit produk",
+        "Import produk dari Excel"
+      ],
+      "overflow": [],
+      "screenshot": "1024-produk.png"
+    },
+    {
+      "url": "/gudang",
+      "status": 200,
+      "width": 1024,
+      "scrollWidth": 1024,
+      "logoutVisible": true,
+      "headings": [
+        " Stok bahan baku & olahan",
+        "Stok bahan baku",
+        "Stok olahan hari ini",
+        "Produksi terbaru",
+        "Pergerakan terbaru",
+        "Catat produksi olahan",
+        "Catat proses ulang",
+        "Penyesuaian stok",
+        "Stock opname akhir hari"
+      ],
+      "overflow": [],
+      "screenshot": "1024-gudang.png"
+    },
+    {
+      "url": "/pembelian",
+      "status": 200,
+      "width": 1024,
+      "scrollWidth": 1024,
+      "logoutVisible": true,
+      "headings": [
+        "Pembelian stok",
+        "Riwayat pembelian",
+        "Catat pembelian",
+        "Koreksi pembelian"
+      ],
+      "overflow": [],
+      "screenshot": "1024-pembelian.png"
+    },
+    {
+      "url": "/pengeluaran",
+      "status": 200,
+      "width": 1024,
+      "scrollWidth": 1024,
+      "logoutVisible": true,
+      "headings": [
+        "Pengeluaran operasional",
+        "Riwayat pengeluaran",
+        "Catat pengeluaran"
+      ],
+      "overflow": [],
+      "screenshot": "1024-pengeluaran.png"
+    },
+    {
+      "url": "/member",
+      "status": 200,
+      "width": 1024,
+      "scrollWidth": 1024,
+      "logoutVisible": true,
+      "headings": [
+        " Membership & deposit",
+        "Alur aktivasi kartu",
+        "0 data member",
+        "Scan kartu lalu isi data",
+        "Top up deposit",
+        "Edit data member",
+        "Koreksi deposit",
+        "Kartu membership",
+        "Scan / cari member aktif"
+      ],
+      "overflow": [],
+      "screenshot": "1024-member.png"
+    },
+    {
+      "url": "/laporan",
+      "status": 200,
+      "width": 1024,
+      "scrollWidth": 1024,
+      "logoutVisible": true,
+      "headings": [
+        "Laporan Cabang Melati",
+        "Penjualan harian",
+        "Metode pembayaran",
+        "Produk terjual",
+        "Membership & deposit baru",
+        " Detail transaksi"
+      ],
+      "overflow": [],
+      "screenshot": "1024-laporan.png"
+    },
+    {
+      "url": "/pengaturan",
+      "status": 200,
+      "width": 1024,
+      "scrollWidth": 1024,
+      "logoutVisible": true,
+      "headings": [
+        "Pengaturan sistem",
+        " Aturan laporan & membership",
+        "Identitas warung",
+        "Tampilan struk",
+        "Perangkat terhubung",
+        "Kartu member pra-cetak",
+        "Master role & hak akses menu",
+        "Tiering akses & akun",
+        "Cabang",
+        "Pemeliharaan",
+        "Tambah perangkat",
+        "Tambah akun",
+        "Edit akun",
+        "Atur PIN otorisasi",
+        "Tambah role",
+        "Tambah cabang",
+        "Edit cabang",
+        "Kartu pra-cetak"
+      ],
+      "overflow": [],
+      "screenshot": "1024-pengaturan.png"
+    },
+    {
+      "url": "/kasir/tutup-harian",
+      "status": 200,
+      "width": 1024,
+      "scrollWidth": 1024,
+      "logoutVisible": true,
+      "headings": [
+        "Rekonsiliasi kas harian",
+        "Hitung kas fisik",
+        "Rincian pembayaran",
+        "Produk terjual"
+      ],
+      "overflow": [],
+      "screenshot": "1024-kasir-tutup-harian.png"
+    },
+    {
+      "url": "/dashboard",
+      "status": 200,
+      "width": 768,
+      "scrollWidth": 768,
+      "logoutVisible": false,
+      "headings": [
+        "Selamat pagi, Sistem!",
+        " Tren penjualan 7 hari",
+        " Perhatian stok",
+        "Transaksi terbaru"
+      ],
+      "overflow": [],
+      "screenshot": "768-dashboard.png"
+    },
+    {
+      "url": "/kasir",
+      "status": 200,
+      "width": 768,
+      "scrollWidth": 768,
+      "logoutVisible": false,
+      "headings": [
+        " Kasir Cabang Melati",
+        "Pesanan baru",
+        "Custom amount",
+        "Open bill",
+        "Scan QR member"
+      ],
+      "overflow": [],
+      "screenshot": "768-kasir.png"
+    },
+    {
+      "url": "/transaksi",
+      "status": 200,
+      "width": 768,
+      "scrollWidth": 768,
+      "logoutVisible": false,
+      "headings": [
+        "Riwayat transaksi",
+        "0 transaksi",
+        "Batalkan transaksi"
+      ],
+      "overflow": [],
+      "screenshot": "768-transaksi.png"
+    },
+    {
+      "url": "/produk",
+      "status": 200,
+      "width": 768,
+      "scrollWidth": 768,
+      "logoutVisible": false,
+      "headings": [
+        "Daftar produk",
+        "5 produk",
+        "Kelola kategori",
+        "Tambah produk",
+        "Edit produk",
+        "Import produk dari Excel"
+      ],
+      "overflow": [],
+      "screenshot": "768-produk.png"
+    },
+    {
+      "url": "/gudang",
+      "status": 200,
+      "width": 768,
+      "scrollWidth": 768,
+      "logoutVisible": false,
+      "headings": [
+        " Stok bahan baku & olahan",
+        "Stok bahan baku",
+        "Stok olahan hari ini",
+        "Produksi terbaru",
+        "Pergerakan terbaru",
+        "Catat produksi olahan",
+        "Catat proses ulang",
+        "Penyesuaian stok",
+        "Stock opname akhir hari"
+      ],
+      "overflow": [],
+      "screenshot": "768-gudang.png"
+    },
+    {
+      "url": "/pembelian",
+      "status": 200,
+      "width": 768,
+      "scrollWidth": 768,
+      "logoutVisible": false,
+      "headings": [
+        "Pembelian stok",
+        "Riwayat pembelian",
+        "Catat pembelian",
+        "Koreksi pembelian"
+      ],
+      "overflow": [],
+      "screenshot": "768-pembelian.png"
+    },
+    {
+      "url": "/pengeluaran",
+      "status": 200,
+      "width": 768,
+      "scrollWidth": 768,
+      "logoutVisible": false,
+      "headings": [
+        "Pengeluaran operasional",
+        "Riwayat pengeluaran",
+        "Catat pengeluaran"
+      ],
+      "overflow": [],
+      "screenshot": "768-pengeluaran.png"
+    },
+    {
+      "url": "/member",
+      "status": 200,
+      "width": 768,
+      "scrollWidth": 768,
+      "logoutVisible": false,
+      "headings": [
+        " Membership & deposit",
+        "Alur aktivasi kartu",
+        "0 data member",
+        "Scan kartu lalu isi data",
+        "Top up deposit",
+        "Edit data member",
+        "Koreksi deposit",
+        "Kartu membership",
+        "Scan / cari member aktif"
+      ],
+      "overflow": [],
+      "screenshot": "768-member.png"
+    },
+    {
+      "url": "/laporan",
+      "status": 200,
+      "width": 768,
+      "scrollWidth": 768,
+      "logoutVisible": false,
+      "headings": [
+        "Laporan Cabang Melati",
+        "Penjualan harian",
+        "Metode pembayaran",
+        "Produk terjual",
+        "Membership & deposit baru",
+        " Detail transaksi"
+      ],
+      "overflow": [],
+      "screenshot": "768-laporan.png"
+    },
+    {
+      "url": "/pengaturan",
+      "status": 200,
+      "width": 768,
+      "scrollWidth": 768,
+      "logoutVisible": false,
+      "headings": [
+        "Pengaturan sistem",
+        " Aturan laporan & membership",
+        "Identitas warung",
+        "Tampilan struk",
+        "Perangkat terhubung",
+        "Kartu member pra-cetak",
+        "Master role & hak akses menu",
+        "Tiering akses & akun",
+        "Cabang",
+        "Pemeliharaan",
+        "Tambah perangkat",
+        "Tambah akun",
+        "Edit akun",
+        "Atur PIN otorisasi",
+        "Tambah role",
+        "Tambah cabang",
+        "Edit cabang",
+        "Kartu pra-cetak"
+      ],
+      "overflow": [],
+      "screenshot": "768-pengaturan.png"
+    },
+    {
+      "url": "/kasir/tutup-harian",
+      "status": 200,
+      "width": 768,
+      "scrollWidth": 768,
+      "logoutVisible": false,
+      "headings": [
+        "Rekonsiliasi kas harian",
+        "Hitung kas fisik",
+        "Rincian pembayaran",
+        "Produk terjual"
+      ],
+      "overflow": [],
+      "screenshot": "768-kasir-tutup-harian.png"
+    },
+    {
+      "url": "/dashboard",
+      "status": 200,
+      "width": 390,
+      "scrollWidth": 390,
+      "logoutVisible": false,
+      "headings": [
+        "Selamat pagi, Sistem!",
+        " Tren penjualan 7 hari",
+        " Perhatian stok",
+        "Transaksi terbaru"
+      ],
+      "overflow": [],
+      "screenshot": "390-dashboard.png"
+    },
+    {
+      "url": "/kasir",
+      "status": 200,
+      "width": 390,
+      "scrollWidth": 390,
+      "logoutVisible": false,
+      "headings": [
+        " Kasir Cabang Melati",
+        "Pesanan baru",
+        "Custom amount",
+        "Open bill",
+        "Scan QR member"
+      ],
+      "overflow": [],
+      "screenshot": "390-kasir.png"
+    },
+    {
+      "url": "/transaksi",
+      "status": 200,
+      "width": 390,
+      "scrollWidth": 390,
+      "logoutVisible": false,
+      "headings": [
+        "Riwayat transaksi",
+        "0 transaksi",
+        "Batalkan transaksi"
+      ],
+      "overflow": [],
+      "screenshot": "390-transaksi.png"
+    },
+    {
+      "url": "/produk",
+      "status": 200,
+      "width": 390,
+      "scrollWidth": 390,
+      "logoutVisible": false,
+      "headings": [
+        "Daftar produk",
+        "5 produk",
+        "Kelola kategori",
+        "Tambah produk",
+        "Edit produk",
+        "Import produk dari Excel"
+      ],
+      "overflow": [],
+      "screenshot": "390-produk.png"
+    },
+    {
+      "url": "/gudang",
+      "status": 200,
+      "width": 390,
+      "scrollWidth": 390,
+      "logoutVisible": false,
+      "headings": [
+        " Stok bahan baku & olahan",
+        "Stok bahan baku",
+        "Stok olahan hari ini",
+        "Produksi terbaru",
+        "Pergerakan terbaru",
+        "Catat produksi olahan",
+        "Catat proses ulang",
+        "Penyesuaian stok",
+        "Stock opname akhir hari"
+      ],
+      "overflow": [],
+      "screenshot": "390-gudang.png"
+    },
+    {
+      "url": "/pembelian",
+      "status": 200,
+      "width": 390,
+      "scrollWidth": 390,
+      "logoutVisible": false,
+      "headings": [
+        "Pembelian stok",
+        "Riwayat pembelian",
+        "Catat pembelian",
+        "Koreksi pembelian"
+      ],
+      "overflow": [],
+      "screenshot": "390-pembelian.png"
+    },
+    {
+      "url": "/pengeluaran",
+      "status": 200,
+      "width": 390,
+      "scrollWidth": 390,
+      "logoutVisible": false,
+      "headings": [
+        "Pengeluaran operasional",
+        "Riwayat pengeluaran",
+        "Catat pengeluaran"
+      ],
+      "overflow": [],
+      "screenshot": "390-pengeluaran.png"
+    },
+    {
+      "url": "/member",
+      "status": 200,
+      "width": 390,
+      "scrollWidth": 390,
+      "logoutVisible": false,
+      "headings": [
+        " Membership & deposit",
+        "Alur aktivasi kartu",
+        "0 data member",
+        "Scan kartu lalu isi data",
+        "Top up deposit",
+        "Edit data member",
+        "Koreksi deposit",
+        "Kartu membership",
+        "Scan / cari member aktif"
+      ],
+      "overflow": [],
+      "screenshot": "390-member.png"
+    },
+    {
+      "url": "/laporan",
+      "status": 200,
+      "width": 390,
+      "scrollWidth": 390,
+      "logoutVisible": false,
+      "headings": [
+        "Laporan Cabang Melati",
+        "Penjualan harian",
+        "Metode pembayaran",
+        "Produk terjual",
+        "Membership & deposit baru",
+        " Detail transaksi"
+      ],
+      "overflow": [],
+      "screenshot": "390-laporan.png"
+    },
+    {
+      "url": "/pengaturan",
+      "status": 200,
+      "width": 390,
+      "scrollWidth": 390,
+      "logoutVisible": false,
+      "headings": [
+        "Pengaturan sistem",
+        " Aturan laporan & membership",
+        "Identitas warung",
+        "Tampilan struk",
+        "Perangkat terhubung",
+        "Kartu member pra-cetak",
+        "Master role & hak akses menu",
+        "Tiering akses & akun",
+        "Cabang",
+        "Pemeliharaan",
+        "Tambah perangkat",
+        "Tambah akun",
+        "Edit akun",
+        "Atur PIN otorisasi",
+        "Tambah role",
+        "Tambah cabang",
+        "Edit cabang",
+        "Kartu pra-cetak"
+      ],
+      "overflow": [],
+      "screenshot": "390-pengaturan.png"
+    },
+    {
+      "url": "/kasir/tutup-harian",
+      "status": 200,
+      "width": 390,
+      "scrollWidth": 390,
+      "logoutVisible": false,
+      "headings": [
+        "Rekonsiliasi kas harian",
+        "Hitung kas fisik",
+        "Rincian pembayaran",
+        "Produk terjual"
+      ],
+      "overflow": [],
+      "screenshot": "390-kasir-tutup-harian.png"
+    },
+    {
+      "url": "/dashboard",
+      "status": 200,
+      "width": 360,
+      "scrollWidth": 360,
+      "logoutVisible": false,
+      "headings": [
+        "Selamat pagi, Sistem!",
+        " Tren penjualan 7 hari",
+        " Perhatian stok",
+        "Transaksi terbaru"
+      ],
+      "overflow": [],
+      "screenshot": "360-dashboard.png"
+    },
+    {
+      "url": "/kasir",
+      "status": 200,
+      "width": 360,
+      "scrollWidth": 360,
+      "logoutVisible": false,
+      "headings": [
+        " Kasir Cabang Melati",
+        "Pesanan baru",
+        "Custom amount",
+        "Open bill",
+        "Scan QR member"
+      ],
+      "overflow": [],
+      "screenshot": "360-kasir.png"
+    },
+    {
+      "url": "/transaksi",
+      "status": 200,
+      "width": 360,
+      "scrollWidth": 360,
+      "logoutVisible": false,
+      "headings": [
+        "Riwayat transaksi",
+        "0 transaksi",
+        "Batalkan transaksi"
+      ],
+      "overflow": [],
+      "screenshot": "360-transaksi.png"
+    },
+    {
+      "url": "/produk",
+      "status": 200,
+      "width": 360,
+      "scrollWidth": 360,
+      "logoutVisible": false,
+      "headings": [
+        "Daftar produk",
+        "5 produk",
+        "Kelola kategori",
+        "Tambah produk",
+        "Edit produk",
+        "Import produk dari Excel"
+      ],
+      "overflow": [],
+      "screenshot": "360-produk.png"
+    },
+    {
+      "url": "/gudang",
+      "status": 200,
+      "width": 360,
+      "scrollWidth": 360,
+      "logoutVisible": false,
+      "headings": [
+        " Stok bahan baku & olahan",
+        "Stok bahan baku",
+        "Stok olahan hari ini",
+        "Produksi terbaru",
+        "Pergerakan terbaru",
+        "Catat produksi olahan",
+        "Catat proses ulang",
+        "Penyesuaian stok",
+        "Stock opname akhir hari"
+      ],
+      "overflow": [],
+      "screenshot": "360-gudang.png"
+    },
+    {
+      "url": "/pembelian",
+      "status": 200,
+      "width": 360,
+      "scrollWidth": 360,
+      "logoutVisible": false,
+      "headings": [
+        "Pembelian stok",
+        "Riwayat pembelian",
+        "Catat pembelian",
+        "Koreksi pembelian"
+      ],
+      "overflow": [],
+      "screenshot": "360-pembelian.png"
+    },
+    {
+      "url": "/pengeluaran",
+      "status": 200,
+      "width": 360,
+      "scrollWidth": 360,
+      "logoutVisible": false,
+      "headings": [
+        "Pengeluaran operasional",
+        "Riwayat pengeluaran",
+        "Catat pengeluaran"
+      ],
+      "overflow": [],
+      "screenshot": "360-pengeluaran.png"
+    },
+    {
+      "url": "/member",
+      "status": 200,
+      "width": 360,
+      "scrollWidth": 360,
+      "logoutVisible": false,
+      "headings": [
+        " Membership & deposit",
+        "Alur aktivasi kartu",
+        "0 data member",
+        "Scan kartu lalu isi data",
+        "Top up deposit",
+        "Edit data member",
+        "Koreksi deposit",
+        "Kartu membership",
+        "Scan / cari member aktif"
+      ],
+      "overflow": [],
+      "screenshot": "360-member.png"
+    },
+    {
+      "url": "/laporan",
+      "status": 200,
+      "width": 360,
+      "scrollWidth": 360,
+      "logoutVisible": false,
+      "headings": [
+        "Laporan Cabang Melati",
+        "Penjualan harian",
+        "Metode pembayaran",
+        "Produk terjual",
+        "Membership & deposit baru",
+        " Detail transaksi"
+      ],
+      "overflow": [],
+      "screenshot": "360-laporan.png"
+    },
+    {
+      "url": "/pengaturan",
+      "status": 200,
+      "width": 360,
+      "scrollWidth": 360,
+      "logoutVisible": false,
+      "headings": [
+        "Pengaturan sistem",
+        " Aturan laporan & membership",
+        "Identitas warung",
+        "Tampilan struk",
+        "Perangkat terhubung",
+        "Kartu member pra-cetak",
+        "Master role & hak akses menu",
+        "Tiering akses & akun",
+        "Cabang",
+        "Pemeliharaan",
+        "Tambah perangkat",
+        "Tambah akun",
+        "Edit akun",
+        "Atur PIN otorisasi",
+        "Tambah role",
+        "Tambah cabang",
+        "Edit cabang",
+        "Kartu pra-cetak"
+      ],
+      "overflow": [],
+      "screenshot": "360-pengaturan.png"
+    },
+    {
+      "url": "/kasir/tutup-harian",
+      "status": 200,
+      "width": 360,
+      "scrollWidth": 360,
+      "logoutVisible": false,
+      "headings": [
+        "Rekonsiliasi kas harian",
+        "Hitung kas fisik",
+        "Rincian pembayaran",
+        "Produk terjual"
+      ],
+      "overflow": [],
+      "screenshot": "360-kasir-tutup-harian.png"
+    }
+  ],
+  "errors": []
+}

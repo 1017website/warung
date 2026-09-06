@@ -1,0 +1,484 @@
+{
+  "scenarios": [
+    {
+      "id": "B03",
+      "passed": true,
+      "stockBeforeInventory": 7
+    },
+    {
+      "id": "B01",
+      "passed": true,
+      "blockedInputs": [
+        0,
+        1000
+      ],
+      "cashSent": 30000,
+      "split": [
+        {
+          "method": "deposit",
+          "amount": 5000
+        },
+        {
+          "method": "cash",
+          "provider": null,
+          "amount": 20000
+        }
+      ]
+    },
+    {
+      "id": "B02",
+      "passed": true,
+      "amounts": [
+        1000,
+        5000,
+        1000000
+      ]
+    },
+    {
+      "id": "B05",
+      "passed": true,
+      "supplier": "Supplier dikoreksi"
+    },
+    {
+      "id": "B07",
+      "passed": true,
+      "from": "2026-08-01",
+      "to": "2026-08-15"
+    },
+    {
+      "id": "B04",
+      "passed": true,
+      "logoutWidths": [
+        768,
+        390,
+        360
+      ]
+    }
+  ],
+  "renders": [
+    {
+      "url": "dashboard",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "logoutVisible": true
+    },
+    {
+      "url": "kasir",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "logoutVisible": true
+    },
+    {
+      "url": "transaksi",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "logoutVisible": true
+    },
+    {
+      "url": "produk",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "logoutVisible": true
+    },
+    {
+      "url": "gudang",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "logoutVisible": true
+    },
+    {
+      "url": "pembelian",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "logoutVisible": true
+    },
+    {
+      "url": "pengeluaran",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "logoutVisible": true
+    },
+    {
+      "url": "member",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "logoutVisible": true
+    },
+    {
+      "url": "laporan",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "logoutVisible": true
+    },
+    {
+      "url": "pengaturan",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "logoutVisible": true
+    },
+    {
+      "url": "kasir/tutup-harian",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "logoutVisible": true
+    },
+    {
+      "url": "dashboard",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "logoutVisible": true
+    },
+    {
+      "url": "kasir",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "logoutVisible": true
+    },
+    {
+      "url": "transaksi",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "logoutVisible": true
+    },
+    {
+      "url": "produk",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "logoutVisible": true
+    },
+    {
+      "url": "gudang",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "logoutVisible": true
+    },
+    {
+      "url": "pembelian",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "logoutVisible": true
+    },
+    {
+      "url": "pengeluaran",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "logoutVisible": true
+    },
+    {
+      "url": "member",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "logoutVisible": true
+    },
+    {
+      "url": "laporan",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "logoutVisible": true
+    },
+    {
+      "url": "pengaturan",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "logoutVisible": true
+    },
+    {
+      "url": "kasir/tutup-harian",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "logoutVisible": true
+    },
+    {
+      "url": "dashboard",
+      "width": 768,
+      "scrollWidth": 768,
+      "logoutVisible": true
+    },
+    {
+      "url": "kasir",
+      "width": 768,
+      "scrollWidth": 768,
+      "logoutVisible": true
+    },
+    {
+      "url": "transaksi",
+      "width": 768,
+      "scrollWidth": 768,
+      "logoutVisible": true
+    },
+    {
+      "url": "produk",
+      "width": 768,
+      "scrollWidth": 768,
+      "logoutVisible": true
+    },
+    {
+      "url": "gudang",
+      "width": 768,
+      "scrollWidth": 768,
+      "logoutVisible": true
+    },
+    {
+      "url": "pembelian",
+      "width": 768,
+      "scrollWidth": 768,
+      "logoutVisible": true
+    },
+    {
+      "url": "pengeluaran",
+      "width": 768,
+      "scrollWidth": 768,
+      "logoutVisible": true
+    },
+    {
+      "url": "member",
+      "width": 768,
+      "scrollWidth": 768,
+      "logoutVisible": true
+    },
+    {
+      "url": "laporan",
+      "width": 768,
+      "scrollWidth": 768,
+      "logoutVisible": true
+    },
+    {
+      "url": "pengaturan",
+      "width": 768,
+      "scrollWidth": 768,
+      "logoutVisible": true
+    },
+    {
+      "url": "kasir/tutup-harian",
+      "width": 768,
+      "scrollWidth": 768,
+      "logoutVisible": true
+    },
+    {
+      "url": "dashboard",
+      "width": 390,
+      "scrollWidth": 390,
+      "logoutVisible": true
+    },
+    {
+      "url": "kasir",
+      "width": 390,
+      "scrollWidth": 390,
+      "logoutVisible": true
+    },
+    {
+      "url": "transaksi",
+      "width": 390,
+      "scrollWidth": 390,
+      "logoutVisible": true
+    },
+    {
+      "url": "produk",
+      "width": 390,
+      "scrollWidth": 390,
+      "logoutVisible": true
+    },
+    {
+      "url": "gudang",
+      "width": 390,
+      "scrollWidth": 390,
+      "logoutVisible": true
+    },
+    {
+      "url": "pembelian",
+      "width": 390,
+      "scrollWidth": 390,
+      "logoutVisible": true
+    },
+    {
+      "url": "pengeluaran",
+      "width": 390,
+      "scrollWidth": 390,
+      "logoutVisible": true
+    },
+    {
+      "url": "member",
+      "width": 390,
+      "scrollWidth": 390,
+      "logoutVisible": true
+    },
+    {
+      "url": "laporan",
+      "width": 390,
+      "scrollWidth": 390,
+      "logoutVisible": true
+    },
+    {
+      "url": "pengaturan",
+      "width": 390,
+      "scrollWidth": 390,
+      "logoutVisible": true
+    },
+    {
+      "url": "kasir/tutup-harian",
+      "width": 390,
+      "scrollWidth": 390,
+      "logoutVisible": true
+    },
+    {
+      "url": "dashboard",
+      "width": 360,
+      "scrollWidth": 360,
+      "logoutVisible": true
+    },
+    {
+      "url": "kasir",
+      "width": 360,
+      "scrollWidth": 360,
+      "logoutVisible": true
+    },
+    {
+      "url": "transaksi",
+      "width": 360,
+      "scrollWidth": 360,
+      "logoutVisible": true
+    },
+    {
+      "url": "produk",
+      "width": 360,
+      "scrollWidth": 360,
+      "logoutVisible": true
+    },
+    {
+      "url": "gudang",
+      "width": 360,
+      "scrollWidth": 360,
+      "logoutVisible": true
+    },
+    {
+      "url": "pembelian",
+      "width": 360,
+      "scrollWidth": 360,
+      "logoutVisible": true
+    },
+    {
+      "url": "pengeluaran",
+      "width": 360,
+      "scrollWidth": 360,
+      "logoutVisible": true
+    },
+    {
+      "url": "member",
+      "width": 360,
+      "scrollWidth": 360,
+      "logoutVisible": true
+    },
+    {
+      "url": "laporan",
+      "width": 360,
+      "scrollWidth": 360,
+      "logoutVisible": true
+    },
+    {
+      "url": "pengaturan",
+      "width": 360,
+      "scrollWidth": 360,
+      "logoutVisible": true
+    },
+    {
+      "url": "kasir/tutup-harian",
+      "width": 360,
+      "scrollWidth": 360,
+      "logoutVisible": true
+    }
+  ],
+  "roles": [
+    {
+      "role": "developer",
+      "statuses": [
+        {
+          "url": "dashboard",
+          "status": 200
+        },
+        {
+          "url": "kasir",
+          "status": 200
+        },
+        {
+          "url": "transaksi",
+          "status": 200
+        },
+        {
+          "url": "produk",
+          "status": 200
+        },
+        {
+          "url": "gudang",
+          "status": 200
+        },
+        {
+          "url": "pembelian",
+          "status": 200
+        },
+        {
+          "url": "pengeluaran",
+          "status": 200
+        },
+        {
+          "url": "member",
+          "status": 200
+        },
+        {
+          "url": "laporan",
+          "status": 200
+        },
+        {
+          "url": "pengaturan",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "role": "superadmin",
+      "statuses": [
+        {
+          "url": "dashboard",
+          "status": 200
+        },
+        {
+          "url": "kasir",
+          "status": 200
+        },
+        {
+          "url": "transaksi",
+          "status": 200
+        },
+        {
+          "url": "produk",
+          "status": 200
+        },
+        {
+          "url": "gudang",
+          "status": 200
+        },
+        {
+          "url": "pembelian",
+          "status": 200
+        },
+        {
+          "url": "pengeluaran",
+          "status": 200
+        },
+        {
+          "url": "member",
+          "status": 200
+        },
+        {
+          "url": "laporan",
+          "status": 200
+        },
+        {
+          "url": "pengaturan",
+          "status": 200
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "failure": "Error: UNKNOWN: unknown error, open 'D:\\Project\\1017website 2026\\warung\\docs\\fix-verification-2026-09-06\\screenshots\\role-head_ops-produk.png'\n    at async open (node:internal/fs/promises:639:25)\n    at async Object.writeFile (node:internal/fs/promises:1216:14)\n    at async _Page.screenshot (C:\\Users\\M.Zulfi\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\node_modules\\playwright-core\\lib\\coreBundle.js:61393:11)\n    at async shot (D:\\Project\\1017website 2026\\warung\\tests\\browser\\audit-fixes.cjs:13:30)\n    at async D:\\Project\\1017website 2026\\warung\\tests\\browser\\audit-fixes.cjs:64:208"
+}

@@ -19,7 +19,7 @@ for (const mode of ['popup', 'blocked', 'failed', 'hold']) {
         };
         const context = vm.createContext({
             URL, cart: new Map([['1', {}]]), payment: 'cash', serviceType: 'takeaway',
-            orderPayload: () => ({ payments: [] }),
+            orderPayload: () => ({ payments: [] }), totals: () => ({ total: 0 }),
             document: { getElementById: () => button, querySelector: () => ({ content: 'token' }) },
             window: { open: () => { calls.push(['open']); return mode === 'blocked' ? null : popup; } },
             location: { origin: 'https://warung.test', assign: url => calls.push(['fallback', url]), reload: () => calls.push(['reload']) },

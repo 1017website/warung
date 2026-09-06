@@ -1,0 +1,31 @@
+﻿{
+    "payments": [
+        {
+            "invoice_no": "TRX-260906-074749-SNV",
+            "total": "25000.00",
+            "paid_amount": "25000.00",
+            "change_amount": "0.00",
+            "status": "completed",
+            "method": "cash",
+            "amount": "25000.00"
+        },
+        {
+            "invoice_no": "TRX-260906-074729-VLA",
+            "total": "25000.00",
+            "paid_amount": "25000.00",
+            "change_amount": "0.00",
+            "status": "completed",
+            "method": "cash",
+            "amount": "25000.00"
+        }
+    ],
+    "purchase": [
+        {
+            "purchase_no": "PO-AUDIT-USED",
+            "payment_status": "dp",
+            "dp_amount": "5.00",
+            "total": "10000.00",
+            "supplier_name": "Supplier Audit"
+        }
+    ]
+}

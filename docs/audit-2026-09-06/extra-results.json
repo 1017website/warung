@@ -1,0 +1,86 @@
+{
+  "modals": [
+    {
+      "url": "produk",
+      "selector": "product-modal",
+      "width": 350,
+      "scrollWidth": 350,
+      "viewport": 390
+    },
+    {
+      "url": "produk",
+      "selector": "edit-product-modal",
+      "width": 350,
+      "scrollWidth": 350,
+      "viewport": 390
+    },
+    {
+      "url": "produk",
+      "selector": "category-modal",
+      "width": 350,
+      "scrollWidth": 350,
+      "viewport": 390
+    },
+    {
+      "url": "produk",
+      "selector": "import-modal",
+      "width": 350,
+      "scrollWidth": 350,
+      "viewport": 390
+    },
+    {
+      "url": "gudang",
+      "selector": "production-modal",
+      "width": 350,
+      "scrollWidth": 350,
+      "viewport": 390
+    },
+    {
+      "url": "pembelian",
+      "selector": "purchase-modal",
+      "width": 350,
+      "scrollWidth": 350,
+      "viewport": 390
+    },
+    {
+      "url": "member",
+      "selector": "member-modal",
+      "width": 350,
+      "scrollWidth": 350,
+      "viewport": 390
+    },
+    {
+      "url": "pengeluaran",
+      "selector": "expense-modal",
+      "width": 350,
+      "scrollWidth": 350,
+      "viewport": 390
+    },
+    {
+      "url": "pengaturan",
+      "selector": "user-modal",
+      "width": 350,
+      "scrollWidth": 350,
+      "viewport": 390
+    },
+    {
+      "url": "pengaturan",
+      "selector": "role-modal",
+      "width": 350,
+      "scrollWidth": 350,
+      "viewport": 390
+    }
+  ],
+  "errors": [],
+  "reportPeriod": {
+    "before": {
+      "from": "2026-08-01",
+      "to": "2026-08-15"
+    },
+    "after": {
+      "from": "2026-09-01",
+      "to": "2026-09-06",
+      "url": "http://127.0.0.1:8017/laporan?type=non_real&period=custom"
+    }
+  }
+}
