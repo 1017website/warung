@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Dashboard') · {{ $activeStore?->brandName() ?? auth()->user()->tenant->name }}</title>
+    <title>@yield('title', 'Dashboard') · {{ $isConsolidated ? 'Semua warung' : ($activeStore?->brandName() ?? auth()->user()->tenant->name) }}</title>
     @include('partials.static-assets')
     @stack('head')
 </head>
@@ -18,13 +18,13 @@
     <aside class="sidebar">
         <a class="brand" href="{{ route($nav[0][0] ?? 'pos') }}">
             <span class="brand-mark">
-                @if($activeStore?->logo_path)
+                @if(!$isConsolidated && $activeStore?->logo_path)
                     <img src="{{ asset('storage/'.$activeStore->logo_path) }}" alt="Logo">
                 @else <i class="bi bi-shop"></i> @endif
             </span>
             <span class="brand-copy">
-                <span class="brand-name">{{ $activeStore?->brandName() ?? auth()->user()->tenant->name }}</span>
-                <span class="brand-sub">POS Warung</span>
+                <span class="brand-name">{{ $isConsolidated ? 'Semua warung' : ($activeStore?->brandName() ?? auth()->user()->tenant->name) }}</span>
+                <span class="brand-sub">{{ $isConsolidated ? auth()->user()->tenant->name : 'POS Warung' }}</span>
             </span>
         </a>
         <div class="nav-label">Operasional</div>

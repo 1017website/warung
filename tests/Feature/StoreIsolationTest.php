@@ -52,6 +52,22 @@ class StoreIsolationTest extends TestCase
         return [['cashier'], ['spv'], ['outlet_manager'], ['ops_admin']];
     }
 
+    public function test_sidebar_identity_follows_consolidated_and_individual_store_selection(): void
+    {
+        ['tenant' => $tenant, 'melati' => $melati, 'kenanga' => $kenanga] = $this->setupTwoStores();
+        $user = $this->makeUser($tenant, $melati, 'superadmin');
+        $kenanga->update(['business_name' => 'Warung Kenanga']);
+        $this->actingAs($user)->post('/switch-store', ['store_id' => 'consolidated'])->assertRedirect();
+        $this->get('/dashboard')->assertOk()
+            ->assertSee('<span class="brand-name">Semua warung</span>', false)
+            ->assertSee('<span class="brand-sub">Warung Dua Cabang</span>', false);
+
+        $this->post('/switch-store', ['store_id' => $kenanga->id])->assertRedirect();
+        $this->get('/dashboard')->assertOk()
+            ->assertSee('<span class="brand-name">Warung Kenanga</span>', false)
+            ->assertDontSee('<span class="brand-name">Semua warung</span>', false);
+    }
+
     #[DataProvider('limitedRoles')]
     public function test_limited_roles_cannot_switch_to_another_store(string $role): void
     {

@@ -6,6 +6,9 @@
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f4f6fa;color:#19273a;font:16px/1.5 system-ui,sans-serif}header{background:#fff;border-bottom:1px solid #dde3ec;padding:18px max(20px,calc((100% - 960px)/2));display:flex;align-items:center;justify-content:space-between;gap:16px}main{max-width:820px;margin:36px auto;padding:0 20px 48px}h1{font-size:30px;margin:0 0 8px}h2{font-size:22px;margin-top:0}p{color:#576579}.steps{display:flex;list-style:none;padding:0;gap:12px;margin:26px 0}.steps li{flex:1;border-top:4px solid #d6deeb;padding:12px 0;font-weight:600}.steps .active{border-color:#2563eb;color:#1d4ed8}.card{padding:28px;background:white;border:1px solid #dde3ec;border-radius:16px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.field{display:flex;flex-direction:column;gap:7px;margin-bottom:18px}.grid .field{margin-bottom:0}label{font-weight:600}input,textarea{width:100%;padding:12px;border:1px solid #aab7ca;border-radius:8px;font:inherit;min-width:0}button{border:0;border-radius:8px;padding:12px 18px;min-height:44px;font:inherit;cursor:pointer;background:#2563eb;color:#fff;font-weight:600}.logout{background:#edf1f7;color:#263b58}.actions{margin-top:26px;display:flex;justify-content:flex-end}.error{padding:14px;background:#fff0f0;color:#991b1b;border-radius:8px;margin-bottom:20px}.hint{font-size:14px;margin:7px 0 20px}.review{padding:0;list-style:none}.review li{padding:12px 0;border-bottom:1px solid #e4e9f0;overflow-wrap:anywhere}.check{display:flex;gap:10px;align-items:flex-start}.check input{width:20px;flex:none;margin-top:4px}.badge{color:#167348;font-weight:700}.product{font-weight:600}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #93b4fc;outline-offset:3px}@media(max-width:600px){main{margin-top:24px}.card{padding:20px}.grid{grid-template-columns:1fr}.steps{gap:8px;font-size:13px}h1{font-size:26px}.actions button{width:100%}header{padding:14px 20px}}
 </style>
+<link rel="stylesheet" href="{{ asset('css/setup.css') }}?v={{ filemtime(public_path('css/setup.css')) }}">
+<script>window.money = value => new Intl.NumberFormat('id-ID').format(Number(value || 0));</script>
+<script defer src="{{ asset('js/overrides.js') }}?v={{ filemtime(public_path('js/overrides.js')) }}"></script>
 </head>
 <body>
 <header><strong>POS Warung</strong><form method="post" action="{{ route('logout') }}">@csrf<button class="logout">Keluar</button></form></header>
@@ -13,9 +16,12 @@
 @if(! $user->canManageSystem())
 <section class="card"><h1>Warung belum siap digunakan</h1><p>Superadmin perlu melengkapi setup awal usaha, cabang, dan produk. Silakan hubungi Superadmin, lalu masuk kembali setelah setup selesai.</p></section>
 @else
-<h1>Siapkan warung Anda</h1><p>Lengkapi data awal agar kasir bisa mulai berjualan. Progres tersimpan setiap kali Anda melanjutkan langkah.</p>
+<div class="setup-layout"><aside class="setup-guide">
+<p class="step-caption">Pengaturan awal · Langkah {{ $step }} dari 3</p>
+<h1>Siapkan warung Anda</h1><p>Mulai dari identitas usaha, siapkan menu, lalu buka kasir pertama Anda.</p>
 <ol class="steps" aria-label="Progres setup"><li class="{{ $step >= 1 ? 'active' : '' }}" @if($step === 1) aria-current="step" @endif>1. Usaha & cabang</li><li class="{{ $step >= 2 ? 'active' : '' }}" @if($step === 2) aria-current="step" @endif>2. Produk awal</li><li class="{{ $step >= 3 ? 'active' : '' }}" @if($step === 3) aria-current="step" @endif>3. Siap digunakan</li></ol>
-<section class="card">
+<div class="save-note"><strong>Lanjutkan kapan saja</strong><p>Progres tersimpan setiap kali Anda melanjutkan langkah.</p></div>
+</aside><section class="card">
 @if($errors->any())<div class="error" role="alert"><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
 <form method="post" action="{{ route('setup.save') }}">
 @csrf<input type="hidden" name="step" value="{{ $step }}">
@@ -32,7 +38,7 @@
 <h2>Tambahkan menu pertama</h2><p class="hint">Buat satu menu beserta stok siap jual. Menu lainnya dapat ditambahkan melalui Produk, sedangkan bahan baku dan stok produksi melalui Gudang.</p>
 <div class="field"><label for="category">Kategori</label><input id="category" name="category" value="{{ old('category') }}" maxlength="255" placeholder="Contoh: Makanan" required></div>
 <div class="field"><label for="product_name">Nama menu</label><input id="product_name" name="product_name" value="{{ old('product_name') }}" maxlength="255" placeholder="Contoh: Nasi Goreng" required></div>
-<div class="grid"><div class="field"><label for="selling_price">Harga jual (Rp)</label><input id="selling_price" name="selling_price" type="number" min="1" max="999999999999" step="0.01" value="{{ old('selling_price') }}" required></div><div class="field"><label for="unit">Satuan</label><input id="unit" name="unit" value="{{ old('unit', 'porsi') }}" maxlength="20" required></div><div class="field"><label for="quantity">Stok siap jual hari ini</label><input id="quantity" name="quantity" type="number" min="0.001" max="999999999" step="0.001" value="{{ old('quantity') }}" required></div></div>
+<div class="grid"><div class="field"><label for="selling_price">Harga jual (Rp)</label><input id="selling_price" name="selling_price" type="text" data-money-input data-min="1" inputmode="numeric" autocomplete="off" maxlength="15" value="{{ old('selling_price') }}" placeholder="Contoh: 15.000" aria-describedby="price-hint" required><small id="price-hint">Rupiah, tanpa desimal. Pemisah ribuan otomatis.</small></div><div class="field"><label for="unit">Satuan</label><input id="unit" name="unit" value="{{ old('unit', 'porsi') }}" maxlength="20" required></div><div class="field"><label for="quantity">Stok siap jual hari ini</label><input id="quantity" name="quantity" type="number" min="0.001" max="999999999" step="0.001" value="{{ old('quantity') }}" required></div></div>
 <p class="hint">Isi stok yang benar-benar tersedia. Stok awal dicatat dalam riwayat pergerakan stok.</p>
 <div class="actions"><button>Simpan & periksa kesiapan</button></div>
 @else
@@ -41,6 +47,29 @@
 <label class="check"><input type="checkbox" name="confirm" value="1" required> Saya sudah memeriksa data awal dan siap menggunakan POS Warung.</label>
 <div class="actions"><button>Selesai & masuk POS Warung</button></div>
 @endif
-</form></section>
+</form></section></div>
 @endif
-</main></body></html>
+</main>
+<script>
+document.addEventListener('submit', event => {
+    if (event.defaultPrevented) return;
+    const button = event.submitter;
+    if (!button) return;
+    button.dataset.originalLabel = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Memproses…';
+    event.target.setAttribute('aria-busy', 'true');
+});
+window.addEventListener('pageshow', () => {
+    document.querySelectorAll('form[aria-busy="true"]').forEach(form => {
+        form.removeAttribute('aria-busy');
+        form.querySelectorAll('button[data-original-label]').forEach(button => {
+            button.disabled = false;
+            button.textContent = button.dataset.originalLabel;
+        });
+        window.initializeMoneyInputs?.(form);
+        form.querySelectorAll('[data-money-input]').forEach(input => window.formatMoneyInput?.(input));
+    });
+});
+</script>
+</body></html>
