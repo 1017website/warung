@@ -48,7 +48,12 @@ class WarungController extends Controller
             'stock_date' => $stockDate,
         ];
 
-        if ($stock = DailyMenuStock::where($attributes)->lockForUpdate()->first()) {
+        if ($stock = DailyMenuStock::where('tenant_id', $this->tenantId())
+            ->where('store_id', $storeId)
+            ->where('product_id', $productId)
+            ->whereDate('stock_date', $stockDate)
+            ->lockForUpdate()
+            ->first()) {
             return $stock;
         }
 
@@ -733,9 +738,16 @@ class WarungController extends Controller
         return back()->with('success', 'Produk berhasil diperbarui.');
     }
 
-    public function destroyProduct(Product $product)
+    public function destroyProduct(int $product)
     {
-        abort_unless($product->tenant_id === $this->tenantId(), 404);
+        // A repeated/double submission remains harmless instead of turning a
+        // successful archive into a 404 page.
+        $product = Product::withTrashed()->where('tenant_id', $this->tenantId())->findOrFail($product);
+        if ($product->trashed()) {
+            return back()->with('success', 'Produk sudah berada di arsip.');
+        }
+
+        $product->update(['is_active' => false]);
         $product->delete();
 
         return back()->with('success', 'Produk dipindahkan ke arsip.');
@@ -1097,7 +1109,8 @@ class WarungController extends Controller
     public function purchases()
     {
         $purchases = Purchase::with('items')->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->latest('purchased_at')->paginate(20);
-        $products = Product::where('tenant_id', $this->tenantId())->where('product_type', 'ingredient')->orderBy('name')->get();
+        $products = Product::where('tenant_id', $this->tenantId())->where('is_active', true)
+            ->orderBy('product_type')->orderBy('name')->get();
 
         return $this->view('purchases.index', compact('purchases', 'products'));
     }
@@ -1109,7 +1122,7 @@ class WarungController extends Controller
             'unit_cost' => 'required|numeric|min:0', 'purchased_at' => 'required|date', 'status' => ['required', Rule::in(['received', 'not_received'])],
             'payment_status' => ['required', Rule::in(['paid', 'dp', 'unpaid'])], 'dp_amount' => 'nullable|numeric|min:0', 'notes' => 'nullable|string|max:255',
         ]);
-        $product = Product::where('tenant_id', $this->tenantId())->where('product_type', 'ingredient')->findOrFail($data['product_id']);
+        $product = Product::where('tenant_id', $this->tenantId())->where('is_active', true)->findOrFail($data['product_id']);
         $total = $data['quantity'] * $data['unit_cost'];
         abort_if(($data['dp_amount'] ?? 0) > $total, 422, 'DP tidak boleh melebihi total pembelian.');
         DB::transaction(function () use ($data, $product, $total) {
@@ -1139,7 +1152,7 @@ class WarungController extends Controller
             'unit_cost' => 'required|numeric|min:0', 'purchased_at' => 'required|date', 'status' => ['required', Rule::in(['received', 'not_received'])],
             'payment_status' => ['required', Rule::in(['paid', 'dp', 'unpaid'])], 'dp_amount' => 'nullable|numeric|min:0', 'notes' => 'nullable|string|max:255',
         ]);
-        $product = Product::where('tenant_id', $this->tenantId())->where('product_type', 'ingredient')->findOrFail($data['product_id']);
+        $product = Product::where('tenant_id', $this->tenantId())->where('is_active', true)->findOrFail($data['product_id']);
         $total = (float) $data['quantity'] * (float) $data['unit_cost'];
         abort_if(($data['dp_amount'] ?? 0) > $total, 422, 'DP tidak boleh melebihi total pembelian.');
 
@@ -1197,8 +1210,16 @@ class WarungController extends Controller
         if (abs($delta) < 0.0005) {
             return;
         }
-        $stock = ProductStock::firstOrCreate(['tenant_id' => $this->tenantId(), 'store_id' => $purchase->store_id, 'product_id' => $productId], ['quantity' => 0]);
-        $stock = ProductStock::whereKey($stock->id)->lockForUpdate()->firstOrFail();
+        $product = Product::withTrashed()->where('tenant_id', $this->tenantId())->findOrFail($productId);
+        if ($product->product_type === 'menu') {
+            $stock = $this->menuStockForDate($product->id, null, $purchase->store_id);
+            $stock = DailyMenuStock::whereKey($stock->id)->lockForUpdate()->firstOrFail();
+        } else {
+            $stock = ProductStock::firstOrCreate([
+                'tenant_id' => $this->tenantId(), 'store_id' => $purchase->store_id, 'product_id' => $productId,
+            ], ['quantity' => 0]);
+            $stock = ProductStock::whereKey($stock->id)->lockForUpdate()->firstOrFail();
+        }
         abort_if((float) $stock->quantity + $delta < -0.0005, 422, 'Status tidak dapat diubah karena stok sudah terpakai.');
         $stock->increment('quantity', $delta);
         DB::table('stock_movements')->insert([
@@ -1244,6 +1265,14 @@ class WarungController extends Controller
 
     public function storeExpense(Request $request)
     {
+        $data = $this->expenseData($request);
+        Expense::create($data + ['tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'user_id' => auth()->id(), 'report_type' => 'real']);
+
+        return back()->with('success', 'Pengeluaran berhasil dicatat.');
+    }
+
+    private function expenseData(Request $request): array
+    {
         $data = $request->validate([
             'category' => ['required', Rule::in(Expense::CATEGORIES)],
             'description' => 'required|string|max:180',
@@ -1252,9 +1281,17 @@ class WarungController extends Controller
             'expense_date' => 'required|date',
         ]);
         $data['payment_method'] = $data['payment_method'] ?? 'cash';
-        Expense::create($data + ['tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'user_id' => auth()->id(), 'report_type' => 'real']);
 
-        return back()->with('success', 'Pengeluaran berhasil dicatat.');
+        return $data;
+    }
+
+    public function updateExpense(Request $request, Expense $expense)
+    {
+        abort_unless($expense->tenant_id === $this->tenantId(), 404);
+        $this->assertStoreAccess($expense->store_id);
+        $expense->update($this->expenseData($request));
+
+        return back()->with('success', 'Pengeluaran berhasil diperbarui.');
     }
 
     public function destroyExpense(Expense $expense)
