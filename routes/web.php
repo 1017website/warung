@@ -103,6 +103,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureInitialSetup::class])->gro
     Route::middleware('module:expenses')->group(function () {
         Route::get('/pengeluaran', [WarungController::class, 'expenses'])->name('expenses');
         Route::post('/pengeluaran', [WarungController::class, 'storeExpense'])->name('expenses.store');
+        Route::put('/pengeluaran/{expense}', [WarungController::class, 'updateExpense'])->name('expenses.update');
         Route::delete('/pengeluaran/{expense}', [WarungController::class, 'destroyExpense'])->name('expenses.destroy');
     });
 
