@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Dashboard') · {{ $isConsolidated ? 'Semua warung' : ($activeStore?->brandName() ?? auth()->user()->tenant->name) }}</title>
+    @if(!$isConsolidated && $activeStore?->logo_path)<link rel="icon" href="{{ asset('storage/'.$activeStore->logo_path) }}">@endif
     @include('partials.static-assets')
     @stack('head')
 </head>
@@ -81,6 +82,9 @@
         <div class="page">
             @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
             @if($errors->any())<div class="alert alert-error">{{ $errors->first() }}</div>@endif
+            @if($isConsolidated && !request()->routeIs('dashboard', 'reports*', 'transactions*', 'products*', 'assets*'))
+                <div class="alert consolidated-note"><i class="bi bi-diagram-3"></i> Mode consolidated berlaku untuk Ringkasan, Transaksi, Produk, Inventaris, dan Laporan. Halaman ini tetap memakai data <b>{{ $activeStore?->name }}</b>; pilih cabang di atas untuk berpindah.</div>
+            @endif
             @yield('content')
         </div>
     </main>

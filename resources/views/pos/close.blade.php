@@ -40,7 +40,7 @@
         </tbody></table></div>
         <div class="card-title" style="margin-top:22px"><div><h2>Produk terjual</h2><p>Rekap kuantitas transaksi selesai.</p></div></div>
         <div class="table-wrap"><table><thead><tr><th>Produk</th><th>Qty</th></tr></thead><tbody>
-        @forelse($sales as $item)<tr><td>{{ $item->product_name }}</td><td>{{ $item->quantity }} {{ $item->unit }}</td></tr>
+        @forelse($sales as $item)<tr><td>{{ $item->product_name }}</td><td>@qty($item->quantity) {{ $item->unit }}</td></tr>
         @empty<tr><td colspan="2">Belum ada produk terjual.</td></tr>@endforelse
         </tbody></table></div>
     </section>

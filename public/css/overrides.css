@@ -118,3 +118,60 @@
 .receipt-preview-row{display:flex;justify-content:space-between;gap:12px;text-align:left}
 .receipt-preview-row.total{font-weight:800;font-size:11px}
 .receipt-preview-category{text-align:left;border-bottom:1px dotted #777;margin-top:5px;font-weight:700}
+/* Revisi 2026-09: ikon menu, harga per warung, stok rusak, inventaris, pajak & printer */
+.menu-icon{--menu-icon-color:#78978a;display:inline-grid;place-items:center;flex:none;width:34px;height:34px;border-radius:10px;background:#eef3f0;background:color-mix(in srgb,var(--menu-icon-color) 16%,#fff);color:var(--menu-icon-color);font-size:16px;line-height:1}
+.menu-icon-sm{width:26px;height:26px;border-radius:8px;font-size:13px}
+.menu-icon-emoji{font-size:1.15em;line-height:1}
+.product-cell{display:flex;align-items:center;gap:10px;min-width:0}
+.product-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.product-card-top .product-category{margin:0}
+.product-options{display:block;margin-top:2px;font-size:9px;font-weight:700;color:var(--forest-dark)}
+.icon-picker{position:relative}
+.icon-picker-toggle{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:5px 12px 5px 6px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font:inherit;font-size:12px;cursor:pointer}
+.icon-picker-panel{position:absolute;z-index:40;top:calc(100% + 6px);left:0;width:min(320px,80vw);display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;padding:10px;border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:var(--shadow)}
+.icon-picker-panel[hidden]{display:none}
+.icon-choice{display:grid;place-items:center;height:36px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:17px;cursor:pointer}
+.icon-choice:hover,.icon-choice.active{border-color:var(--forest);background:var(--sage)}
+.icon-choice-reset{grid-column:1/-1;height:32px;font-size:11px;font-weight:700;color:var(--muted)}
+.icon-custom{grid-column:1/-1;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)}
+.icon-custom input{flex:1;min-height:32px}
+.category-edit-form{flex-wrap:wrap}
+.price-modal-card{width:min(780px,100%)}
+.price-section-title{display:flex;align-items:center;gap:8px;margin:18px 0 8px;font-size:14px}
+.price-table{min-width:520px}
+.price-table input[type=text]{min-height:36px;width:150px}
+.price-table input[type=checkbox]{width:18px;min-height:18px;height:18px;accent-color:var(--forest)}
+.price-options{display:grid;gap:10px;margin:8px 0 12px}
+.price-option-row{display:grid;grid-template-columns:minmax(130px,1.4fr) minmax(100px,1fr) minmax(100px,1fr) minmax(130px,1.2fr) auto;gap:8px;align-items:end;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--mist)}
+.price-option-row .field{margin:0}
+.price-picker-list{display:grid;gap:8px}
+.price-choice{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit;font-size:13px;cursor:pointer;text-align:left}
+.price-choice:hover{border-color:var(--forest);background:var(--sage)}
+.member-history-link{display:inline-flex;align-items:center;gap:5px;margin-top:6px;font-size:11px;font-weight:700;color:var(--forest-dark)}
+.member-history-link[hidden]{display:none}
+.consolidated-note{border-color:#c9d3e6;background:var(--sage);color:var(--forest-dark)}
+.waste-input{border-color:#e8c3c6;background:#fff8f8}
+.waste-type-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.waste-type-grid .service-option{font-size:11px;min-height:58px}
+.waste-type-grid .service-option.active{border-color:var(--forest);background:var(--sage);color:var(--forest-dark)}
+.asset-filter{display:grid;grid-template-columns:minmax(200px,2fr) minmax(150px,1fr) minmax(150px,1fr) auto;gap:8px;margin-bottom:14px}
+.check-row{display:flex;flex-wrap:wrap;gap:6px}
+.check-row .inventory-note{margin:0;padding:7px 10px}
+.tax-preview{padding:10px 12px;border:1px dashed var(--line);border-radius:10px;background:var(--mist);font-size:12px}
+.report-tax-note{margin:0 0 16px}
+.amount-in{color:#3f7d5c}.amount-out{color:var(--red)}
+.epos-fields{border:1px solid var(--line);border-radius:12px;padding:12px;margin:0}
+.epos-fields[hidden]{display:none}
+.epos-fields code{font-size:11px}
+.device-item{flex-wrap:wrap}
+.device-item .actions{flex-wrap:wrap}
+@media(max-width:760px){
+    .price-option-row{grid-template-columns:1fr 1fr}
+    .price-option-row .price-option-remove{justify-self:start}
+    .asset-filter{grid-template-columns:1fr 1fr}
+    .asset-filter .search{grid-column:1/-1}
+    .icon-picker-panel{grid-template-columns:repeat(6,minmax(0,1fr))}
+}
+@media(max-width:420px){.price-option-row{grid-template-columns:1fr}}
+.history-filter{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;align-items:end}
+.history-filter .field{min-width:0;margin:0}

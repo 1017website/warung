@@ -41,11 +41,11 @@ class RoleMasterTest extends TestCase
             $roles->pluck('key')->all()
         );
         $this->assertSame(
-            ['dashboard', 'pos', 'transactions', 'products', 'inventory', 'purchases', 'expenses', 'members', 'reports'],
+            ['dashboard', 'pos', 'transactions', 'products', 'inventory', 'assets', 'purchases', 'expenses', 'members', 'reports'],
             $this->roleKey($tenant->id, 'head_ops')->modules
         );
         $this->assertSame(
-            ['pos', 'transactions', 'products', 'inventory', 'purchases', 'expenses', 'members'],
+            ['pos', 'transactions', 'products', 'inventory', 'assets', 'purchases', 'expenses', 'members'],
             $this->roleKey($tenant->id, 'ops_admin')->modules
         );
         $this->assertSame(
@@ -116,7 +116,7 @@ class RoleMasterTest extends TestCase
         ])->assertStatus(422);
         $this->actingAs($superadmin)->delete("/pengaturan/role/{$systemRole->id}")->assertStatus(422);
 
-        $this->assertCount(10, $systemRole->fresh()->modules);
+        $this->assertCount(count(Role::MODULES), $systemRole->fresh()->modules);
     }
 
     public function test_role_still_used_by_an_account_cannot_be_deleted(): void
@@ -297,7 +297,7 @@ class RoleMasterTest extends TestCase
         $this->actingAs($developer)->get('/dashboard')->assertOk();
         $this->assertTrue($developer->canRunMaintenance());
         $this->assertTrue($developer->canSeeNonRealReport());
-        $this->assertCount(10, $developer->menu());
+        $this->assertCount(count(Role::MODULES), $developer->menu());
         $this->actingAs($superadmin)->patch('/pengaturan/pengguna/'.$developer->id.'/status', ['is_active' => 0])->assertForbidden();
         $this->assertDatabaseHas('users', ['id' => $developer->id, 'role' => User::DEVELOPER, 'is_active' => true, 'deleted_at' => null]);
     }

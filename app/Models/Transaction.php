@@ -16,6 +16,8 @@ class Transaction extends Model
         'voided_at' => 'datetime',
         'subtotal' => 'decimal:2',
         'discount' => 'decimal:2',
+        'service_charge' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
         'total' => 'decimal:2',
     ];
 

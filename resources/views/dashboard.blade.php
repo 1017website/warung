@@ -21,7 +21,7 @@
         <div class="card-title"><div><h2><i class="bi bi-boxes"></i> Perhatian stok</h2><p>Di bawah batas minimum</p></div>@if(auth()->user()->canAccess('inventory'))<a href="{{ route('inventory') }}" class="badge gray">Lihat semua</a>@endif</div>
         <div class="list">
             @forelse($lowStocks as $stock)
-                <div class="list-item"><span class="list-icon">{{ mb_substr($stock->product->name,0,2) }}</span><div class="list-body"><div class="list-title">{{ $stock->product->name }}</div><div class="list-sub">{{ $isConsolidated ? ($stock->store?->name.' · ') : '' }}Minimum {{ $stock->product->minimum_stock }} {{ $stock->product->unit }}</div></div><span class="badge {{ $stock->quantity <= 0 ? 'red' : 'amber' }}">{{ $stock->quantity }} {{ $stock->product->unit }}</span></div>
+                <div class="list-item"><span class="list-icon">{{ mb_substr($stock->product->name,0,2) }}</span><div class="list-body"><div class="list-title">{{ $stock->product->name }}</div><div class="list-sub">{{ $isConsolidated ? ($stock->store?->name.' · ') : '' }}Minimum {{ $stock->product->minimum_stock }} {{ $stock->product->unit }}</div></div><span class="badge {{ $stock->quantity <= 0 ? 'red' : 'amber' }}">@qty($stock->quantity) {{ $stock->product->unit }}</span></div>
             @empty
                 <div class="cart-empty">Stok dalam kondisi aman.</div>
             @endforelse

@@ -39,6 +39,7 @@ class User extends Authenticatable
         ['transactions', 'bi-receipt', 'Transaksi'],
         ['products', 'bi-box-seam', 'Produk'],
         ['inventory', 'bi-boxes', 'Stok / Gudang'],
+        ['assets', 'bi-tools', 'Inventaris'],
         ['purchases', 'bi-bag-check', 'Pembelian'],
         ['expenses', 'bi-wallet2', 'Pengeluaran'],
         ['members', 'bi-people', 'Membership'],

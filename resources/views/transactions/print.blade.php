@@ -28,6 +28,7 @@ h1{font-size:14px;margin:4px 0}.muted{font-size:10px}.line{border-top:1px dashed
 <button type="button" onclick="printReceipts('customer')">Cetak customer</button>
 <button type="button" onclick="printReceipts('kitchen')">Cetak dapur</button>
 <p>POS 58 mm · Pilih kertas 58 mm, skala 100%, margin tidak ada, serta matikan header/footer browser. Jumlah salinan: 1 (sudah berisi customer + dapur).</p>
+@if($eposPrinter ?? null)<button type="button" id="epos-print" onclick="printEpos()">Cetak ke {{ $eposPrinter['name'] }} (Epson)</button><div id="epos-status" role="status"></div>@endif
 <a href="{{ route('pos') }}">Kembali ke kasir</a>
 </div>
 @php
@@ -51,13 +52,34 @@ h1{font-size:14px;margin:4px 0}.muted{font-size:10px}.line{border-top:1px dashed
 @endforeach
 @endforeach
 @if($copy === 'customer')
-<div class="line"></div><div class="row"><span>Subtotal</span><span>Rp {{ number_format($transaction->subtotal,0,',','.') }}</span></div>@if($transaction->discount>0)<div class="row"><span>Diskon{{ in_array($transaction->discount_type,['percent','member'])?' ('.number_format($transaction->discount_value,0).'%)':'' }}</span><span>-Rp {{ number_format($transaction->discount,0,',','.') }}</span></div>@endif<div class="row total"><span>TOTAL</span><span>Rp {{ number_format($transaction->total,0,',','.') }}</span></div>
+<div class="line"></div><div class="row"><span>Subtotal</span><span>Rp {{ number_format($transaction->subtotal,0,',','.') }}</span></div>@if($transaction->discount>0)<div class="row"><span>Diskon{{ in_array($transaction->discount_type,['percent','member'])?' ('.number_format($transaction->discount_value,0).'%)':'' }}</span><span>-Rp {{ number_format($transaction->discount,0,',','.') }}</span></div>@endif @if($transaction->service_charge>0)<div class="row"><span>Service ({{ \App\Support\Qty::format($transaction->service_charge_percent) }}%)</span><span>Rp {{ number_format($transaction->service_charge,0,',','.') }}</span></div>@endif @if($transaction->tax_amount>0)<div class="row"><span>{{ $transaction->tax_label ?: 'Pajak' }} ({{ \App\Support\Qty::format($transaction->tax_percent) }}%)</span><span>Rp {{ number_format($transaction->tax_amount,0,',','.') }}</span></div>@endif<div class="row total"><span>TOTAL</span><span>Rp {{ number_format($transaction->total,0,',','.') }}</span></div>
 @if($transaction->payments->isNotEmpty())@foreach($transaction->payments as $pay)<div class="row"><span>{{ strtoupper($pay->method) }}{{ $pay->provider?' · '.$pay->provider:'' }}</span><span>Rp {{ number_format($pay->amount,0,',','.') }}</span></div>@endforeach @else<div class="row"><span>{{ strtoupper($transaction->payment_method) }}</span><span>Rp {{ number_format($transaction->paid_amount,0,',','.') }}</span></div>@endif @if($transaction->change_amount>0)<div class="row"><span>Kembali</span><span>Rp {{ number_format($transaction->change_amount,0,',','.') }}</span></div>@endif<div class="line"></div><footer class="center">{{ $receiptStore->receipt_footer ?: 'Terima kasih sudah berbelanja.' }}<br><span class="muted">Simpan struk ini sebagai bukti transaksi.</span></footer>
 @else
 <div class="line"></div><footer class="center">Pesanan dapur · {{ $transaction->items->count() }} jenis menu</footer>
 @endif
 </article>
 @endforeach
+@if($eposPrinter ?? null)
+<script src="{{ asset('js/epos-printer.js') }}?v={{ is_file(public_path('js/epos-printer.js')) ? filemtime(public_path('js/epos-printer.js')) : 1 }}"></script>
+<script>
+async function printEpos() {
+    const button = document.getElementById('epos-print'), status = document.getElementById('epos-status');
+    button.disabled = true;
+    status.textContent = 'Mengirim ke printer…';
+    try {
+        const response = await fetch(@json(route('transactions.epos', $transaction)), { headers: { Accept: 'application/json' } });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.message || 'Data cetak tidak tersedia.');
+        await window.PosPrinter.printJobs(payload);
+        status.textContent = 'Struk terkirim ke printer.';
+    } catch (error) {
+        status.textContent = error.message;
+    } finally {
+        button.disabled = false;
+    }
+}
+</script>
+@endif
 <script>
 let printing = false;
 function printReceipts(copy) {

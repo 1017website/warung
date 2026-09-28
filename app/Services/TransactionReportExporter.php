@@ -7,6 +7,7 @@ use App\Models\Member;
 use App\Models\Store;
 use App\Models\Tenant;
 use App\Models\Transaction;
+use App\Support\Qty;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -43,6 +44,9 @@ class TransactionReportExporter
         $scaledSales = $transactions->sum(fn (Transaction $transaction) => (float) $transaction->total * $factorForStore($transaction->store_id));
         $scaledCost = $transactions->sum(fn (Transaction $transaction) => $transaction->items->sum(fn ($item) => $item->cost * $item->quantity) * $factorForStore($transaction->store_id));
         $scaledExpenses = $expenseRows->sum(fn (Expense $expense) => (float) $expense->amount * $factorForStore($expense->store_id));
+        // Pajak dititipkan pelanggan untuk disetor, sehingga tidak dihitung sebagai laba.
+        $scaledTax = $transactions->sum(fn (Transaction $transaction) => (float) $transaction->tax_amount * $factorForStore($transaction->store_id));
+        $scaledService = $transactions->sum(fn (Transaction $transaction) => (float) $transaction->service_charge * $factorForStore($transaction->store_id));
 
         $daily = $transactions->groupBy(fn (Transaction $transaction) => $transaction->transacted_at->toDateString())
             ->map(fn (Collection $rows, string $date) => (object) [
@@ -115,7 +119,9 @@ class TransactionReportExporter
             'sales' => round($scaledSales, 2),
             'cost' => round($scaledCost, 2),
             'expenses' => round($scaledExpenses, 2),
-            'profit' => round($scaledSales - $scaledCost - $scaledExpenses, 2),
+            'tax' => round($scaledTax, 2),
+            'service' => round($scaledService, 2),
+            'profit' => round($scaledSales - $scaledTax - $scaledCost - $scaledExpenses, 2),
             'daily' => $daily,
             'payments' => $payments,
             'products' => $productSales,
@@ -157,13 +163,16 @@ class TransactionReportExporter
         $sheet->mergeCells('A2:D2')->setCellValue('A2', $tenant->name.' · '.$store->name);
         $sheet->mergeCells('A3:D3')->setCellValue('A3', $from->translatedFormat('d M Y').' – '.$to->translatedFormat('d M Y').' · '.($type === 'non_real' ? $this->factorLabel($factor) : 'Riil'));
 
+        $lastTransaction = max(5, 4 + $transactionCount);
         $sheet->fromArray([
             ['Indikator', 'Nilai', 'Keterangan'],
-            ['Omzet', "=SUM('Transaksi'!K5:K".max(5, 4 + $transactionCount).')', 'Total penjualan setelah diskon'],
-            ['HPP', "=SUM('Transaksi'!L5:L".max(5, 4 + $transactionCount).')', 'Modal menu terjual'],
+            ['Omzet', "=SUM('Transaksi'!K5:K{$lastTransaction})", 'Total dibayar pelanggan, termasuk service & pajak'],
+            ['HPP', "=SUM('Transaksi'!L5:L{$lastTransaction})", 'Modal menu terjual'],
             ['Pengeluaran', "=SUM('Pengeluaran'!E5:E".max(5, 4 + $expenseCount).')', 'Biaya operasional'],
-            ['Laba Kotor', '=B6-B7', 'Omzet dikurangi HPP'],
-            ['Laba Bersih', '=B6-B7-B8', 'Setelah HPP dan pengeluaran'],
+            ['Laba Kotor', '=B6-B12-B7', 'Omzet tanpa pajak dikurangi HPP'],
+            ['Laba Bersih', '=B6-B12-B7-B8', 'Setelah pajak, HPP, dan pengeluaran'],
+            ['Service charge', "=SUM('Transaksi'!N5:N{$lastTransaction})", 'Sudah termasuk dalam omzet'],
+            ['Pajak', "=SUM('Transaksi'!O5:O{$lastTransaction})", 'Termasuk dalam omzet, untuk disetor'],
         ], null, 'A5');
 
         $sheet->getStyle('A1:D1')->applyFromArray([
@@ -174,15 +183,15 @@ class TransactionReportExporter
         $sheet->getRowDimension(1)->setRowHeight(34);
         $sheet->getStyle('A2:A3')->getFont()->setColor(new Color('74819A'));
         $this->styleHeader($sheet, 'A5:C5');
-        $sheet->getStyle('A6:B10')->getBorders()->getBottom()->setBorderStyle(Border::BORDER_HAIR)->getColor()->setRGB('E2E7F0');
-        $sheet->getStyle('B6:B10')->getNumberFormat()->setFormatCode('"Rp" #,##0');
+        $sheet->getStyle('A6:B12')->getBorders()->getBottom()->setBorderStyle(Border::BORDER_HAIR)->getColor()->setRGB('E2E7F0');
+        $sheet->getStyle('B6:B12')->getNumberFormat()->setFormatCode('"Rp" #,##0');
         $sheet->getStyle('A10:C10')->applyFromArray([
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E8EDF7']],
             'font' => ['bold' => true, 'color' => ['rgb' => '465D8B']],
         ]);
         $sheet->getColumnDimension('A')->setWidth(23);
         $sheet->getColumnDimension('B')->setWidth(20);
-        $sheet->getColumnDimension('C')->setWidth(34);
+        $sheet->getColumnDimension('C')->setWidth(46);
         $sheet->getColumnDimension('D')->setWidth(4);
         $sheet->freezePane('A5');
         $sheet->getTabColor()->setRGB('465D8B');
@@ -191,16 +200,19 @@ class TransactionReportExporter
     private function buildTransactionsSheet(Worksheet $sheet, Collection $transactions, Tenant $tenant, Store $store, Carbon $from, Carbon $to, string $type, float|array $factor): void
     {
         $sheet->setShowGridlines(false);
-        $sheet->mergeCells('A1:M1')->setCellValue('A1', 'RINCIAN TRANSAKSI · '.strtoupper($type === 'non_real' ? $this->factorLabel($factor) : 'RIIL'));
-        $sheet->mergeCells('A2:M2')->setCellValue('A2', $tenant->name.' · '.$store->name.' · '.$from->format('d/m/Y').'–'.$to->format('d/m/Y'));
-        $headers = ['Invoice', 'Waktu', 'Layanan', 'Meja / Platform', 'Kasir', 'Member', 'Item', 'Pembayaran', 'Subtotal', 'Diskon', 'Omzet', 'HPP', 'Laba Kotor'];
+        $sheet->mergeCells('A1:P1')->setCellValue('A1', 'RINCIAN TRANSAKSI · '.strtoupper($type === 'non_real' ? $this->factorLabel($factor) : 'RIIL'));
+        $sheet->mergeCells('A2:P2')->setCellValue('A2', $tenant->name.' · '.$store->name.' · '.$from->format('d/m/Y').'–'.$to->format('d/m/Y'));
+        $headers = ['Invoice', 'Waktu', 'Layanan', 'Meja / Platform', 'Kasir', 'Member', 'Item', 'Pembayaran', 'Subtotal', 'Diskon', 'Omzet', 'HPP', 'Laba Kotor', 'Service', 'Pajak', 'Cabang'];
         $sheet->fromArray($headers, null, 'A4');
 
         $row = 5;
         foreach ($transactions as $transaction) {
             $rowFactor = $this->factorForStore($factor, $transaction->store_id);
             $cost = $transaction->items->sum(fn ($item) => $item->cost * $item->quantity) * $rowFactor;
-            $items = $transaction->items->map(fn ($item) => $item->product_name.' × '.$item->quantity)->implode(', ');
+            $items = $transaction->items->map(fn ($item) => $item->product_name.' × '.Qty::format($item->quantity))->implode(', ');
+            $payment = $transaction->payments->isNotEmpty()
+                ? $transaction->payments->map(fn ($pay) => strtoupper($pay->method).($pay->provider ? ' '.$pay->provider : '').' '.number_format((float) $pay->amount * $rowFactor, 0, ',', '.'))->implode(' + ')
+                : strtoupper((string) $transaction->payment_method);
             $service = match ($transaction->service_type) {
                 'takeaway' => 'Take Away',
                 'online' => 'Ojek Online',
@@ -219,25 +231,28 @@ class TransactionReportExporter
                 $transaction->user->name,
                 $transaction->member?->name ?? 'Umum',
                 $items,
-                strtoupper($transaction->payment_method),
+                $payment,
                 (float) $transaction->subtotal * $rowFactor,
                 (float) $transaction->discount * $rowFactor,
                 (float) $transaction->total * $rowFactor,
                 (float) $cost,
-                "=K{$row}-L{$row}",
+                "=K{$row}-O{$row}-L{$row}",
+                (float) $transaction->service_charge * $rowFactor,
+                (float) $transaction->tax_amount * $rowFactor,
+                $transaction->store?->name,
             ]], null, "A{$row}");
             $row++;
         }
 
         $lastRow = max(5, $row - 1);
-        $this->styleTitleRows($sheet, 'A1:M1');
-        $this->styleHeader($sheet, 'A4:M4');
+        $this->styleTitleRows($sheet, 'A1:P1');
+        $this->styleHeader($sheet, 'A4:P4');
         $sheet->freezePane('A5');
-        $sheet->setAutoFilter("A4:M{$lastRow}");
+        $sheet->setAutoFilter("A4:P{$lastRow}");
         $sheet->getStyle("B5:B{$lastRow}")->getNumberFormat()->setFormatCode('dd mmm yyyy hh:mm');
-        $sheet->getStyle("I5:M{$lastRow}")->getNumberFormat()->setFormatCode('"Rp" #,##0');
-        $sheet->getStyle("G5:G{$lastRow}")->getAlignment()->setWrapText(true);
-        foreach (['A' => 23, 'B' => 20, 'C' => 15, 'D' => 18, 'E' => 19, 'F' => 18, 'G' => 42, 'H' => 14, 'I' => 16, 'J' => 14, 'K' => 16, 'L' => 16, 'M' => 17] as $column => $width) {
+        $sheet->getStyle("I5:O{$lastRow}")->getNumberFormat()->setFormatCode('"Rp" #,##0');
+        $sheet->getStyle("G5:H{$lastRow}")->getAlignment()->setWrapText(true);
+        foreach (['A' => 23, 'B' => 20, 'C' => 15, 'D' => 18, 'E' => 19, 'F' => 18, 'G' => 42, 'H' => 26, 'I' => 16, 'J' => 14, 'K' => 16, 'L' => 16, 'M' => 17, 'N' => 14, 'O' => 14, 'P' => 20] as $column => $width) {
             $sheet->getColumnDimension($column)->setWidth($width);
         }
         $sheet->getTabColor()->setRGB('637BA8');

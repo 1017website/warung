@@ -21,6 +21,7 @@ class AccessTieringTest extends TestCase
         'transactions' => '/transaksi',
         'products' => '/produk',
         'inventory' => '/gudang',
+        'assets' => '/inventaris',
         'purchases' => '/pembelian',
         'expenses' => '/pengeluaran',
         'members' => '/member',
@@ -30,7 +31,8 @@ class AccessTieringTest extends TestCase
 
     /**
      * Tabel TIERING AKSES pada POINT REVISION.docx, ditulis ulang dari dokumen
-     * dan bukan dari kode, supaya jadi pembanding independen.
+     * dan bukan dari kode, supaya jadi pembanding independen. Revisi September 2026
+     * menambah Inventaris peralatan untuk role pengelola stok, kecuali Kasir.
      */
     public static function tiering(): array
     {
@@ -39,10 +41,10 @@ class AccessTieringTest extends TestCase
         return [
             'Developer — semua fitur' => ['developer', array_keys(self::URLS)],
             'Superadmin — semua fitur' => ['superadmin', array_keys(self::URLS)],
-            'Head of Ops' => ['head_ops', [...$operational, 'purchases', 'products', 'reports', 'dashboard']],
-            'Ops Admin — gaboleh lihat omset' => ['ops_admin', [...$operational, 'purchases', 'products']],
-            'Outlet Manager — gaboleh lihat omset' => ['outlet_manager', $operational],
-            'SPV — gaboleh lihat omset' => ['spv', $operational],
+            'Head of Ops' => ['head_ops', [...$operational, 'assets', 'purchases', 'products', 'reports', 'dashboard']],
+            'Ops Admin — gaboleh lihat omset' => ['ops_admin', [...$operational, 'assets', 'purchases', 'products']],
+            'Outlet Manager — gaboleh lihat omset' => ['outlet_manager', [...$operational, 'assets']],
+            'SPV — gaboleh lihat omset' => ['spv', [...$operational, 'assets']],
             'Kasir — gaboleh lihat omset' => ['cashier', $operational],
         ];
     }

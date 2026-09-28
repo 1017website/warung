@@ -38,6 +38,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureInitialSetup::class])->gro
 
     // Read-only POS dependencies remain available to custom cashier roles.
     Route::get('/transaksi/{transaction}/print', [WarungController::class, 'print'])->middleware('module:transactions,pos,reports')->name('transactions.print');
+    Route::get('/transaksi/{transaction}/epos', [WarungController::class, 'eposReceipt'])->middleware('module:transactions,pos,reports')->name('transactions.epos');
     Route::get('/member/find/{code}', [WarungController::class, 'findMember'])->middleware('module:members,pos')->name('members.find');
 
     Route::middleware('module:transactions')->group(function () {
@@ -49,6 +50,8 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureInitialSetup::class])->gro
         Route::get('/member/card/{code}', [WarungController::class, 'findAvailableMemberCard'])->name('members.card');
         Route::get('/member', [WarungController::class, 'members'])->name('members');
         Route::get('/member/export', [WarungController::class, 'exportMembers'])->name('members.export');
+        Route::get('/member/{member}/riwayat', [WarungController::class, 'memberHistory'])->name('members.history');
+        Route::get('/member/{member}/riwayat/export', [WarungController::class, 'exportMemberHistory'])->name('members.history.export');
         Route::post('/member', [WarungController::class, 'storeMember'])->name('members.store');
         Route::put('/member/{member}', [WarungController::class, 'updateMember'])->name('members.update');
         Route::patch('/member/{member}/status', [WarungController::class, 'updateMemberStatus'])->name('members.status');
@@ -60,6 +63,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureInitialSetup::class])->gro
         Route::get('/produk', [WarungController::class, 'products'])->name('products');
         Route::post('/produk', [WarungController::class, 'storeProduct'])->name('products.store');
         Route::put('/produk/{product}', [WarungController::class, 'updateProduct'])->name('products.update');
+        Route::put('/produk/{product}/harga', [WarungController::class, 'updateProductPrices'])->name('products.prices');
         Route::delete('/produk/{product}', [WarungController::class, 'destroyProduct'])->name('products.destroy');
         Route::post('/produk/{product}/restore', [WarungController::class, 'restoreProduct'])->name('products.restore');
         Route::post('/produk/kategori', [WarungController::class, 'storeCategory'])->name('products.categories.store');
@@ -84,6 +88,16 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureInitialSetup::class])->gro
         Route::post('/gudang/production', [WarungController::class, 'storeProduction'])->name('inventory.production');
         Route::post('/gudang/reprocess', [WarungController::class, 'reprocessStock'])->name('inventory.reprocess');
         Route::post('/gudang/count', [WarungController::class, 'storeStockCount'])->name('inventory.count');
+        Route::post('/gudang/rusak', [WarungController::class, 'storeWaste'])->name('inventory.waste');
+    });
+
+    Route::middleware('module:assets')->group(function () {
+        Route::get('/inventaris', [WarungController::class, 'assets'])->name('assets');
+        Route::get('/inventaris/export', [WarungController::class, 'exportAssets'])->name('assets.export');
+        Route::post('/inventaris', [WarungController::class, 'storeAsset'])->name('assets.store');
+        Route::put('/inventaris/{asset}', [WarungController::class, 'updateAsset'])->name('assets.update');
+        Route::delete('/inventaris/{asset}', [WarungController::class, 'destroyAsset'])->name('assets.destroy');
+        Route::post('/inventaris/{asset}/restore', [WarungController::class, 'restoreAsset'])->name('assets.restore');
     });
 
     Route::middleware('module:expenses')->group(function () {
@@ -102,10 +116,12 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureInitialSetup::class])->gro
         Route::post('/pengaturan/brand', [WarungController::class, 'updateBrand'])->name('settings.brand');
         Route::post('/pengaturan/receipt', [WarungController::class, 'updateReceiptSettings'])->name('settings.receipt');
         Route::post('/pengaturan/aturan-bisnis', [WarungController::class, 'updateBusinessRules'])->name('settings.business-rules');
+        Route::post('/pengaturan/pajak-service', [WarungController::class, 'updateTaxService'])->name('settings.tax-service');
         Route::post('/pengaturan/cabang', [WarungController::class, 'storeBranch'])->name('settings.branch');
         Route::put('/pengaturan/cabang/{store}', [WarungController::class, 'updateBranch'])->name('settings.branch.update');
         Route::patch('/pengaturan/cabang/{store}/status', [WarungController::class, 'updateBranchStatus'])->name('settings.branch.status');
         Route::post('/pengaturan/perangkat', [WarungController::class, 'storeDevice'])->name('settings.device');
+        Route::put('/pengaturan/perangkat/{device}', [WarungController::class, 'updateDevice'])->name('settings.device.update');
         Route::post('/pengaturan/perangkat/{device}/test', [WarungController::class, 'testDevice'])->name('settings.device.test');
         Route::delete('/pengaturan/perangkat/{device}', [WarungController::class, 'destroyDevice'])->name('settings.device.destroy');
         Route::post('/pengaturan/role', [WarungController::class, 'storeRole'])->name('settings.role');

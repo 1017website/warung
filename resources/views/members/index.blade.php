@@ -44,7 +44,8 @@
             <td><span class="badge {{ $member->is_active ? '' : 'gray' }}">{{ $member->is_active ? 'Aktif' : 'Nonaktif' }}</span></td>
             <td class="money">Rp {{ number_format($member->deposit_balance,0,',','.') }}</td>
             <td><div class="actions">
-                <button type="button" class="btn btn-outline btn-sm member-card-trigger" data-qr="{{ $member->qr_code }}" data-name="{{ $member->name }}" data-code="{{ $member->member_code }}" data-phone="{{ $member->phone }}"><i class="bi bi-person-badge"></i></button>
+                <a class="btn btn-soft btn-sm" href="{{ route('members.history',$member) }}" title="Riwayat deposit & transaksi"><i class="bi bi-clock-history"></i> Riwayat</a>
+                <button type="button" class="btn btn-outline btn-sm member-card-trigger" data-qr="{{ $member->qr_code }}" data-name="{{ $member->name }}" data-code="{{ $member->member_code }}" data-phone="{{ $member->phone }}" title="Kartu member"><i class="bi bi-person-badge"></i></button>
                 <button type="button" class="btn btn-outline btn-sm edit-member-trigger" data-url="{{ route('members.update',$member) }}" data-member="{{ json_encode(['name'=>$member->name,'phone'=>$member->phone,'email'=>$member->email,'domicile'=>$member->domicile,'birth_date'=>$member->birth_date?->format('Y-m-d'),'discount_percent'=>$member->discount_percent]) }}"><i class="bi bi-pencil"></i></button>
                 @if($member->is_active)<button type="button" class="btn btn-soft btn-sm topup-trigger" data-url="{{ route('members.topup',$member) }}" data-name="{{ $member->name }}"><i class="bi bi-plus-circle"></i> Top up</button>@endif
                 <button type="button" class="btn btn-outline btn-sm adjustment-trigger" data-url="{{ route('members.deposit-adjustment',$member) }}" data-name="{{ $member->name }}"><i class="bi bi-arrow-left-right"></i></button>

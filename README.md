@@ -67,3 +67,32 @@ Transaksi kasir masuk sebagai data riil. Akses non-riil mengikuti izin master ro
 Halaman laporan menyediakan ekspor Excel sesuai periode dan jenis laporan aktif. Workbook berisi tiga sheet: ringkasan dengan formula, rincian transaksi, dan rincian pengeluaran. Permintaan ekspor non-riil dari role pegawai otomatis dipaksa menjadi laporan riil.
 
 Scan QR kamera menggunakan `BarcodeDetector` bawaan browser. Gunakan Chrome/Edge modern melalui HTTPS atau localhost agar izin kamera tersedia.
+
+## Revisi 28 September 2026
+
+| Poin | Fitur | Tempat |
+|---|---|---|
+| Export | SKU & barcode ditulis sebagai teks (nol di depan dan barcode 13 digit tidak rusak). Workbook produk memuat sheet *Harga Warung* dan *Pilihan Harga* yang ikut diimpor kembali. File Excel ditulis penuh sebelum diunduh sehingga unduhan tidak terpotong/rusak. Laporan menampilkan qty `× 2` (bukan `× 2.000`) dan seluruh pembayaran split. | Produk, Membership, Laporan, Inventaris |
+| Icon | Ikon menu dan kategori (Bootstrap Icons atau emoji). Menu tanpa ikon memakai ikon kategori. | Produk → Edit / Kelola kategori; tampil di Kasir |
+| SKU & harga | Satu SKU dapat memiliki beberapa pilihan harga (mis. porsi kecil/besar). Kasir memilih harga saat menu diklik; stok tetap satu. Pilihan harga dapat berlaku di semua warung atau satu warung. | Produk → tombol **Harga** |
+| Menu consolidated | Harga normal/online dapat berbeda per warung (Warung A Rp6.000, Warung B Rp7.000) dan menu dapat disembunyikan di warung tertentu. Kosong = ikut harga default. | Produk → tombol **Harga** |
+| Inventory | Modul **Inventaris** untuk peralatan (panci, kompor, freezer): jumlah baik/rusak, lokasi, nilai, riwayat perubahan, arsip, ekspor Excel. Terbuka untuk Head of Ops, Ops Admin, Outlet Manager, SPV, Superadmin, Developer. | Menu Inventaris |
+| Stok / bahan baku | Kolom **Rusak / tidak layak** (input manual, mengurangi stok) pada tabel bahan baku (mentah) dan olahan (matang), plus tombol **Catat rusak** dengan pilihan stok mentah/matang. | Stok / Gudang |
+| Tax & services | Service charge dan pajak (nama & tarif bebas, mis. PB1 10%) per cabang, dapat dibatasi per jenis pesanan. Service dihitung dari total setelah diskon; pajak dari total setelah diskon + service. Muncul di kasir, struk, laporan, dan ekspor; pajak dikeluarkan dari laba. | Pengaturan → Pajak & service |
+| Printer kasir | Printer Epson ePOS (TM-m30, TM-T82III/X, TM-T88VI, dll.) mencetak struk customer + dapur langsung dari browser kasir lewat jaringan lokal, opsional membuka cash drawer. Bila gagal, struk browser dibuka sebagai cadangan. | Pengaturan → Perangkat terhubung |
+| Membership | Tombol **Riwayat** per member: mutasi deposit, transaksi, ringkasan belanja, filter periode, ekspor Excel. Akun satu cabang hanya melihat aktivitas di cabangnya. | Membership, juga tautan di Kasir |
+
+Bug yang diperbaiki pada revisi ini: harga di modal Edit produk terbaca 100× lipat (Rp15.000 tampil Rp1.500.000), verifikasi kartu member selalu menampilkan "Kartu tidak ditemukan", qty desimal tampil seperti ribuan di Ringkasan/Produk/Tutup kasir/Pembelian/Laporan, cabang nonaktif yang tersisa di session tetap dipakai untuk transaksi, impor Excel/CSV membaca "15.000" sebagai 15, dan daftar Transaksi pada mode consolidated hanya menampilkan satu cabang.
+
+### Deploy revisi
+
+1. Upload file yang berubah (tanpa npm; CSS/JS ada di `public/css/overrides.css`, `public/js/overrides.js`, `public/js/epos-printer.js`).
+2. Login, lalu buka `/maintenance/migrate` dan `/maintenance/optimize-clear` (lihat RECOVERY.md). Migration `2026_09_28_000100` aman dijalankan ulang.
+
+### Menyiapkan printer Epson ePOS
+
+1. Beri printer IP tetap dan aktifkan **ePOS-Print** lewat EpsonNet Config / Web Config printer.
+2. Pengaturan → Perangkat terhubung → Tambah: jenis *Printer struk*, cara cetak *Epson ePOS*, isi IP, lebar kertas, dan opsi cetak otomatis/lembar dapur/cash drawer. Tekan **Tes cetak**.
+3. Bila aplikasi dibuka lewat HTTPS, aktifkan HTTPS di printer, centang *Printer memakai HTTPS*, lalu buka `https://IP-printer` sekali di browser kasir untuk menerima sertifikatnya. Browser memblokir pengiriman dari halaman HTTPS ke printer HTTP.
+
+Tes tambahan: `php artisan test --filter=SeptemberRevisionTest` dan `node --test tests/js/epos-printer.test.cjs tests/js/pos-revision.test.cjs`.
