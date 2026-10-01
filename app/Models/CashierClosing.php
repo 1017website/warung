@@ -14,6 +14,7 @@ class CashierClosing extends Model
         'opening_cash' => 'decimal:2',
         'cash_sales' => 'decimal:2',
         'cash_topups' => 'decimal:2',
+        'cash_reservation_dp' => 'decimal:2',
         'cash_expenses' => 'decimal:2',
         'expected_cash' => 'decimal:2',
         'actual_cash' => 'decimal:2',

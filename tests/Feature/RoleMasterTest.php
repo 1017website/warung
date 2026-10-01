@@ -41,15 +41,15 @@ class RoleMasterTest extends TestCase
             $roles->pluck('key')->all()
         );
         $this->assertSame(
-            ['dashboard', 'pos', 'transactions', 'products', 'inventory', 'assets', 'purchases', 'expenses', 'members', 'reports'],
+            ['dashboard', 'pos', 'reservations', 'transactions', 'products', 'inventory', 'assets', 'purchases', 'expenses', 'members', 'reports'],
             $this->roleKey($tenant->id, 'head_ops')->modules
         );
         $this->assertSame(
-            ['pos', 'transactions', 'products', 'inventory', 'assets', 'purchases', 'expenses', 'members'],
+            ['pos', 'reservations', 'transactions', 'products', 'inventory', 'assets', 'purchases', 'expenses', 'members'],
             $this->roleKey($tenant->id, 'ops_admin')->modules
         );
         $this->assertSame(
-            ['pos', 'transactions', 'inventory', 'expenses', 'members'],
+            ['pos', 'reservations', 'transactions', 'inventory', 'expenses', 'members'],
             $this->roleKey($tenant->id, 'cashier')->modules
         );
         $this->assertSame(['developer', 'superadmin', 'head_ops'], $roles->where('can_access_all_stores', true)->pluck('key')->all());

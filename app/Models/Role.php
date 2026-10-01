@@ -25,6 +25,7 @@ class Role extends Model
     public const MODULES = [
         'dashboard' => 'Ringkasan',
         'pos' => 'Kasir',
+        'reservations' => 'Reservasi',
         'transactions' => 'Transaksi',
         'products' => 'Produk',
         'inventory' => 'Stok / Gudang',
@@ -53,7 +54,8 @@ class Role extends Model
     /**
      * Data awal master role, disalin dari tabel TIERING AKSES pada POINT REVISION.docx.
      * Revisi September 2026 menambah Inventaris untuk role yang mengelola stok,
-     * kecuali Kasir yang tetap hanya memakai Stok / Gudang.
+     * kecuali Kasir yang tetap hanya memakai Stok / Gudang. Revisi Oktober 2026 menambah
+     * Reservasi untuk setiap role yang memegang Kasir.
      * Dipakai migrasi dan seeder; setelah itu Developer/Superadmin dapat mengubahnya lewat Pengaturan.
      */
     public const DEFAULTS = [
@@ -61,7 +63,7 @@ class Role extends Model
             'key' => 'developer',
             'name' => 'Developer',
             'summary' => 'Semua fitur & pemeliharaan sistem',
-            'modules' => ['dashboard', 'pos', 'transactions', 'products', 'inventory', 'assets', 'purchases', 'expenses', 'members', 'reports', 'settings'],
+            'modules' => ['dashboard', 'pos', 'reservations', 'transactions', 'products', 'inventory', 'assets', 'purchases', 'expenses', 'members', 'reports', 'settings'],
             'settings_permissions' => ['business_rules', 'branding', 'receipt', 'devices', 'member_cards', 'branches', 'tax_service'],
             'can_access_all_stores' => true,
             'can_see_non_real' => true,
@@ -72,7 +74,7 @@ class Role extends Model
             'key' => 'superadmin',
             'name' => 'Superadmin',
             'summary' => 'Semua fitur & akun',
-            'modules' => ['dashboard', 'pos', 'transactions', 'products', 'inventory', 'assets', 'purchases', 'expenses', 'members', 'reports', 'settings'],
+            'modules' => ['dashboard', 'pos', 'reservations', 'transactions', 'products', 'inventory', 'assets', 'purchases', 'expenses', 'members', 'reports', 'settings'],
             'settings_permissions' => ['business_rules', 'branding', 'receipt', 'devices', 'member_cards', 'branches', 'tax_service'],
             'can_access_all_stores' => true,
             'can_see_non_real' => true,
@@ -83,7 +85,7 @@ class Role extends Model
             'key' => 'head_ops',
             'name' => 'Head of Ops',
             'summary' => 'Operasional lengkap + laporan',
-            'modules' => ['dashboard', 'pos', 'transactions', 'products', 'inventory', 'assets', 'purchases', 'expenses', 'members', 'reports'],
+            'modules' => ['dashboard', 'pos', 'reservations', 'transactions', 'products', 'inventory', 'assets', 'purchases', 'expenses', 'members', 'reports'],
             'settings_permissions' => [],
             'can_access_all_stores' => true,
             'can_see_non_real' => false,
@@ -94,7 +96,7 @@ class Role extends Model
             'key' => 'ops_admin',
             'name' => 'Ops Admin',
             'summary' => 'Operasional tanpa omzet',
-            'modules' => ['pos', 'transactions', 'products', 'inventory', 'assets', 'purchases', 'expenses', 'members'],
+            'modules' => ['pos', 'reservations', 'transactions', 'products', 'inventory', 'assets', 'purchases', 'expenses', 'members'],
             'settings_permissions' => [],
             'can_access_all_stores' => false,
             'can_see_non_real' => false,
@@ -105,7 +107,7 @@ class Role extends Model
             'key' => 'outlet_manager',
             'name' => 'Outlet Manager',
             'summary' => 'Kasir, transaksi, member, stok, pengeluaran',
-            'modules' => ['pos', 'transactions', 'inventory', 'assets', 'expenses', 'members'],
+            'modules' => ['pos', 'reservations', 'transactions', 'inventory', 'assets', 'expenses', 'members'],
             'settings_permissions' => [],
             'can_access_all_stores' => false,
             'can_see_non_real' => false,
@@ -116,7 +118,7 @@ class Role extends Model
             'key' => 'spv',
             'name' => 'SPV',
             'summary' => 'Kasir, transaksi, member, stok, pengeluaran',
-            'modules' => ['pos', 'transactions', 'inventory', 'assets', 'expenses', 'members'],
+            'modules' => ['pos', 'reservations', 'transactions', 'inventory', 'assets', 'expenses', 'members'],
             'settings_permissions' => [],
             'can_access_all_stores' => false,
             'can_see_non_real' => false,
@@ -127,7 +129,7 @@ class Role extends Model
             'key' => 'cashier',
             'name' => 'Kasir',
             'summary' => 'Kasir, transaksi, member, stok, pengeluaran',
-            'modules' => ['pos', 'transactions', 'inventory', 'expenses', 'members'],
+            'modules' => ['pos', 'reservations', 'transactions', 'inventory', 'expenses', 'members'],
             'settings_permissions' => [],
             'can_access_all_stores' => false,
             'can_see_non_real' => false,

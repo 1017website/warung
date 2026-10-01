@@ -18,6 +18,7 @@ class AccessTieringTest extends TestCase
     private const URLS = [
         'dashboard' => '/dashboard',
         'pos' => '/kasir',
+        'reservations' => '/reservasi',
         'transactions' => '/transaksi',
         'products' => '/produk',
         'inventory' => '/gudang',
@@ -36,7 +37,7 @@ class AccessTieringTest extends TestCase
      */
     public static function tiering(): array
     {
-        $operational = ['pos', 'transactions', 'members', 'inventory', 'expenses'];
+        $operational = ['pos', 'reservations', 'transactions', 'members', 'inventory', 'expenses'];
 
         return [
             'Developer — semua fitur' => ['developer', array_keys(self::URLS)],

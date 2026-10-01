@@ -36,6 +36,7 @@ class User extends Authenticatable
     public const MENU = [
         ['dashboard', 'bi-grid-1x2', 'Ringkasan'],
         ['pos', 'bi-calculator', 'Kasir'],
+        ['reservations', 'bi-calendar-check', 'Reservasi'],
         ['transactions', 'bi-receipt', 'Transaksi'],
         ['products', 'bi-box-seam', 'Produk'],
         ['inventory', 'bi-boxes', 'Stok / Gudang'],

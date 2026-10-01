@@ -9,11 +9,12 @@
     <div class="card stat"><div class="stat-label">Transaksi selesai</div><div class="stat-value">{{ $summary['transactions'] }}</div></div>
     <div class="card stat"><div class="stat-label">Tunai penjualan (net)</div><div class="stat-value">Rp {{ number_format($summary['cashSales'],0,',','.') }}</div></div>
     <div class="card stat"><div class="stat-label">Top up tunai</div><div class="stat-value">Rp {{ number_format($summary['cashTopups'],0,',','.') }}</div></div>
+    <div class="card stat"><div class="stat-label">DP reservasi tunai (net)</div><div class="stat-value">Rp {{ number_format($summary['cashReservationDp'],0,',','.') }}</div></div>
     <div class="card stat"><div class="stat-label">Pengeluaran tunai</div><div class="stat-value">Rp {{ number_format($summary['cashExpenses'],0,',','.') }}</div></div>
 </div>
 <div class="grid two-col" style="margin-top:16px">
     <section class="card card-pad">
-        <div class="card-title"><div><h2>Hitung kas fisik</h2><p>Kas seharusnya = modal awal + penjualan tunai + top up tunai − pengeluaran tunai.</p></div></div>
+        <div class="card-title"><div><h2>Hitung kas fisik</h2><p>Kas seharusnya = modal awal + penjualan tunai + top up tunai + DP reservasi tunai (net) − pengeluaran tunai.</p></div></div>
         <form method="POST" action="{{ route('pos.close.store') }}" class="form-grid">
             @csrf
             <div class="field"><label>Modal kas awal</label><input type="text" name="opening_cash" data-money-input data-min="0" value="{{ number_format(old('opening_cash',$closing?->opening_cash ?? 0),0,',','.') }}" required></div>

@@ -36,6 +36,13 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureInitialSetup::class])->gro
         Route::post('/kasir/tutup-harian', [WarungController::class, 'storeCashierClosing'])->middleware('throttle:10,1')->name('pos.close.store');
     });
 
+    Route::middleware('module:reservations')->group(function () {
+        Route::get('/reservasi', [WarungController::class, 'reservations'])->name('reservations');
+        Route::post('/reservasi', [WarungController::class, 'storeReservation'])->name('reservations.store');
+        Route::put('/reservasi/{reservation}', [WarungController::class, 'updateReservation'])->name('reservations.update');
+        Route::patch('/reservasi/{reservation}/status', [WarungController::class, 'updateReservationStatus'])->name('reservations.status');
+    });
+
     // Read-only POS dependencies remain available to custom cashier roles.
     Route::get('/transaksi/{transaction}/print', [WarungController::class, 'print'])->middleware('module:transactions,pos,reports')->name('transactions.print');
     Route::get('/transaksi/{transaction}/epos', [WarungController::class, 'eposReceipt'])->middleware('module:transactions,pos,reports')->name('transactions.epos');

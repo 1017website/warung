@@ -1,0 +1,43 @@
+*Update POS Warung – Revisi 1 Oktober 2026* 🙏
+
+Selamat siang Bapak/Ibu, berikut rangkuman update sistem POS Warung yang sudah selesai kami kerjakan:
+
+*1. Login tiap akun* 🔐
+• Panduan login sudah tersedia untuk setiap akun: Kasir, SPV, Outlet Manager, Ops Admin, Head of Ops, dan Superadmin.
+• Setelah login, Kasir/SPV/Manager/Ops Admin langsung masuk ke halaman *Kasir*. Superadmin & Head of Ops masuk ke *Ringkasan*.
+• Akun staf dibuat Superadmin lewat *Pengaturan → Akun* (password min. 8 karakter, PIN otorisasi 4–8 digit untuk Manager/SPV).
+• Lupa password: Superadmin yang menggantinya di menu yang sama.
+
+*2. Reservasi (baru)* 📅
+• Menu baru *Reservasi*: catat nama, no. HP, tanggal & jam, jumlah orang, meja, catatan, dan *DP* (tunai/QRIS/transfer/debit).
+• Saat tamu datang, di Kasir klik tombol *Reservasi* → pilih nama tamu. Nomor meja terisi otomatis dan *DP langsung memotong tagihan*.
+• Contoh: total Rp114.000, DP Rp100.000 → kasir cukup menagih Rp14.000.
+• Struk mencantumkan DP, dan DP tunai sudah dihitung otomatis di *Tutup Kasir* (tidak dobel).
+• Reservasi bisa ditandai *Batal* / *Tidak datang*, dengan pilihan DP dikembalikan atau hangus.
+
+*3. Upload menu & stok* 📦
+• File Excel yang dikirim (_POS MENU ALL OUTLET & SKU, Stok Bahan Baku, Stok Olahan Hari Ini, Stok CV Samudera Pangan_) bisa langsung diupload *tanpa diubah formatnya* lewat *Produk → Import Excel*.
+• Hasil uji: *350 menu* dan *242 bahan baku* (mentah, support, dan CV) masuk dengan benar, lengkap dengan harga offline/online, kategori, dan min. stok.
+• Upload ulang file yang sudah diperbarui aman: data lama diperbarui, tidak dobel.
+• Pencarian produk sekarang bisa mencari ke seluruh katalog (nama/SKU/barcode) + filter jenis & kategori.
+
+*4. Tutorial menyambungkan printer* 🖨️
+• Panduan untuk 2 jenis printer:
+  – Printer USB/Bluetooth: cetak lewat browser (kertas 58/80 mm, skala 100%, tanpa margin).
+  – Printer Epson ePOS (jaringan/WiFi): cetak otomatis struk customer + dapur, bisa buka laci uang.
+• Termasuk langkah jika printer tidak mencetak. Transaksi tetap tersimpan dan struk bisa dicetak ulang dari menu Transaksi.
+
+*Perbaikan tampilan* ✨
+• Scroll bar dirapikan (lebih tipis & serasi dengan warna aplikasi). Menu samping juga dirapatkan agar semua menu terlihat di layar laptop tanpa perlu scroll.
+
+📄 Panduan PDF per akun sudah kami perbarui (Kasir, SPV, Outlet Manager, Ops Admin, Head of Ops, Superadmin).
+
+*Mohon konfirmasi beberapa hal berikut* 🙏
+1. Di file menu, beberapa menu memakai SKU yang sama (contoh BA-04 dipakai 8 menu Ayam Negeri). Saat ini tiap menu kami buat terpisah dengan stok masing-masing (SKU BA-04-1, BA-04-2, dst.). Apakah sudah sesuai, atau menu-menu tersebut seharusnya *berbagi satu stok*?
+2. File yang dikirim belum berisi *jumlah stok*, hanya min. stok. Stok awal bisa diisi dengan menambah kolom *STOK* di Excel lalu upload ulang per cabang, atau lewat Stock Opname di menu Stok/Gudang.
+3. Harga online di file berkoma (contoh Rp28.571,43) kami bulatkan menjadi Rp28.571. Apakah perlu dibulatkan ke ratusan terdekat (misal Rp28.600)?
+4. Item *CV Samudera Pangan* kami masukkan sebagai bahan baku. Jika CV dikelola sebagai gudang/cabang sendiri, mohon info agar stoknya kami arahkan ke cabang tersebut.
+
+Printer fisik tetap perlu dicoba langsung di outlet. Kami siap membantu saat pemasangan.
+
+Terima kasih 🙏

@@ -17,16 +17,19 @@ use App\Models\ProductPrice;
 use App\Models\ProductStock;
 use App\Models\ProductStorePrice;
 use App\Models\Purchase;
+use App\Models\Reservation;
 use App\Models\Role;
 use App\Models\StockCount;
 use App\Models\StockProduction;
 use App\Models\Store;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\OutletCatalogImporter;
 use App\Services\TransactionReportExporter;
 use App\Support\EposReceipt;
 use App\Support\MenuIcon;
 use App\Support\Qty;
+use App\Support\SheetValue;
 use App\Support\SpreadsheetDownload;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -296,12 +299,17 @@ class WarungController extends Controller
             ->where('payment_method', 'cash')
             ->whereDate('expense_date', today())
             ->sum('amount');
+        // DP tunai masuk laci pada hari diterima; pembayaran bermetode `dp` di kasir bukan uang baru.
+        $cashDp = fn () => Reservation::where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->where('dp_method', 'cash');
+        $cashReservationDp = (float) $cashDp()->whereDate('dp_paid_at', today())->sum('dp_amount')
+            - (float) $cashDp()->where('dp_refunded', true)->whereDate('dp_refunded_at', today())->sum(DB::raw('dp_amount - dp_used'));
 
         return [
             'transactions' => $transactions->count(),
             'paymentSummary' => $paymentSummary,
             'cashSales' => round($paymentRows->where('method', 'cash')->sum('amount'), 2),
             'cashTopups' => round($cashTopups, 2),
+            'cashReservationDp' => round($cashReservationDp, 2),
             'cashExpenses' => round($cashExpenses, 2),
         ];
     }
@@ -371,7 +379,7 @@ class WarungController extends Controller
             ->filter(fn (Product $product) => $product->isAvailableAt($storeId))->values();
         $categories = Category::where('tenant_id', $this->tenantId())->whereIn('id', $products->pluck('category_id')->filter()->unique())->orderBy('name')->get();
         $members = Member::where('tenant_id', $this->tenantId())->where('is_active', true)->orderBy('name')->get();
-        $pendingBills = Transaction::with(['items', 'member'])->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->where('status', 'pending')->latest()->get();
+        $pendingBills = Transaction::with(['items', 'member', 'reservation'])->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->where('status', 'pending')->latest()->get();
         $pendingBillData = $pendingBills->map(fn ($bill) => [
             'id' => $bill->id,
             'invoice' => $bill->invoice_no,
@@ -381,6 +389,7 @@ class WarungController extends Controller
             'online_platform' => $bill->online_platform,
             'discount_type' => $bill->discount_type,
             'discount_value' => (float) $bill->discount_value,
+            'reservation' => $bill->reservation?->isOpen() ? $bill->reservation->setRelation('transaction', $bill)->posData() : null,
             'items' => $bill->items->map(fn ($item) => [
                 'id' => $item->product_id,
                 'price_id' => $item->product_price_id,
@@ -410,8 +419,13 @@ class WarungController extends Controller
         ])->values();
         $chargeConfig = $this->activeStoreRecord()->chargeConfig();
         $eposPrinter = $this->eposPrinter()?->eposConfig();
+        // Reservasi hari ini dan tamu yang sudah datang (termasuk yang terlambat dari hari sebelumnya).
+        $reservationData = Reservation::with('transaction')->where('tenant_id', $this->tenantId())->where('store_id', $storeId)
+            ->whereIn('status', Reservation::OPEN_STATUSES)
+            ->where(fn ($query) => $query->whereDate('reserved_at', today())->orWhere('status', 'arrived'))
+            ->orderBy('reserved_at')->get()->map(fn (Reservation $reservation) => $reservation->posData())->values();
 
-        return $this->view('pos.index', compact('products', 'categories', 'members', 'pendingBills', 'pendingBillData', 'posProducts', 'chargeConfig', 'eposPrinter'));
+        return $this->view('pos.index', compact('products', 'categories', 'members', 'pendingBills', 'pendingBillData', 'posProducts', 'chargeConfig', 'eposPrinter', 'reservationData'));
     }
 
     /** Printer Epson ePOS aktif untuk cabang: printer khusus cabang lebih diutamakan. */
@@ -469,6 +483,7 @@ class WarungController extends Controller
             'online_platform' => ['nullable', 'string', 'max:30', Rule::requiredIf(fn () => $request->input('service_type') === 'online')],
             'notes' => ['nullable', 'string', 'max:500'],
             'pending_transaction_id' => ['nullable', 'integer'],
+            'reservation_id' => ['nullable', 'integer'],
             'transaction_type' => ['nullable', Rule::in(['sale', 'replacement'])],
             'approval_pin' => ['nullable', 'string', 'min:4', 'max:12'],
         ]);
@@ -577,6 +592,25 @@ class WarungController extends Controller
         return [$payments, $paid, $deposit];
     }
 
+    /** Reservasi yang dibuka di Kasir: milik cabang aktif, masih terbuka, dan belum terhubung ke bill lain. */
+    private function reservationForOrder(array $data): ?Reservation
+    {
+        if (empty($data['reservation_id'])) {
+            return null;
+        }
+        $reservation = Reservation::where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->lockForUpdate()->findOrFail($data['reservation_id']);
+        abort_unless($reservation->isOpen(), 422, "Reservasi {$reservation->code} sudah berstatus {$reservation->statusLabel()}.");
+        abort_if($reservation->transaction_id && $reservation->transaction_id !== (int) ($data['pending_transaction_id'] ?? 0), 422, "Reservasi {$reservation->code} sudah terhubung ke open bill lain.");
+
+        return $reservation;
+    }
+
+    /** Bill yang sebelumnya membawa reservasi lain dilepas agar DP-nya dapat dipakai kembali. */
+    private function releaseOtherReservations(Transaction $transaction, ?Reservation $keep): void
+    {
+        Reservation::where('transaction_id', $transaction->id)->when($keep, fn ($query) => $query->whereKeyNot($keep->id))->update(['transaction_id' => null]);
+    }
+
     public function checkout(Request $request)
     {
         $data = $this->validateOrder($request);
@@ -594,8 +628,17 @@ class WarungController extends Controller
             }
             $charges = $this->activeStoreRecord()->chargesFor($transactionType === 'replacement' ? 0 : $subtotal - $discount, $data['service_type']);
             $total = $transactionType === 'replacement' ? 0 : $subtotal - $discount + $charges['service_charge'] + $charges['tax_amount'];
-            [$payments, $paid, $depositUsed] = $total > 0 ? $this->normalizedPayments($data, $total, $member) : [collect(), 0, 0];
-            $primary = $payments->firstWhere('method', '!=', 'deposit')['method'] ?? ($payments->first()['method'] ?? 'cash');
+            $reservation = $this->reservationForOrder($data);
+            abort_if($reservation && $transactionType === 'replacement', 422, 'Reservasi tidak dapat dipakai untuk retur pengganti.');
+            // DP reservasi sudah diterima sebelumnya: memotong tagihan, sisanya dibayar seperti biasa.
+            $dpUsed = $reservation ? min((float) $reservation->dp_amount, $total) : 0;
+            [$payments, $paid, $depositUsed] = $total - $dpUsed > 0 ? $this->normalizedPayments($data, $total - $dpUsed, $member) : [collect(), 0, 0];
+            if ($dpUsed > 0) {
+                $payments->prepend(['method' => 'dp', 'provider' => $reservation->code, 'amount' => $dpUsed]);
+                $paid += $dpUsed;
+            }
+            $primary = $payments->first(fn ($payment) => ! in_array($payment['method'], ['deposit', 'dp'], true))['method'] ?? ($payments->first()['method'] ?? 'cash');
+            $primary = $primary === 'dp' ? ($reservation->dp_method ?: 'cash') : $primary;
             $primary = $primary === 'debit' ? 'transfer' : $primary;
             $invoice = 'TRX-'.now()->format('ymd-His').'-'.strtoupper(Str::random(3));
 
@@ -642,6 +685,11 @@ class WarungController extends Controller
                     'description' => "Pembayaran {$trx->invoice_no}", 'created_at' => now(), 'updated_at' => now(),
                 ]);
             }
+            $this->releaseOtherReservations($trx, $reservation);
+            $reservation?->update([
+                'transaction_id' => $trx->id, 'status' => 'completed', 'dp_used' => $dpUsed,
+                'arrived_at' => $reservation->arrived_at ?? now(), 'closed_at' => now(),
+            ]);
 
             return $trx;
         }, 3);
@@ -694,10 +742,13 @@ class WarungController extends Controller
                 'discount_value' => $discountValue, 'discount' => $discount, 'total' => $subtotal - $discount + $charges['service_charge'] + $charges['tax_amount'],
                 'payment_method' => 'cash', 'paid_amount' => 0, 'change_amount' => 0, 'notes' => $data['notes'] ?? null, 'transacted_at' => now(),
             ] + $charges;
+            $reservation = $this->reservationForOrder($data);
             $trx ? $trx->update($attributes) : $trx = Transaction::create($attributes);
             foreach ($lines as $line) {
                 $trx->items()->create($this->itemAttributes($line));
             }
+            $this->releaseOtherReservations($trx, $reservation);
+            $reservation?->update(['transaction_id' => $trx->id, 'status' => 'arrived', 'arrived_at' => $reservation->arrived_at ?? now()]);
 
             return $trx;
         }, 3);
@@ -716,6 +767,7 @@ class WarungController extends Controller
             'void_authorized_by' => auth()->id(),
             'voided_at' => now(),
         ]);
+        $this->releaseOtherReservations($transaction, null);
 
         return back()->with('success', 'Bill pending dibatalkan tanpa mengubah stok atau saldo member.');
     }
@@ -726,6 +778,124 @@ class WarungController extends Controller
         $this->activeStoreRecord()->update(['allow_custom_amount' => $request->boolean('enabled')]);
 
         return back()->with('success', 'Custom amount '.($request->boolean('enabled') ? 'diaktifkan.' : 'dinonaktifkan.'));
+    }
+
+    public function reservations(Request $request)
+    {
+        $filters = $request->validate([
+            'date' => ['nullable', 'date'],
+            'status' => ['nullable', Rule::in(array_merge(['open', 'all'], array_keys(Reservation::STATUSES)))],
+            'q' => ['nullable', 'string', 'max:80'],
+        ]);
+        $date = Carbon::parse($filters['date'] ?? today());
+        $status = $filters['status'] ?? 'all';
+        $scope = fn () => Reservation::where('tenant_id', $this->tenantId())->where('store_id', $this->storeId());
+        $reservations = $scope()->with(['user', 'transaction'])
+            ->whereDate('reserved_at', $date)
+            ->when($status === 'open', fn ($query) => $query->whereIn('status', Reservation::OPEN_STATUSES))
+            ->when(! in_array($status, ['open', 'all'], true), fn ($query) => $query->where('status', $status))
+            ->when($filters['q'] ?? null, fn ($query, $q) => $query->where(fn ($inner) => $inner->where('customer_name', 'like', "%{$q}%")->orWhere('phone', 'like', "%{$q}%")->orWhere('code', 'like', "%{$q}%")))
+            ->orderBy('reserved_at')->get();
+        $summary = [
+            'count' => $reservations->whereNotIn('status', ['cancelled'])->count(),
+            'guests' => $reservations->whereIn('status', ['booked', 'arrived', 'completed'])->sum('guests'),
+            'open' => $reservations->whereIn('status', Reservation::OPEN_STATUSES)->count(),
+            'dp' => $reservations->where('dp_refunded', false)->sum(fn ($reservation) => (float) $reservation->dp_amount),
+        ];
+        $upcoming = $scope()->whereIn('status', Reservation::OPEN_STATUSES)->where('reserved_at', '>=', today()->addDay())
+            ->selectRaw('DATE(reserved_at) as day, COUNT(*) as total')->groupBy('day')->orderBy('day')->take(7)->get();
+
+        return $this->view('reservations.index', compact('reservations', 'date', 'status', 'summary', 'upcoming', 'filters'));
+    }
+
+    private function reservationData(Request $request): array
+    {
+        $data = $request->validate([
+            'customer_name' => 'required|string|max:120',
+            'phone' => 'nullable|string|max:30',
+            'reserved_date' => 'required|date',
+            'reserved_time' => 'required|date_format:H:i',
+            'guests' => 'required|integer|min:1|max:1000',
+            'table_number' => 'nullable|string|max:20',
+            'notes' => 'nullable|string|max:500',
+            'dp_amount' => 'nullable|numeric|min:0',
+            'dp_method' => ['nullable', Rule::in(array_keys(Reservation::DP_METHODS)), Rule::requiredIf(fn () => (float) $request->input('dp_amount') > 0)],
+            'dp_provider' => ['nullable', 'string', 'max:80', Rule::requiredIf(fn () => (float) $request->input('dp_amount') > 0 && in_array($request->input('dp_method'), ['qris', 'transfer', 'debit'], true))],
+        ], [], ['dp_method' => 'cara bayar DP', 'dp_provider' => 'bank/provider DP', 'reserved_date' => 'tanggal', 'reserved_time' => 'jam']);
+        $data['reserved_at'] = Carbon::parse($data['reserved_date'].' '.$data['reserved_time']);
+        $data['dp_amount'] = (float) ($data['dp_amount'] ?? 0);
+        if ($data['dp_amount'] <= 0) {
+            $data['dp_method'] = $data['dp_provider'] = null;
+        } elseif (($data['dp_method'] ?? null) === 'cash') {
+            $data['dp_provider'] = null;
+        }
+        unset($data['reserved_date'], $data['reserved_time']);
+
+        return $data;
+    }
+
+    public function storeReservation(Request $request)
+    {
+        $data = $this->reservationData($request);
+        $reservation = Reservation::create($data + [
+            'tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'user_id' => auth()->id(), 'status' => 'booked',
+            'code' => 'RSV-'.now()->format('ymd').'-'.strtoupper(Str::random(4)),
+            'dp_paid_at' => $data['dp_amount'] > 0 ? now() : null,
+        ]);
+
+        return redirect()->route('reservations', ['date' => $reservation->reserved_at->toDateString()])
+            ->with('success', "Reservasi {$reservation->code} a.n. {$reservation->customer_name} tersimpan.");
+    }
+
+    public function updateReservation(Request $request, Reservation $reservation)
+    {
+        abort_unless($reservation->tenant_id === $this->tenantId() && $reservation->store_id === $this->storeId(), 404);
+        abort_unless($reservation->isOpen(), 422, 'Reservasi yang sudah selesai atau batal tidak dapat diubah.');
+        $data = $this->reservationData($request);
+        $dpChanged = abs($data['dp_amount'] - (float) $reservation->dp_amount) > 0.004 || $data['dp_method'] !== $reservation->dp_method;
+        if ($dpChanged) {
+            // DP yang sudah diterima tidak diganti diam-diam setelah hari penerimaannya (kas harian sudah ditutup).
+            abort_if($reservation->dp_paid_at && ! $reservation->dp_paid_at->isToday() && (float) $reservation->dp_amount > 0, 422, 'DP diterima pada hari lain. Batalkan reservasi (DP dikembalikan) lalu buat reservasi baru bila nominal DP berubah.');
+            $data['dp_paid_at'] = $data['dp_amount'] > 0 ? ($reservation->dp_paid_at ?? now()) : null;
+        }
+        $reservation->update($data);
+
+        return back()->with('success', "Reservasi {$reservation->code} diperbarui.");
+    }
+
+    public function updateReservationStatus(Request $request, Reservation $reservation)
+    {
+        abort_unless($reservation->tenant_id === $this->tenantId() && $reservation->store_id === $this->storeId(), 404);
+        $data = $request->validate([
+            'status' => ['required', Rule::in(['arrived', 'cancelled', 'no_show', 'booked'])],
+            'reason' => ['nullable', 'string', 'max:255', Rule::requiredIf(fn () => $request->input('status') === 'cancelled')],
+            'refund_dp' => ['nullable', 'boolean'],
+        ], [], ['reason' => 'alasan pembatalan']);
+
+        DB::transaction(function () use ($reservation, $data) {
+            $reservation = Reservation::whereKey($reservation->id)->lockForUpdate()->firstOrFail();
+            abort_unless($reservation->isOpen(), 422, "Reservasi {$reservation->code} sudah berstatus {$reservation->statusLabel()}.");
+            if ($data['status'] === 'arrived') {
+                $reservation->update(['status' => 'arrived', 'arrived_at' => now()]);
+
+                return;
+            }
+            if ($data['status'] === 'booked') {
+                abort_if($reservation->transaction_id, 422, 'Reservasi sudah memiliki open bill di Kasir.');
+                $reservation->update(['status' => 'booked', 'arrived_at' => null]);
+
+                return;
+            }
+            abort_if($reservation->transaction_id, 422, 'Reservasi masih terhubung ke open bill. Batalkan open bill di Kasir terlebih dahulu.');
+            $refund = (bool) ($data['refund_dp'] ?? false) && (float) $reservation->dp_amount > 0;
+            $reservation->update([
+                'status' => $data['status'], 'cancel_reason' => $data['reason'] ?? null, 'closed_at' => now(),
+                'dp_refunded' => $refund, 'dp_refunded_at' => $refund ? now() : null,
+            ]);
+        });
+        $messages = ['arrived' => 'Tamu ditandai datang. Buka reservasi di Kasir untuk memotong DP.', 'booked' => 'Status kembali menjadi dipesan.', 'cancelled' => 'Reservasi dibatalkan.', 'no_show' => 'Reservasi ditandai tidak datang.'];
+
+        return back()->with('success', $messages[$data['status']]);
     }
 
     public function closeCashier()
@@ -761,7 +931,7 @@ class WarungController extends Controller
         abort_unless($authorizer, 422, 'PIN Manager/SPV cabang aktif diperlukan untuk tutup kasir.');
 
         $summary = $this->cashierSummary();
-        $expected = (float) $data['opening_cash'] + $summary['cashSales'] + $summary['cashTopups'] - $summary['cashExpenses'];
+        $expected = (float) $data['opening_cash'] + $summary['cashSales'] + $summary['cashTopups'] + $summary['cashReservationDp'] - $summary['cashExpenses'];
         $existing = CashierClosing::where('tenant_id', $this->tenantId())
             ->where('store_id', $this->storeId())
             ->whereDate('closing_date', today())
@@ -777,6 +947,7 @@ class WarungController extends Controller
                 'opening_cash' => $data['opening_cash'],
                 'cash_sales' => $summary['cashSales'],
                 'cash_topups' => $summary['cashTopups'],
+                'cash_reservation_dp' => $summary['cashReservationDp'],
                 'cash_expenses' => $summary['cashExpenses'],
                 'expected_cash' => $expected,
                 'actual_cash' => $data['actual_cash'],
@@ -790,13 +961,19 @@ class WarungController extends Controller
         return back()->with('success', 'Rekonsiliasi dan tutup kasir hari ini berhasil disimpan.');
     }
 
-    public function products()
+    public function products(Request $request)
     {
         $this->prepareDailyMenuStocks();
+        $filters = $request->validate(['q' => 'nullable|string|max:80', 'type' => ['nullable', Rule::in(['menu', 'ingredient'])], 'category' => 'nullable|integer']);
+        // Pencarian di server: katalog outlet berisi ratusan produk sehingga tidak cukup mencari di halaman aktif.
         $products = Product::with(['category', 'storePrices', 'prices'])
             ->withSum(['stocks as warehouse_stock' => fn ($q) => $q->where('store_id', $this->storeId())], 'quantity')
             ->withSum(['dailyStocks as daily_stock' => fn ($q) => $q->where('store_id', $this->storeId())->whereDate('stock_date', today())], 'quantity')
-            ->where('tenant_id', $this->tenantId())->latest()->paginate(20);
+            ->where('tenant_id', $this->tenantId())
+            ->when($filters['q'] ?? null, fn ($query, $q) => $query->where(fn ($inner) => $inner->where('name', 'like', "%{$q}%")->orWhere('sku', 'like', "%{$q}%")->orWhere('ingredient_sku', 'like', "%{$q}%")->orWhere('barcode', 'like', "%{$q}%")))
+            ->when($filters['type'] ?? null, fn ($query, $type) => $query->where('product_type', $type))
+            ->when($filters['category'] ?? null, fn ($query, $category) => $query->where('category_id', $category))
+            ->latest()->orderBy('name')->paginate(20)->withQueryString();
         $categories = Category::where('tenant_id', $this->tenantId())->orderBy('name')->get();
         $archivedProducts = Product::onlyTrashed()->with('category')
             ->where('tenant_id', $this->tenantId())->latest('deleted_at')->take(20)->get();
@@ -805,7 +982,7 @@ class WarungController extends Controller
         $priceStores = $this->stores();
         $priceStoreId = $this->isConsolidated() ? null : $this->storeId();
 
-        return $this->view('products.index', compact('products', 'categories', 'archivedProducts', 'archivedCategories', 'priceStores', 'priceStoreId'));
+        return $this->view('products.index', compact('products', 'categories', 'archivedProducts', 'archivedCategories', 'priceStores', 'priceStoreId', 'filters'));
     }
 
     /**
@@ -877,7 +1054,8 @@ class WarungController extends Controller
         return $request->validate([
             'name' => 'required|string|max:120',
             'icon' => MenuIcon::rules(),
-            'sku' => ['required', 'string', 'max:50', Rule::unique('products')->where('tenant_id', $this->tenantId())->ignore($product?->id)],
+            'sku' => ['required', 'string', 'max:50', Rule::unique('products')->where('tenant_id', $this->tenantId())
+                ->where('product_type', $product?->product_type ?? ($request->input('product_type') === 'ingredient' ? 'ingredient' : 'menu'))->ignore($product?->id)],
             'barcode' => ['nullable', 'string', 'max:80', Rule::unique('products')->where('tenant_id', $this->tenantId())->ignore($product?->id)],
             'category_id' => ['nullable', Rule::exists('categories', 'id')->where('tenant_id', $this->tenantId())->whereNull('deleted_at')],
             'unit' => 'required|string|max:20', 'purchase_price' => 'required|numeric|min:0', 'selling_price' => 'required|numeric|min:0',
@@ -1041,32 +1219,14 @@ class WarungController extends Controller
             ->all();
     }
 
-    /** Teks dari sel Excel; SKU/barcode yang tersimpan sebagai angka tidak berubah menjadi notasi E. */
     private function sheetText(mixed $value): string
     {
-        if (is_float($value) || is_int($value)) {
-            return floor($value) == $value ? sprintf('%.0f', $value) : (string) $value;
-        }
-
-        return trim((string) $value);
+        return SheetValue::text($value);
     }
 
-    /** Angka dari sel Excel/CSV: 15000, "15.000", dan "15,000" dibaca 15000; sel kosong menjadi null. */
     private function sheetNumber(mixed $value): ?float
     {
-        if ($value === null || $value === '') {
-            return null;
-        }
-        if (is_int($value) || is_float($value)) {
-            return (float) $value;
-        }
-        $value = str_replace(['Rp', 'rp', ' '], '', trim((string) $value));
-        if (preg_match('/^\d{1,3}([.,]\d{3})+$/', $value)) {
-            return (float) preg_replace('/\D/', '', $value);
-        }
-        $value = str_replace(',', '.', $value);
-
-        return is_numeric($value) ? (float) $value : null;
+        return SheetValue::number($value);
     }
 
     public function importProducts(Request $request)
@@ -1080,6 +1240,13 @@ class WarungController extends Controller
             $book = $reader->load($file->getRealPath());
         } else {
             $book = IOFactory::load($file->getRealPath());
+        }
+        // Workbook outlet (sheet MATANG/MENTAH/SUPPORT/CV atau file "Stok ...") memakai format sendiri.
+        if (OutletCatalogImporter::detects($book)) {
+            $result = (new OutletCatalogImporter($this->tenantId(), $this->storeId(), (int) auth()->id()))->import($book);
+            $book->disconnectWorksheets();
+
+            return back()->with('success', $result['message'])->with('import_notes', $result['notes']);
         }
         $aliases = [
             'jenis' => 'product_type', 'nama' => 'name', 'kategori' => 'category', 'satuan' => 'unit',
@@ -1105,9 +1272,10 @@ class WarungController extends Controller
                 $icon = $this->sheetText($record->get('icon'));
                 $icon = $icon !== '' && Validator::make(['icon' => $icon], ['icon' => MenuIcon::rules()])->passes() ? $icon : null;
                 $sellingPrice = $this->sheetNumber($record->get('selling_price')) ?? 0;
+                $productType = $this->sheetText($record->get('product_type')) === 'ingredient' ? 'ingredient' : 'menu';
                 $product = Product::withTrashed()->updateOrCreate(
-                    ['tenant_id' => $this->tenantId(), 'sku' => $sku],
-                    ['name' => $name, 'barcode' => $this->sheetText($record->get('barcode')) ?: null, 'category_id' => $categoryId, 'product_type' => $this->sheetText($record->get('product_type')) === 'ingredient' ? 'ingredient' : 'menu',
+                    ['tenant_id' => $this->tenantId(), 'product_type' => $productType, 'sku' => $sku],
+                    ['name' => $name, 'barcode' => $this->sheetText($record->get('barcode')) ?: null, 'category_id' => $categoryId,
                         'unit' => $this->sheetText($record->get('unit')) ?: 'pcs', 'purchase_price' => $this->sheetNumber($record->get('purchase_price')) ?? 0,
                         'selling_price' => $sellingPrice, 'online_selling_price' => $this->sheetNumber($record->get('online_selling_price')) ?: $sellingPrice,
                         'minimum_stock' => (int) ($this->sheetNumber($record->get('minimum_stock')) ?? 0), 'is_active' => true, 'deleted_at' => null]
@@ -2098,9 +2266,12 @@ class WarungController extends Controller
                 DB::table('deposit_transactions')->insert(['tenant_id' => $this->tenantId(), 'store_id' => $transaction->store_id, 'member_id' => $transaction->member->id, 'user_id' => auth()->id(), 'transaction_id' => $transaction->id, 'type' => 'credit', 'payment_method' => 'deposit', 'amount' => $deposit, 'balance_after' => $transaction->member->fresh()->deposit_balance, 'description' => 'Refund pembatalan '.$transaction->invoice_no, 'created_at' => now(), 'updated_at' => now()]);
             }
             $transaction->update(['status' => 'voided', 'cancel_reason' => $data['reason'], 'void_authorized_by' => $authorizer?->id, 'voided_at' => now()]);
+            // DP reservasi kembali tersedia; reservasi dapat dibuka lagi di Kasir.
+            Reservation::where('transaction_id', $transaction->id)->where('status', 'completed')
+                ->update(['transaction_id' => null, 'status' => 'arrived', 'dp_used' => 0, 'closed_at' => null]);
         }, 3);
 
-        return back()->with('success', 'Transaksi dibatalkan, stok dan deposit terkait telah dipulihkan.');
+        return back()->with('success', 'Transaksi dibatalkan, stok, deposit, dan DP reservasi terkait telah dipulihkan.');
     }
 
     public function reports(Request $request, TransactionReportExporter $exporter)

@@ -1,44 +1,44 @@
 [
   {
     "file": "User-Guide-Developer.pdf",
-    "pages": 68,
-    "image_placements": 52,
-    "bytes": 2435436
+    "pages": 100,
+    "image_placements": 77,
+    "bytes": 3929267
   },
   {
     "file": "User-Guide-Head-of-Ops.pdf",
-    "pages": 47,
-    "image_placements": 35,
-    "bytes": 1644994
+    "pages": 76,
+    "image_placements": 58,
+    "bytes": 2903007
   },
   {
     "file": "User-Guide-Kasir.pdf",
-    "pages": 27,
-    "image_placements": 19,
-    "bytes": 932083
+    "pages": 51,
+    "image_placements": 38,
+    "bytes": 1887066
   },
   {
     "file": "User-Guide-Ops-Admin.pdf",
-    "pages": 35,
-    "image_placements": 25,
-    "bytes": 1163141
+    "pages": 64,
+    "image_placements": 48,
+    "bytes": 2421108
   },
   {
     "file": "User-Guide-Outlet-Manager.pdf",
-    "pages": 27,
-    "image_placements": 19,
-    "bytes": 937916
+    "pages": 51,
+    "image_placements": 38,
+    "bytes": 1893750
   },
   {
     "file": "User-Guide-SPV.pdf",
-    "pages": 27,
-    "image_placements": 19,
-    "bytes": 930954
+    "pages": 51,
+    "image_placements": 38,
+    "bytes": 1886093
   },
   {
     "file": "User-Guide-Superadmin.pdf",
-    "pages": 68,
-    "image_placements": 52,
-    "bytes": 2429819
+    "pages": 100,
+    "image_placements": 77,
+    "bytes": 3924828
   }
 ]

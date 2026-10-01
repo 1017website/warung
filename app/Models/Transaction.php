@@ -41,6 +41,11 @@ class Transaction extends Model
         return $this->belongsTo(Store::class);
     }
 
+    public function reservation()
+    {
+        return $this->hasOne(Reservation::class);
+    }
+
     public function payments()
     {
         return $this->hasMany(TransactionPayment::class);

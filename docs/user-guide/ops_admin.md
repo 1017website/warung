@@ -6,6 +6,41 @@ Cabang: Cabang akun. Pemegang otorisasi: tidak. Edit stok awal: ya.
 
 Ikuti cabang akun; gunakan sidebar desktop atau navigasi bawah mobile. Tombol Keluar mobile berada pada baris akun di bawah header. Screenshot menggunakan data demo setelah perbaikan.
 
+## Login akun Ops Admin
+
+Masuk ke POS Warung dengan akun Ops Admin, mengenali halaman yang terbuka, dan menangani kendala masuk.
+
+![Setelah login](../fix-verification-2026-09-06/screenshots/role-ops_admin-kasir.png)
+![Halaman login · tablet 768 px](../revision-2026-10-01/screenshots/login-768.png)
+![Halaman login · mobile 390 px](../revision-2026-10-01/screenshots/login-390.png)
+
+### Masuk ke aplikasi
+
+1. Buka alamat POS Warung di Chrome atau Edge terbaru pada komputer, tablet, atau HP kasir. Gunakan alamat https bila tersedia agar kamera dan printer jaringan dapat dipakai.
+2. Isi email akun dan kata sandi yang diberikan Superadmin/Developer. Huruf besar-kecil pada kata sandi berpengaruh.
+3. Centang Ingat saya hanya pada perangkat milik outlet yang tidak dipakai bergantian dengan orang luar.
+4. Klik Masuk POS Warung. Setelah berhasil, halaman Kasir langsung terbuka karena menu itu adalah menu pertama role Ops Admin.
+5. Periksa nama dan role pada baris akun (sidebar bawah di desktop, di bawah judul pada tablet/mobile) serta cabang di kanan atas. Cabang terkunci ke cabang akun; data cabang lain tidak dapat dibuka.
+
+### Menu yang tersedia untuk Ops Admin
+
+1. Menu bawaan: Kasir dan tutup kasir, Reservasi, Transaksi, Produk dan kategori, Stok / Gudang, Pembelian, Pengeluaran, Membership dan deposit.
+2. Aksi yang meminta otorisasi (pembatalan lewat 30 detik, retur pengganti, koreksi deposit, tutup kasir) memerlukan PIN Manager/SPV cabang yang sama.
+3. Jika Superadmin mengubah master role, menu yang tampil mengikuti perubahan itu pada halaman berikutnya.
+
+### Keluar dan kendala login
+
+1. Keluar: desktop memakai ikon keluar di sidebar bawah; tablet/mobile memakai tombol Keluar di baris akun. Selalu keluar bila perangkat dipakai bergantian.
+2. Pesan "Email atau kata sandi tidak sesuai": periksa ejaan email dan Caps Lock. Akun yang dinonaktifkan juga ditolak dengan pesan ini; hubungi Superadmin.
+3. Setelah 10 kali gagal dalam satu menit, login dikunci sementara. Tunggu satu menit lalu coba lagi.
+4. Pesan "Role akun ini sudah tidak berlaku": role akun dihapus atau diubah. Superadmin perlu memilihkan role yang aktif.
+5. Lupa kata sandi: tidak ada reset mandiri. Minta Superadmin mengganti kata sandi melalui Pengaturan → Akun.
+
+Hasil: Akun masuk ke halaman Kasir dengan menu dan cabang sesuai hak akses.
+
+- Akun demo tidak lagi ditampilkan di halaman login. Gunakan akun yang dibuat untuk Anda.
+- Jangan berbagi akun. Setiap transaksi, pembatalan, dan otorisasi tercatat atas nama akun yang dipakai.
+
 ## Setup awal (wizard)
 
 Pada instalasi baru, halaman Warung belum siap digunakan muncul sampai Developer atau Superadmin menyelesaikan wizard Setup awal. Masuk kembali setelah setup selesai.
@@ -15,6 +50,10 @@ Pada instalasi baru, halaman Warung belum siap digunakan muncul sampai Developer
 Mencatat pesanan, menerima pembayaran, melanjutkan open bill, mencetak struk, dan melakukan rekonsiliasi kas harian.
 
 ![Ops Admin — Kasir dan tutup kasir](../fix-verification-2026-09-06/screenshots/role-ops_admin-kasir.png)
+
+![Kasir · DP reservasi memotong tagihan](../revision-2026-10-01/screenshots/kasir-reservasi-dp-768.png)
+
+![Tutup kasir · DP reservasi tunai](../revision-2026-10-01/screenshots/tutup-kasir-dp-768.png)
 
 ### Membuat pesanan
 
@@ -39,6 +78,13 @@ Mencatat pesanan, menerima pembayaran, melanjutkan open bill, mencetak struk, da
 3. Ubah pesanan lalu Pending untuk memperbarui bill yang sama; gunakan Bayar & cetak untuk menyelesaikannya.
 4. Untuk membatalkan pending, gunakan tombol batal pada daftar Open bill dan isi alasan.
 
+### Melayani tamu reservasi
+
+1. Klik tombol Reservasi di atas Kasir (angka = reservasi hari ini dan tamu yang sudah datang), lalu pilih nama tamu.
+2. Jenis pesanan otomatis Dine in dan nomor meja terisi. Banner reservasi tampil di atas keranjang; tombol Lepas membatalkan pilihan bila salah.
+3. Masukkan pesanan. Ringkasan menampilkan DP reservasi (−) dan Sisa dibayar; terima pembayaran sebesar sisa lalu Bayar & cetak. Bila DP menutup seluruh total, kolom uang diterima tidak perlu diisi.
+4. Langkah lengkap ada pada bagian Reservasi.
+
 ### Transaksi pengganti dan nominal custom
 
 1. Retur/transaksi pengganti: centang opsi tersebut dan isi PIN Manager/SPV yang berwenang. Transaksi pengganti tidak menagih pembayaran, tetapi mengeluarkan stok barang pengganti.
@@ -47,8 +93,8 @@ Mencatat pesanan, menerima pembayaran, melanjutkan open bill, mencetak struk, da
 ### Rekonsiliasi akhir hari
 
 1. Klik Tutup kasir. Rekap berlaku untuk cabang dan tanggal hari ini.
-2. Masukkan modal kas awal dan kas fisik yang dihitung; periksa penjualan tunai bersih, top up tunai, dan pengeluaran tunai.
-3. Kas seharusnya = modal awal + penjualan tunai net + top up tunai − pengeluaran tunai. Isi catatan selisih/serah terima.
+2. Masukkan modal kas awal dan kas fisik yang dihitung; periksa penjualan tunai bersih, top up tunai, DP reservasi tunai (net), dan pengeluaran tunai.
+3. Kas seharusnya = modal awal + penjualan tunai net + top up tunai + DP reservasi tunai (net) − pengeluaran tunai. DP tunai dihitung pada hari DP diterima; DP tunai yang dikembalikan hari itu sudah dikurangkan. Isi catatan selisih/serah terima.
 4. Jika akun bukan pemegang otorisasi, isi PIN Manager/SPV yang berwenang untuk cabang aktif. Klik Simpan tutup kasir dan periksa selisih.
 5. Catatan tutup kasir yang sudah tersimpan hanya dapat diperbarui oleh pemegang otorisasi. Gunakan Cetak rekap bila diperlukan.
 
@@ -56,6 +102,56 @@ Hasil: Invoice selesai tercatat bersama pembayaran; struk customer dan salinan d
 
 - PIN hanya diterima dari akun aktif yang berwenang atas cabang tersebut.
 - Kamera dan printer perlu dicoba di perangkat operasional; panduan ini tidak menggantikan uji fisik.
+
+## Reservasi
+
+Mencatat reservasi meja dan DP tamu, memantau jadwal per tanggal, lalu memotong DP di Kasir saat tamu datang.
+
+![Daftar reservasi · tablet 768 px](../revision-2026-10-01/screenshots/reservasi-768.png)
+![Form reservasi baru dengan DP](../revision-2026-10-01/screenshots/reservasi-form-768.png)
+![Kasir · memilih reservasi](../revision-2026-10-01/screenshots/kasir-reservasi-pilih-768.png)
+![Kasir · DP memotong tagihan](../revision-2026-10-01/screenshots/kasir-reservasi-dp-768.png)
+![Batal / tidak datang · DP dikembalikan](../revision-2026-10-01/screenshots/reservasi-batal-768.png)
+![Reservasi · mobile 390 px](../revision-2026-10-01/screenshots/reservasi-390.png)
+
+### Mencatat reservasi baru
+
+1. Pastikan cabang di kanan atas benar; reservasi hanya terlihat di cabang tempat dicatat.
+2. Buka Reservasi di sidebar (mobile: navigasi bawah), lalu klik Reservasi baru.
+3. Isi nama pemesan, No. HP/WhatsApp, tanggal, jam datang, jumlah orang, serta meja/area bila sudah ditentukan. Gunakan Catatan untuk acara atau permintaan khusus.
+4. Bila tamu membayar DP, isi nominal dan cara bayarnya (Tunai, QRIS, Transfer, Kartu debit). Selain tunai, isi bank/provider penerima. Kosongkan bila tanpa DP.
+5. Klik Simpan reservasi. Sistem memberi kode RSV-…; sampaikan kode itu kepada tamu sebagai bukti.
+
+### Memantau jadwal
+
+1. Daftar menampilkan reservasi satu tanggal, urut jam datang. Gunakan tombol ‹ Hari ini › atau pilih tanggal lalu Terapkan.
+2. Saring status (Dipesan, Tamu datang, Selesai, Batal, Tidak datang) atau cari nama, No. HP, atau kode.
+3. Kartu ringkasan menunjukkan jumlah reservasi, jumlah tamu, reservasi yang belum selesai, dan DP yang diterima. Baris Reservasi berikutnya menunjukkan tanggal mendatang yang sudah terisi.
+
+### Tamu datang dan membayar
+
+1. Saat tamu tiba, klik Tamu datang (opsional; memilih reservasi di Kasir juga dapat langsung dilakukan).
+2. Di Kasir, klik tombol Reservasi lalu pilih nama tamu. Jenis pesanan menjadi Dine in, nomor meja terisi, dan banner reservasi tampil di atas keranjang.
+3. Masukkan pesanan. Ringkasan menampilkan DP reservasi (−) dan Sisa dibayar. Contoh: total Rp114.000, DP Rp100.000, sisa Rp14.000; tamu membayar tunai Rp20.000 sehingga kembalian Rp6.000.
+4. Klik Bayar & cetak. Struk memuat baris DP · RSV-… dan kanal pelunasan; reservasi berubah menjadi Selesai dengan nomor invoice. Bila DP lebih besar dari total, sisa DP yang belum terpakai tercatat di daftar reservasi untuk diselesaikan secara operasional.
+5. Pesanan boleh disimpan sebagai Pending. Reservasi ikut tersimpan pada open bill dan DP dipotong ketika bill dibayar.
+
+### Mengubah, membatalkan, atau tidak datang
+
+1. Klik Ubah untuk mengganti jadwal, meja, jumlah tamu, atau catatan. Nominal DP hanya dapat diubah pada hari DP diterima.
+2. Klik tombol ×, pilih Batal (alasan wajib) atau Tidak datang. Centang DP dikembalikan bila uang DP dikembalikan kepada tamu; tanpa centang, DP tercatat hangus.
+3. Reservasi yang masih terhubung ke open bill tidak dapat dibatalkan. Batalkan open bill di Kasir lebih dulu.
+
+### DP pada tutup kasir
+
+1. DP tunai dihitung ke kas pada hari DP diterima (kartu DP reservasi tunai (net) di halaman Tutup kasir). DP tunai yang dikembalikan hari itu mengurangi kas seharusnya.
+2. Saat tamu membayar, bagian DP tidak dihitung lagi sebagai tunai, sehingga kas tidak tercatat dua kali.
+3. DP QRIS, transfer, atau debit tidak masuk laci kas; cocokkan dengan mutasi rekening atau aplikasi provider.
+
+Hasil: Reservasi tercatat per cabang. DP memotong tagihan satu kali dan tampil di struk, rincian pembayaran laporan (kanal DP), serta tutup kasir.
+
+- Membatalkan transaksi yang memakai DP mengembalikan reservasi ke status Tamu datang sehingga DP dapat dipakai lagi.
+- Akses menu Reservasi dapat diatur Superadmin di Pengaturan → Master role (modul Reservasi). Secara bawaan semua role yang memiliki Kasir mendapat menu ini.
 
 ## Transaksi
 
@@ -81,12 +177,17 @@ Hasil: Pembatalan mengubah status dan mencatat audit; transaksi tidak dihapus pe
 
 - Untuk melanjutkan atau membatalkan bill Pending, gunakan Open bill di Kasir.
 - Nominal pembayaran tunai pada riwayat dapat mencakup uang diterima sebelum kembalian; periksa struk untuk rincian kembalian.
+- Pembayaran DP reservasi tampil sebagai DP · RSV-…. Membatalkan transaksi itu mengembalikan reservasi ke status Tamu datang sehingga DP dapat dipakai lagi.
 
 ## Produk dan kategori
 
 Mengelola bahan baku, menu siap jual, harga, kategori, batas stok, serta arsip produk.
 
 ![Ops Admin — Produk dan kategori](../fix-verification-2026-09-06/screenshots/role-ops_admin-produk.png)
+
+![Import Excel · dua format](../revision-2026-10-01/screenshots/produk-import-768.png)
+
+![Hasil impor · SKU bersama BA-04](../revision-2026-10-01/screenshots/produk-sku-bersama-768.png)
 
 ### Menambahkan produk
 
@@ -111,12 +212,29 @@ Mengelola bahan baku, menu siap jual, harga, kategori, batas stok, serta arsip p
 
 1. Klik Download Excel untuk memperoleh data sekaligus template kolom.
 2. Siapkan file sesuai kolom SKU, Barcode, Nama, Jenis, Kategori, Satuan, Harga Beli, Harga Normal, Harga Online, dan Stok Minimum. Nilai Jenis menggunakan menu atau ingredient.
-3. Klik Import Excel, pilih file .xlsx/.xls/.csv maksimal 5 MB, lalu Import & perbarui. SKU yang sudah ada diperbarui; SKU baru dibuat.
+3. Klik Import Excel, pilih file .xlsx/.xls/.csv maksimal 5 MB, lalu Import & perbarui. SKU yang sudah ada diperbarui (per jenis: menu atau bahan baku); SKU baru dibuat.
 4. Periksa kembali hasil, harga, jenis produk, dan stok setelah impor. Jangan gunakan impor untuk menggantikan pencatatan mutasi stok harian.
+
+### Upload menu & stok dari workbook outlet
+
+1. Siapkan file dari tim pusat: POS MENU ALL OUTLET & SKU (sheet MATANG, MENTAH, SUPPORT, CV), atau file terpisah Stok Bahan Baku, Stok Olahan Hari Ini, dan Stok CV Samudera Pangan. Format tidak perlu diubah: baris 1 berisi judul kolom, baris kosong dilewati.
+2. Pilih cabang tujuan di kanan atas. Menu, harga, dan kategori berlaku untuk semua cabang; stok ditulis ke cabang aktif.
+3. Buka Produk → Import Excel → pilih file → Import & perbarui. File 600 produk selesai dalam beberapa detik.
+4. Baca pesan hasil: jumlah menu dan bahan baku baru/diperbarui. Baris yang dilewati (nama/SKU kosong, harga tidak valid) tercantum pada kotak Catatan impor di atas daftar produk.
+5. Sheet MATANG (atau file dengan kolom NOMINAL OFLINE) menjadi menu siap jual: NOMINAL OFLINE = harga normal, NOMINAL ONLINE = harga online (dibulatkan ke rupiah), MIN STOK = batas aman. Sheet MENTAH, SUPPORT, dan CV menjadi bahan baku. Kategori (Makanan, Snack, Minuman, Basah, Kering, Support, Gudang, Produksi) dibuat otomatis beserta ikon dan warnanya.
+6. SKU bersama: pada workbook outlet, beberapa menu memakai SKU bahan bakunya (mis. BA-04 dipakai 8 menu Ayam Negeri). Menu seperti itu mendapat SKU sendiri BA-04-1, BA-04-2, dan seterusnya; SKU aslinya tampil sebagai "SKU bahan BA-04" dan tetap bisa dicari. Menu dan bahan baku boleh memakai SKU yang sama.
+7. Impor ulang aman. Bahan baku dicocokkan lewat SKU, sedangkan menu lewat SKU dan nama, sehingga perubahan harga/nama memperbarui data yang ada tanpa menggandakan. Sel MIN STOK yang kosong tidak menghapus nilai lama.
+
+### Upload jumlah stok dari Excel
+
+1. Tambahkan kolom STOK (boleh juga STOK AWAL, STOK HARI INI, JUMLAH, QTY, atau SISA) pada file yang sama, lalu isi jumlah fisik per baris. Baris yang kolom stoknya kosong tidak mengubah stok.
+2. Pilih cabang yang dihitung, lalu Import & perbarui seperti di atas.
+3. Stok cabang aktif disetel ke angka tersebut dan dicatat sebagai stock opname berreferensi IMPORT-tanggal, sehingga selisihnya terlihat di riwayat pergerakan Stok / Gudang. Stok menu (olahan) berlaku untuk hari ini; stok bahan baku langsung menjadi saldo gudang.
+4. Tanpa kolom stok, produk baru mulai dari stok 0. Isi melalui Stock opname, Pembelian, atau Produksi di Stok / Gudang.
 
 Hasil: Master produk diperbarui. Penyesuaian stok operasional selanjutnya dicatat di Gudang.
 
-- Pencarian daftar Produk hanya memfilter halaman aktif; gunakan paginasi untuk halaman lainnya.
+- Kotak pencarian Produk mencari ke seluruh katalog (nama, SKU, SKU bahan, barcode); gunakan juga filter Jenis dan Kategori.
 - Produk berlaku dalam tenant, sementara stok mengikuti cabang.
 
 ## Stok / Gudang
@@ -157,6 +275,7 @@ Mencatat pemakaian bahan, produksi, konsumsi, proses ulang, penyesuaian, serta o
 
 Hasil: Stok bahan dan olahan berubah sesuai jenis aktivitas, dengan catatan pergerakan.
 
+- Upload menu & stok lewat Excel dilakukan akun yang memiliki menu Produk (bawaan: Developer, Superadmin, Head of Ops, Ops Admin). Di cabang, jumlah stok dicatat lewat Stock opname.
 - Catat pemakaian satu kali pada aktivitas yang sesuai. Bahan yang sudah berkurang melalui Produksi tidak perlu dikurangi lagi sebagai pemakaian manual untuk aktivitas yang sama.
 - Gunakan catatan untuk menjelaskan selisih fisik atau koreksi.
 
@@ -253,4 +372,41 @@ Hasil: Identitas, status dan saldo member tersedia sesuai tenant; aktivitas depo
 
 - Pendaftaran membutuhkan kartu kosong terverifikasi. Kartu yang sudah dipakai tidak dapat diaktivasi ulang untuk orang lain.
 - Gunakan Top up untuk penerimaan uang baru, dan Koreksi deposit untuk pembetulan beralasan.
+
+## Menyambungkan printer struk
+
+Menyiapkan dan memakai printer struk kasir: printer USB/Bluetooth lewat dialog cetak browser, atau printer Epson ePOS yang mencetak langsung lewat jaringan.
+
+![Halaman struk · pilihan cetak](../revision-2026-10-01/screenshots/printer-struk-browser-768.png)
+
+### Pilih cara cetak
+
+1. Umum (dialog cetak browser): untuk printer thermal USB, Bluetooth, atau LAN yang sudah terpasang di komputer/tablet kasir. Setelah Bayar & cetak, halaman struk terbuka lalu dicetak lewat dialog cetak.
+2. Epson ePOS (langsung via jaringan): untuk printer Epson yang mendukung ePOS-Print, seperti TM-m30, TM-T82III/X, dan TM-T88VI. Struk customer dan dapur tercetak otomatis tanpa dialog dan dapat membuka cash drawer.
+
+### Printer USB/Bluetooth (cara Umum)
+
+1. Pasang driver printer thermal di komputer kasir sesuai petunjuk produsen, lalu lakukan test page dari Windows. Untuk Bluetooth, pasangkan (pair) printer lebih dulu. Pada tablet Android, pasang aplikasi layanan cetak (print service) dari produsen printer agar printer muncul di Chrome.
+2. Buat satu transaksi, lalu klik Bayar & cetak. Halaman struk terbuka di jendela baru; izinkan pop-up untuk alamat POS Warung bila browser memblokirnya.
+3. Pilih Cetak customer + dapur, Cetak customer, atau Cetak dapur.
+4. Pada dialog cetak pilih printer thermal, ukuran kertas 58 mm atau 80 mm sesuai gulungan, skala 100%, margin None/tidak ada, dan matikan Headers and footers. Chrome/Edge mengingat pilihan ini untuk cetak berikutnya.
+5. Struk dapat dicetak ulang kapan saja dari menu Transaksi (ikon printer), tanpa membuat transaksi baru.
+
+### Memakai printer di Kasir
+
+1. Bila printer Epson ePOS aktif untuk cabang, nama printer tampil di samping tombol Tutup kasir. Bayar & cetak langsung mencetak struk customer dan lembar dapur.
+2. Bila printer gagal (mati, kertas habis, beda jaringan), transaksi tetap tersimpan; aplikasi menampilkan pesan lalu membuka struk browser sebagai cadangan. Jangan mengulang pembayaran.
+3. Halaman struk juga menyediakan tombol Cetak ke printer Epson untuk cetak ulang langsung.
+
+### Jika printer tidak mencetak
+
+1. Periksa daya, kertas, dan tutup printer; lampu error harus mati.
+2. Pastikan perangkat kasir dan printer berada di jaringan yang sama dan IP printer tidak berubah (cetak status sheet printer untuk melihat IP).
+3. Untuk https, buka ulang https://IP-printer dan terima sertifikatnya.
+4. Untuk USB/Bluetooth, uji test page dari sistem operasi. Bila test page gagal, masalahnya ada di driver atau sambungan, bukan di aplikasi.
+5. Hubungi Superadmin bila IP atau pengaturan printer perlu diubah; menu Pengaturan tidak tersedia untuk role Anda.
+
+Hasil: Struk customer dan lembar dapur tercetak dari Kasir; cetak ulang tersedia di Transaksi.
+
+- Kamera dan printer tetap perlu diuji di perangkat outlet; panduan ini tidak menggantikan uji fisik.
 

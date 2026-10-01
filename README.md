@@ -96,3 +96,18 @@ Bug yang diperbaiki pada revisi ini: harga di modal Edit produk terbaca 100× li
 3. Bila aplikasi dibuka lewat HTTPS, aktifkan HTTPS di printer, centang *Printer memakai HTTPS*, lalu buka `https://IP-printer` sekali di browser kasir untuk menerima sertifikatnya. Browser memblokir pengiriman dari halaman HTTPS ke printer HTTP.
 
 Tes tambahan: `php artisan test --filter=SeptemberRevisionTest` dan `node --test tests/js/epos-printer.test.cjs tests/js/pos-revision.test.cjs`.
+
+## Revisi 1 Oktober 2026
+
+| Poin | Fitur | Tempat |
+|---|---|---|
+| Login tiap akun | Bagian **Login** di setiap user guide: halaman pertama per role (Ringkasan untuk Developer/Superadmin/Head of Ops, Kasir untuk role lain), menu, PIN otorisasi, kendala login, dan cara Superadmin membuat akun staf. | `docs/user-guide` |
+| Reservasi | Modul **Reservasi** (nama, HP, tanggal/jam, jumlah orang, meja, catatan, DP tunai/QRIS/transfer/debit, status Dipesan/Tamu datang/Selesai/Batal/Tidak datang). Di Kasir tombol **Reservasi** mengisi meja dan memotong DP dari tagihan (pembayaran bermetode `dp`). DP tunai masuk tutup kasir pada hari diterima; DP yang dikembalikan mengurangi kas. Pembatalan transaksi membuka kembali DP. | Menu Reservasi, Kasir, Tutup kasir |
+| Upload menu & stok | Produk → Import Excel menerima workbook outlet apa adanya: sheet MATANG (menu, NOMINAL OFLINE/ONLINE), MENTAH/SUPPORT/CV (bahan baku), atau file *Stok Bahan Baku*, *Stok Olahan Hari Ini*, *Stok CV*. Menu yang berbagi SKU bahan (mis. BA-04) mendapat SKU BA-04-1, BA-04-2, …; SKU asal disimpan di `ingredient_sku`. Kolom STOK opsional menyetel stok cabang aktif sebagai stock opname (`IMPORT-tanggal`). Impor ulang memperbarui tanpa menggandakan. Pencarian Produk kini di server (nama/SKU/barcode) dengan filter jenis & kategori. | Produk |
+| Tutorial printer | Bagian **Printer** di setiap user guide: printer USB/Bluetooth lewat dialog cetak browser dan Epson ePOS lewat jaringan, termasuk penanganan gagal cetak. | `docs/user-guide` |
+
+SKU produk kini unik per jenis (menu / bahan baku), sehingga menu dan bahan baku boleh memakai SKU yang sama. Role bawaan yang memegang Kasir otomatis mendapat modul Reservasi; Superadmin dapat mengubahnya di master role.
+
+Deploy: upload file yang berubah, lalu jalankan `/maintenance/migrate` (migration `2026_10_01_000100` aman dijalankan ulang) dan `/maintenance/optimize-clear`.
+
+Tes tambahan: `php artisan test --filter=OctoberRevisionTest`. Screenshot panduan dibuat ulang dengan `WARUNG_BASE_URL=... node tests/browser/october-guide.cjs` terhadap schema review terpisah, lalu `node docs/user-guide/build-guide.cjs` dan `node docs/user-guide/export-pdf.cjs`.
