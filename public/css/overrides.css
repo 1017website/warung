@@ -196,3 +196,67 @@ html,.table-wrap,.modal-card,.cart-items,.price-picker-list,.list{scrollbar-widt
 .sidebar .nav::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.38)}
 /* Layar laptop pendek: menu dirapatkan agar seluruh menu Superadmin muat tanpa scroll. */
 @media (max-height:760px){.sidebar{padding-top:16px;padding-bottom:14px}.sidebar .brand{padding-bottom:12px}.sidebar .nav-label{padding-top:2px}.sidebar .nav{gap:2px}.sidebar .nav a{min-height:34px}.sidebar .nav-icon{width:24px;height:24px}.sidebar-footer{padding-top:10px}}
+/* Upload file (revisi Oktober 2026): area klik/seret untuk semua <input type="file">. */
+.file-drop{position:relative;display:flex;align-items:center;justify-content:center;width:100%;min-height:128px;padding:18px;border:2px dashed #c9d3e1;border-radius:14px;background:#f7f9fc;cursor:pointer;text-align:center;transition:border-color .15s,background-color .15s}
+.file-drop{color:#26334d;font-size:13px;font-weight:400}
+.file-drop:hover,.file-drop.is-dragging{border-color:#5f79a8;background:#eef3fa}
+.file-drop.is-dragging{border-style:solid}
+.file-drop:focus-within{outline:3px solid rgba(95,121,168,.28);outline-offset:2px}
+.file-drop.is-invalid{border-color:#d0574a;background:#fdf4f3}
+.file-drop.has-file{min-height:0;padding:12px 14px;border-style:solid;border-color:#cfe2d6;background:#fff;text-align:left}
+.file-drop.has-file.is-invalid{border-color:#d0574a;background:#fdf4f3}
+.file-drop input[type=file]{position:absolute;width:1px;height:1px;min-height:0;padding:0;margin:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;opacity:0}
+.file-drop-empty{display:flex;flex-direction:column;align-items:center;gap:6px}
+.file-drop-icon{display:grid;place-items:center;width:48px;height:48px;border-radius:13px;background:#e3e9f3;color:#465d8b;font-size:22px;overflow:hidden}
+.file-drop-icon img{width:100%;height:100%;object-fit:contain;background:#fff}
+.file-drop-text{font-size:14px;color:#26334d;font-weight:500}
+.file-drop-text b{color:#3d5a8f}
+.file-drop-hint{font-size:12px;color:#7a879b}
+.file-drop-chosen{display:flex;align-items:center;gap:12px;width:100%}
+.file-drop-thumb{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:10px;background:#e7f2ec;color:#2f7a55;font-size:22px;overflow:hidden}
+.file-drop-thumb img{width:100%;height:100%;object-fit:cover}
+.file-drop.is-image .file-drop-thumb{width:60px;height:60px;background:#f5f7fb}
+.file-drop.is-image .file-drop-thumb img{object-fit:contain}
+.file-drop-meta{display:flex;flex:1;flex-direction:column;min-width:0}
+.file-drop-name{overflow:hidden;font-size:14px;color:#26334d;text-overflow:ellipsis;white-space:nowrap}
+.file-drop-size{font-size:12px;color:#7a879b}
+.file-drop-actions{display:flex;flex:none;gap:6px}
+.file-drop-error{margin-top:6px;font-size:12.5px;color:#c0392b}
+.file-drop-empty[hidden],.file-drop-chosen[hidden],.file-drop-error[hidden]{display:none}
+.file-drop-spinner{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-2px;animation:file-drop-spin .7s linear infinite}
+@keyframes file-drop-spin{to{transform:rotate(360deg)}}
+@media(max-width:480px){.file-drop-change{display:none}}
+
+/* Modal Import Excel: langkah, tab format, dan tabel kolom template. */
+.modal-card.import-card{width:min(760px,100%)}
+.import-form{display:grid;gap:14px}
+.import-step{display:flex;align-items:flex-start;gap:10px}
+.import-step-no{display:grid;flex:none;place-items:center;width:26px;height:26px;border-radius:50%;background:#2d3a58;color:#fff;font-size:13px;font-weight:700}
+.import-step>div>b{display:block;font-size:14px;color:#26334d}
+.import-step strong{color:#26334d}
+.import-form>*,.import-panel>*{min-width:0}
+.import-step small{font-size:12.5px;color:#7a879b}
+.import-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.import-tab{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 12px;border:1.5px solid #dce2ed;border-radius:12px;background:#fff;color:#26334d;text-align:left;cursor:pointer}
+.import-tab small{font-size:11.5px;color:#7a879b}
+.import-tab:hover{border-color:#9fb1cf}
+.import-tab.active{border-color:#3d5a8f;background:#eef3fa;box-shadow:inset 0 0 0 1px #3d5a8f}
+.import-panel{display:grid;gap:10px;padding:14px;border:1px solid #e3e8f0;border-radius:12px;background:#fbfcfe}
+.import-panel[hidden]{display:none}
+.import-summary{margin:0;font-size:13px;color:#4a5872}
+.import-columns{border:1px solid #e3e8f0;border-radius:10px;background:#fff}
+.import-columns summary{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px 8px;padding:10px 12px;font-size:13px;font-weight:600;color:#26334d;cursor:pointer;list-style:none}
+.import-required-list{display:flex;flex-basis:100%;flex-wrap:wrap;align-items:center;gap:5px;font-size:12px;font-weight:500;color:#4a5872}
+.import-required-list code,.import-table code{padding:1px 6px;border-radius:5px;background:#f1f4f9;color:#26334d;font-weight:700;white-space:nowrap}
+.import-required-list code{background:#2d3a58;color:#fff}
+.badge.import-required{background:#2d3a58;color:#fff}
+.import-columns summary::-webkit-details-marker{display:none}
+.import-columns summary i{display:inline-block;transition:transform .15s}
+.import-columns[open] summary i{transform:rotate(90deg)}
+.import-columns-count{flex:none;font-size:12px;font-weight:500;color:#3d5a8f}
+.import-columns .table-wrap{border-top:1px solid #eef1f6}
+.import-table{width:100%;font-size:12.5px}
+.import-table th,.import-table td{padding:7px 10px;vertical-align:top}
+.import-rules{margin:0;padding-left:18px;font-size:12.5px;color:#4a5872}
+.import-rules li{margin:3px 0}
+@media(max-width:600px){.import-tabs{grid-template-columns:1fr}.import-table .import-example{display:none}}

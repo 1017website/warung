@@ -79,6 +79,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureInitialSetup::class])->gro
         Route::post('/produk/kategori/{category}/restore', [WarungController::class, 'restoreCategory'])->name('products.categories.restore');
         Route::get('/produk/export', [WarungController::class, 'exportProducts'])->name('products.export');
         Route::post('/produk/import', [WarungController::class, 'importProducts'])->name('products.import');
+        Route::get('/produk/import/template/{format}', [WarungController::class, 'productImportTemplate'])->name('products.import-template');
     });
 
     Route::middleware('module:purchases')->group(function () {

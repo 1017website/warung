@@ -283,20 +283,21 @@ Mengelola bahan baku, menu siap jual, harga, kategori, batas stok, serta arsip p
 
 ### Impor dan ekspor
 
-1. Klik Download Excel untuk memperoleh data sekaligus template kolom.
-2. Siapkan file sesuai kolom SKU, Barcode, Nama, Jenis, Kategori, Satuan, Harga Beli, Harga Normal, Harga Online, dan Stok Minimum. Nilai Jenis menggunakan menu atau ingredient.
-3. Klik Import Excel, pilih file .xlsx/.xls/.csv maksimal 5 MB, lalu Import & perbarui. SKU yang sudah ada diperbarui (per jenis: menu atau bahan baku); SKU baru dibuat.
+1. Klik Import Excel lalu pilih tab Format standar. Gunakan Download template untuk file kosong berisi sheet Petunjuk, atau Download data produk saat ini untuk mengubah data yang sudah ada.
+2. Isi sheet Produk. Kolom wajib tampil langsung di bawah judul sheet (SKU, Nama, dan Harga Normal untuk menu); klik judul sheet untuk melihat semua kolom beserta keterangan dan contoh. Nilai Jenis menggunakan menu atau ingredient. Sheet Harga Warung dan Pilihan Harga bersifat opsional.
+3. Klik kotak upload atau seret file ke kotak tersebut. Nama dan ukuran file tampil; file selain .xlsx/.xls/.csv atau di atas 5 MB langsung ditolak dengan pesan merah. Klik Import & perbarui; tombol berubah menjadi Mengunggah… sampai selesai. SKU yang sudah ada diperbarui (per jenis: menu atau bahan baku); SKU baru dibuat.
 4. Periksa kembali hasil, harga, jenis produk, dan stok setelah impor. Jangan gunakan impor untuk menggantikan pencatatan mutasi stok harian.
 
 ### Upload menu & stok dari workbook outlet
 
 1. Siapkan file dari tim pusat: POS MENU ALL OUTLET & SKU (sheet MATANG, MENTAH, SUPPORT, CV), atau file terpisah Stok Bahan Baku, Stok Olahan Hari Ini, dan Stok CV Samudera Pangan. Format tidak perlu diubah: baris 1 berisi judul kolom, baris kosong dilewati.
 2. Pilih cabang tujuan di kanan atas. Menu, harga, dan kategori berlaku untuk semua cabang; stok ditulis ke cabang aktif.
-3. Buka Produk → Import Excel → pilih file → Import & perbarui. File 600 produk selesai dalam beberapa detik.
-4. Baca pesan hasil: jumlah menu dan bahan baku baru/diperbarui. Baris yang dilewati (nama/SKU kosong, harga tidak valid) tercantum pada kotak Catatan impor di atas daftar produk.
-5. Sheet MATANG (atau file dengan kolom NOMINAL OFLINE) menjadi menu siap jual: NOMINAL OFLINE = harga normal, NOMINAL ONLINE = harga online (dibulatkan ke rupiah), MIN STOK = batas aman. Sheet MENTAH, SUPPORT, dan CV menjadi bahan baku. Kategori (Makanan, Snack, Minuman, Basah, Kering, Support, Gudang, Produksi) dibuat otomatis beserta ikon dan warnanya.
-6. SKU bersama: pada workbook outlet, beberapa menu memakai SKU bahan bakunya (mis. BA-04 dipakai 8 menu Ayam Negeri). Menu seperti itu mendapat SKU sendiri BA-04-1, BA-04-2, dan seterusnya; SKU aslinya tampil sebagai "SKU bahan BA-04" dan tetap bisa dicari. Menu dan bahan baku boleh memakai SKU yang sama.
-7. Impor ulang aman. Bahan baku dicocokkan lewat SKU, sedangkan menu lewat SKU dan nama, sehingga perubahan harga/nama memperbarui data yang ada tanpa menggandakan. Sel MIN STOK yang kosong tidak menghapus nilai lama.
+3. Buka Produk → Import Excel, pilih tab Workbook outlet. Kolom wajib tiap sheet tampil langsung (MATANG: NAMA PRODUK, SKU, NOMINAL OFLINE; MENTAH/SUPPORT/CV: NAMA PRODUK, SKU). Klik judul sheet untuk daftar kolom lengkap, atau Download template untuk file kosong berisi sheet Petunjuk.
+4. Seret file ke kotak upload atau klik untuk memilih, periksa nama file yang tampil, lalu klik Import & perbarui. File 600 produk selesai dalam beberapa detik.
+5. Baca pesan hasil: jumlah menu dan bahan baku baru/diperbarui. Baris yang dilewati (nama/SKU kosong, harga tidak valid) tercantum pada kotak Catatan impor di atas daftar produk.
+6. Sheet MATANG (atau file dengan kolom NOMINAL OFLINE) menjadi menu siap jual: NOMINAL OFLINE = harga normal, NOMINAL ONLINE = harga online (dibulatkan ke rupiah), MIN STOK = batas aman. Sheet MENTAH, SUPPORT, dan CV menjadi bahan baku. Kategori (Makanan, Snack, Minuman, Basah, Kering, Support, Gudang, Produksi) dibuat otomatis beserta ikon dan warnanya.
+7. SKU bersama: pada workbook outlet, beberapa menu memakai SKU bahan bakunya (mis. BA-04 dipakai 8 menu Ayam Negeri). Menu seperti itu mendapat SKU sendiri BA-04-1, BA-04-2, dan seterusnya; SKU aslinya tampil sebagai "SKU bahan BA-04" dan tetap bisa dicari. Menu dan bahan baku boleh memakai SKU yang sama.
+8. Impor ulang aman. Bahan baku dicocokkan lewat SKU, sedangkan menu lewat SKU dan nama, sehingga perubahan harga/nama memperbarui data yang ada tanpa menggandakan. Sel MIN STOK yang kosong tidak menghapus nilai lama.
 
 ### Upload jumlah stok dari Excel
 
@@ -487,7 +488,7 @@ Mengatur aturan cabang, identitas, struk, perangkat, kartu, role, akun, dan peme
 
 ### Identitas dan struk
 
-1. Pada Identitas warung, isi nama usaha dan pilih logo bila perlu; simpan.
+1. Pada Identitas warung, isi nama usaha. Untuk logo, klik atau seret gambar PNG/JPG/WEBP maksimal 2 MB ke kotak Logo; pratinjau tampil sebelum disimpan. Simpan.
 2. Pada Tampilan struk, isi header tambahan, footer, dan pilihan tampilkan logo; lihat preview dan simpan.
 3. Struk mengelompokkan item berdasarkan kategori dan menyediakan salinan dapur tanpa harga. Uji cetak dengan perangkat outlet setelah konfigurasi.
 

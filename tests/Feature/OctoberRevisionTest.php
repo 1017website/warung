@@ -16,6 +16,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Tests\TestCase;
@@ -297,5 +298,45 @@ class OctoberRevisionTest extends TestCase
         $this->actingAs($admin)->post('/produk/import', ['file' => new UploadedFile($path, 'produk.xlsx', null, null, true)])
             ->assertSessionHas('success', '2 produk berhasil diimpor/diperbarui.');
         $this->assertSame(['ingredient', 'menu'], Product::where('sku', 'GULA')->orderBy('product_type')->pluck('product_type')->all());
+    }
+
+    /** Unduh template, isi satu baris data seperti pengguna, lalu impor kembali file yang sama. */
+    private function filledTemplate(User $admin, string $format, string $sheet, array $row): UploadedFile
+    {
+        $response = $this->actingAs($admin)->get("/produk/import/template/{$format}")->assertOk();
+        $this->assertStringContainsString('spreadsheetml', $response->headers->get('content-type'));
+        $path = tempnam(sys_get_temp_dir(), 'template').'.xlsx';
+        file_put_contents($path, $response->streamedContent());
+        $book = IOFactory::load($path);
+        $book->getSheetByName($sheet)->fromArray($row, null, 'A2');
+        (new Xlsx($book))->save($path);
+
+        return new UploadedFile($path, "template-{$format}.xlsx", null, null, true);
+    }
+
+    public function test_import_templates_document_columns_and_import_back_cleanly(): void
+    {
+        ['admin' => $admin] = $this->setupWarung();
+
+        $this->actingAs($admin)->get('/produk')->assertOk()
+            ->assertSee('Download template')->assertSee('/produk/import/template/outlet', false)->assertSee('/produk/import/template/standard', false)
+            ->assertSee('NOMINAL OFLINE')->assertSee('Pilihan Harga')->assertSee('data-max-mb="5"', false);
+        $this->actingAs($admin)->get('/produk/import/template/lain')->assertNotFound();
+
+        // Workbook outlet: sheet Petunjuk berisi contoh kolom, tetapi tidak ikut terimpor.
+        $outlet = $this->filledTemplate($admin, 'outlet', 'MATANG', [1, 'Es Jeruk', 'gelas', 'MINUMAN', 'MN-77', null, 7000, 10000, 5, 12]);
+        $book = IOFactory::load($outlet->getRealPath());
+        $this->assertSame(['Petunjuk', 'MATANG', 'MENTAH', 'SUPPORT', 'CV'], $book->getSheetNames());
+        $this->assertSame(['NO', 'NAMA PRODUK', 'SATUAN', 'KATEGORI', 'SKU', 'BARCODE', 'MIN STOK', 'STOK'], $book->getSheetByName('MENTAH')->rangeToArray('A1:H1')[0]);
+        $this->actingAs($admin)->post('/produk/import', ['file' => $outlet])
+            ->assertSessionHas('success', 'Impor workbook outlet selesai: 1 menu baru, 0 menu diperbarui; stok 1 produk disetel.');
+        $this->assertEquals(10000, Product::where('sku', 'MN-77')->value('online_selling_price'));
+        $this->assertFalse(Product::where('name', 'Ayam Bakar Negeri Size 1')->exists());
+
+        // Format standar: kolom sama dengan Download Excel.
+        $standard = $this->filledTemplate($admin, 'standard', 'Produk', ['GULA-01', null, 'Gula Pasir', 'ingredient', 'Kering', 'kg', 15000, 0, 0, 3, null, 8]);
+        $this->assertSame(['Petunjuk', 'Produk', 'Harga Warung', 'Pilihan Harga'], IOFactory::load($standard->getRealPath())->getSheetNames());
+        $this->actingAs($admin)->post('/produk/import', ['file' => $standard])->assertSessionHas('success', '1 produk berhasil diimpor/diperbarui.');
+        $this->assertSame('ingredient', Product::where('sku', 'GULA-01')->value('product_type'));
     }
 }

@@ -27,6 +27,7 @@ use App\Models\User;
 use App\Services\OutletCatalogImporter;
 use App\Services\TransactionReportExporter;
 use App\Support\EposReceipt;
+use App\Support\ImportTemplate;
 use App\Support\MenuIcon;
 use App\Support\Qty;
 use App\Support\SheetValue;
@@ -1227,6 +1228,14 @@ class WarungController extends Controller
     private function sheetNumber(mixed $value): ?float
     {
         return SheetValue::number($value);
+    }
+
+    /** Template kosong + sheet Petunjuk untuk format impor workbook outlet atau standar. */
+    public function productImportTemplate(string $format)
+    {
+        abort_unless(array_key_exists($format, ImportTemplate::FORMATS), 404);
+
+        return SpreadsheetDownload::response(ImportTemplate::workbook($format, $this->stores()), ImportTemplate::FORMATS[$format]['filename']);
     }
 
     public function importProducts(Request $request)

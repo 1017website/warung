@@ -34,6 +34,9 @@ final class OutletCatalogImporter
 
     private const INGREDIENT_SHEETS = ['MENTAH', 'BAHAN BAKU', 'SUPPORT', 'CV', 'GUDANG', 'STOK BAHAN BAKU'];
 
+    /** Sheet panduan pada template unduhan; tidak pernah diimpor. */
+    private const IGNORED_SHEETS = ['PETUNJUK'];
+
     private const COLUMNS = [
         'name' => ['nama_produk', 'item', 'bahan_baku', 'nama_barang', 'nama_menu', 'nama', 'produk'],
         'unit' => ['satuan', 'unit'],
@@ -89,7 +92,7 @@ final class OutletCatalogImporter
     {
         $sheets = ['ingredient' => [], 'menu' => []];
         foreach ($book->getWorksheetIterator() as $sheet) {
-            $header = self::headerRow($sheet);
+            $header = in_array(Str::upper(trim($sheet->getTitle())), self::IGNORED_SHEETS, true) ? null : self::headerRow($sheet);
             if ($header === null) {
                 continue;
             }

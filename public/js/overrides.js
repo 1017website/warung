@@ -159,3 +159,176 @@ document.addEventListener('click', (event) => {
 });
 
 document.addEventListener('DOMContentLoaded', () => window.initializeIconPickers());
+
+/*
+ * Revisi 2026-10: upload file. Setiap <input type="file"> menjadi area klik/seret dengan
+ * nama & ukuran file terpilih, pratinjau gambar, serta validasi jenis/ukuran sebelum dikirim.
+ * Atribut opsional: data-file-hint, data-max-mb, data-current-src, data-current-label.
+ */
+window.formatFileSize = (bytes) => (bytes >= 1048576
+    ? `${(bytes / 1048576).toFixed(1).replace('.', ',')} MB`
+    : `${Math.max(1, Math.round(bytes / 1024))} KB`);
+
+const fileMatchesAccept = (input, file) => {
+    const rules = (input.accept || '').split(',').map((rule) => rule.trim().toLowerCase()).filter(Boolean);
+    if (!rules.length) return true;
+    const name = file.name.toLowerCase();
+    const type = (file.type || '').toLowerCase();
+
+    return rules.some((rule) => {
+        if (rule.startsWith('.')) return name.endsWith(rule);
+        if (rule.endsWith('/*')) return type.startsWith(rule.slice(0, -1));
+
+        return type === rule;
+    });
+};
+
+window.initializeFileDrops = (root = document) => {
+    root.querySelectorAll('input[type="file"]').forEach((input) => {
+        if (input.dataset.fileDropBound === 'true') return;
+        input.dataset.fileDropBound = 'true';
+
+        const image = (input.accept || '').includes('image');
+        const maxMb = Number(input.dataset.maxMb || 0);
+        const hint = input.dataset.fileHint || (image ? 'Gambar PNG atau JPG' : 'File');
+        const icon = image ? 'bi-image' : 'bi-file-earmark-spreadsheet';
+
+        const drop = document.createElement('label');
+        drop.className = image ? 'file-drop is-image' : 'file-drop';
+        input.insertAdjacentElement('beforebegin', drop);
+        drop.append(input);
+        drop.insertAdjacentHTML('beforeend', `
+            <span class="file-drop-empty">
+                <span class="file-drop-icon"><i class="bi ${image ? 'bi-image' : 'bi-cloud-arrow-up'}"></i></span>
+                <span class="file-drop-text"><b>Klik untuk memilih file</b> atau seret file ke sini</span>
+                <span class="file-drop-hint"></span>
+            </span>
+            <span class="file-drop-chosen" hidden>
+                <span class="file-drop-thumb"></span>
+                <span class="file-drop-meta"><b class="file-drop-name"></b><small class="file-drop-size"></small></span>
+                <span class="file-drop-actions">
+                    <span class="btn btn-outline btn-sm file-drop-change">Ganti</span>
+                    <button type="button" class="btn btn-danger btn-sm file-drop-clear" aria-label="Batalkan pilihan file" title="Batalkan pilihan file"><i class="bi bi-x-lg"></i></button>
+                </span>
+            </span>`);
+        drop.querySelector('.file-drop-hint').textContent = hint + (maxMb ? ` · maks. ${maxMb} MB` : '');
+        const error = document.createElement('div');
+        error.className = 'file-drop-error';
+        error.setAttribute('role', 'alert');
+        error.hidden = true;
+        drop.insertAdjacentElement('afterend', error);
+
+        // File yang sudah tersimpan (mis. logo cabang) tampil di area kosong sebagai acuan.
+        if (input.dataset.currentSrc) {
+            const current = drop.querySelector('.file-drop-icon');
+            const img = new Image();
+            img.src = input.dataset.currentSrc;
+            img.alt = input.dataset.currentLabel || 'File saat ini';
+            current.replaceChildren(img);
+            drop.querySelector('.file-drop-text').innerHTML = `<b>${window.escapeHtml(input.dataset.currentLabel || 'File saat ini')}</b> · klik atau seret file untuk mengganti`;
+        }
+
+        const showError = (message) => {
+            error.textContent = message;
+            error.hidden = !message;
+            drop.classList.toggle('is-invalid', Boolean(message));
+        };
+        const validate = () => {
+            const file = input.files[0];
+            let message = '';
+            if (file && !fileMatchesAccept(input, file)) message = `Jenis file tidak sesuai. Pilih ${hint}.`;
+            else if (file && maxMb && file.size > maxMb * 1048576) message = `Ukuran file ${window.formatFileSize(file.size)} melebihi batas ${maxMb} MB.`;
+            input.setCustomValidity(message);
+            showError(message);
+
+            return !message;
+        };
+        const render = () => {
+            const file = input.files[0];
+            const thumb = drop.querySelector('.file-drop-thumb');
+            drop.classList.toggle('has-file', Boolean(file));
+            drop.querySelector('.file-drop-empty').hidden = Boolean(file);
+            drop.querySelector('.file-drop-chosen').hidden = !file;
+            thumb.innerHTML = `<i class="bi ${icon}"></i>`;
+            if (file) {
+                drop.querySelector('.file-drop-name').textContent = file.name;
+                drop.querySelector('.file-drop-size').textContent = window.formatFileSize(file.size);
+                if (image && (file.type || '').startsWith('image/')) {
+                    const url = URL.createObjectURL(file);
+                    const img = new Image();
+                    img.alt = '';
+                    img.onload = () => URL.revokeObjectURL(url);
+                    img.src = url;
+                    thumb.replaceChildren(img);
+                }
+            }
+            validate();
+        };
+
+        input.addEventListener('change', render);
+        // Pesan sendiri menggantikan balon validasi browser yang menempel pada input tersembunyi.
+        input.addEventListener('invalid', (event) => {
+            event.preventDefault();
+            showError(input.files.length && input.validationMessage ? input.validationMessage : 'Pilih file terlebih dahulu.');
+            drop.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        });
+        drop.querySelector('.file-drop-clear').addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            input.value = '';
+            render();
+        });
+        ['dragenter', 'dragover'].forEach((type) => drop.addEventListener(type, (event) => {
+            event.preventDefault();
+            drop.classList.add('is-dragging');
+        }));
+        ['dragleave', 'dragend', 'drop'].forEach((type) => drop.addEventListener(type, (event) => {
+            if (type === 'dragleave' && drop.contains(event.relatedTarget)) return;
+            drop.classList.remove('is-dragging');
+        }));
+        drop.addEventListener('drop', (event) => {
+            event.preventDefault();
+            const file = event.dataTransfer?.files?.[0];
+            if (!file) return;
+            const transfer = new DataTransfer();
+            transfer.items.add(file);
+            input.files = transfer.files;
+            render();
+        });
+        input.form?.addEventListener('reset', () => setTimeout(render));
+    });
+};
+
+document.addEventListener('DOMContentLoaded', () => window.initializeFileDrops());
+
+// Tombol kirim form upload terkunci selama file diunggah agar tidak terkirim dua kali.
+document.addEventListener('submit', (event) => {
+    const form = event.target;
+    if (event.defaultPrevented || !form.querySelector('input[type="file"][data-file-drop-bound]')) return;
+    form.querySelectorAll('button[type="submit"], button:not([type])').forEach((button) => {
+        button.dataset.originalHtml = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<span class="file-drop-spinner" aria-hidden="true"></span> Mengunggah…';
+    });
+});
+window.addEventListener('pageshow', () => {
+    document.querySelectorAll('button[data-original-html]').forEach((button) => {
+        button.innerHTML = button.dataset.originalHtml;
+        button.disabled = false;
+        delete button.dataset.originalHtml;
+    });
+});
+
+/* Tab format pada modal Import Excel. */
+document.addEventListener('click', (event) => {
+    const tab = event.target.closest('[data-import-tab]');
+    if (!tab) return;
+    const form = tab.closest('form');
+    form.querySelectorAll('[data-import-tab]').forEach((item) => {
+        item.classList.toggle('active', item === tab);
+        item.setAttribute('aria-selected', String(item === tab));
+    });
+    form.querySelectorAll('[data-import-panel]').forEach((panel) => {
+        panel.hidden = panel.dataset.importPanel !== tab.dataset.importTab;
+    });
+});
