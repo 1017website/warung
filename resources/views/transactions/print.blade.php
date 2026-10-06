@@ -13,6 +13,8 @@ h1{font-size:14px;margin:4px 0}.muted{font-size:10px}.line{border-top:1px dashed
 .total,.copy-label{font-size:13px;font-weight:bold}.stamp{border:2px solid #000;padding:4px;margin:6px 0;font-weight:bold}
 .kitchen .item-name{font-size:14px}.actions{text-align:center;margin:12px auto;max-width:540px;padding:0 12px;font:14px/1.5 sans-serif}
 .actions button{background:#476c5c;color:#fff;border:0;border-radius:6px;padding:10px 14px;margin:3px;cursor:pointer}
+.actions .rawbt-link{display:inline-block;background:#476c5c;color:#fff;border-radius:6px;padding:12px 14px;min-height:44px;text-decoration:none;overflow-wrap:anywhere}
+.actions a:focus-visible,.actions button:focus-visible{outline:3px solid #111;outline-offset:3px}
 /* The printer driver supplies the roll length; select its 58 mm paper form. */
 @page{size:auto;margin:0}
 @media print{
@@ -24,9 +26,22 @@ h1{font-size:14px;margin:4px 0}.muted{font-size:10px}.line{border-top:1px dashed
 </head>
 <body data-print-copy="both">
 <div class="actions">
-<button type="button" onclick="printReceipts('both')">Cetak customer + dapur</button>
-<button type="button" onclick="printReceipts('customer')">Cetak customer</button>
-<button type="button" onclick="printReceipts('kitchen')">Cetak dapur</button>
+@if($rawbtPrinter ?? null)
+@php
+    $rawbtJobs = \App\Support\EposReceipt::jobs($transaction, $receiptStore, 32, true, false);
+@endphp
+<p><b>{{ $rawbtPrinter->name }} · RawBT Android · 58 mm</b></p>
+<p>Ketuk untuk membuka RawBT. Pastikan printer Bluetooth sudah dipilih di RawBT.</p>
+<p><a class="rawbt-link" href="{{ \App\Support\RawbtReceipt::uri($rawbtJobs) }}">Cetak customer + dapur via RawBT</a></p>
+<p><a class="rawbt-link" href="{{ \App\Support\RawbtReceipt::uri([$rawbtJobs[0]]) }}">Cetak customer via RawBT</a></p>
+<p><a class="rawbt-link" href="{{ \App\Support\RawbtReceipt::uri([$rawbtJobs[1]]) }}">Cetak dapur via RawBT</a></p>
+<p><a href="https://play.google.com/store/apps/details?id=ru.a402d.rawbtprinter" target="_blank" rel="noopener">Pasang RawBT di Android</a>. Untuk iPad, gunakan printer atau layanan cetak yang kompatibel.</p>
+<p id="rawbt-status" role="status"></p>
+<script src="{{ asset('js/rawbt-printer.js') }}?v={{ filemtime(public_path('js/rawbt-printer.js')) }}"></script>
+@endif
+<button type="button" onclick="printReceipts('both')">Cetak customer + dapur (browser)</button>
+<button type="button" onclick="printReceipts('customer')">Cetak customer (browser)</button>
+<button type="button" onclick="printReceipts('kitchen')">Cetak dapur (browser)</button>
 <p>POS 58 mm · Pilih kertas 58 mm, skala 100%, margin tidak ada, serta matikan header/footer browser. Jumlah salinan: 1 (sudah berisi customer + dapur).</p>
 @if($eposPrinter ?? null)<button type="button" id="epos-print" onclick="printEpos()">Cetak ke {{ $eposPrinter['name'] }} (Epson)</button><div id="epos-status" role="status"></div>@endif
 <a href="{{ route('pos') }}">Kembali ke kasir</a>
@@ -94,7 +109,7 @@ window.addEventListener('load', () => {
         const url = new URL(window.location.href);
         url.searchParams.delete('autoprint');
         history.replaceState(null, '', url);
-        printReceipts('both');
+        if (!(@json((bool) ($rawbtPrinter ?? null)) && window.RawbtPrinter?.isAndroid())) printReceipts('both');
     }
 });
 </script>

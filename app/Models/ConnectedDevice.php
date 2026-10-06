@@ -7,6 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 class ConnectedDevice extends Model
 {
     public const DRIVER_EPSON_EPOS = 'epson_epos';
+    public const DRIVER_RAWBT = 'rawbt';
+
+    public function isRawbtPrinter(): bool
+    {
+        return $this->type === 'receipt_printer' && $this->driver === self::DRIVER_RAWBT;
+    }
 
     protected $guarded = [];
 

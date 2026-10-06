@@ -89,7 +89,14 @@ Bug yang diperbaiki pada revisi ini: harga di modal Edit produk terbaca 100× li
 1. Upload file yang berubah (tanpa npm; CSS/JS ada di `public/css/overrides.css`, `public/js/overrides.js`, `public/js/epos-printer.js`).
 2. Login, lalu buka `/maintenance/migrate` dan `/maintenance/optimize-clear` (lihat RECOVERY.md). Migration `2026_09_28_000100` aman dijalankan ulang.
 
-### Menyiapkan printer Epson ePOS
+### Printer Xantri BT-58D Pro melalui RawBT (Android)
+
+1. Pasang [RawBT](https://play.google.com/store/apps/details?id=ru.a402d.rawbtprinter) di tablet Android. Pairing Bluetooth printer, pilih printer di RawBT, lalu lakukan tes cetak.
+2. Pengaturan → Perangkat terhubung → Tambah: jenis **Printer struk**, cara cetak **RawBT · Bluetooth Android, 58 mm**, pilih cabang dan simpan. Buka **Ubah perangkat** untuk mengakses **Tes cetak RawBT**.
+3. Setelah pembayaran di Android, halaman struk terbuka. Ketuk **Cetak customer + dapur via RawBT**, **Cetak customer via RawBT**, atau **Cetak dapur via RawBT**. Pemanggilan RawBT membutuhkan ketukan pengguna agar browser mengizinkan aplikasi eksternal dibuka.
+4. Kertas 58 mm, Font A 32 karakter per baris. Pemotongan kertas manual. Website mengirim perintah ESC/POS melalui Android intent; hasil fisik cetak tidak dapat dikonfirmasi website. Periksa kertas sebelum mengulang cetak. RawBT tidak tersedia di iPad; perangkat selain Android tetap memakai alur cetak browser/Epson yang tersedia.
+
+### Pengaturan Epson ePOS
 
 1. Beri printer IP tetap dan aktifkan **ePOS-Print** lewat EpsonNet Config / Web Config printer.
 2. Pengaturan → Perangkat terhubung → Tambah: jenis *Printer struk*, cara cetak *Epson ePOS*, isi IP, lebar kertas, dan opsi cetak otomatis/lembar dapur/cash drawer. Tekan **Tes cetak**.

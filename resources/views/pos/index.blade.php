@@ -8,6 +8,7 @@
         @if($reservationData->isNotEmpty() || auth()->user()->canAccess('reservations'))<button class="btn btn-soft" onclick="openModal('reservation-modal')" title="Reservasi hari ini dan tamu yang sudah datang"><i class="bi bi-calendar-check"></i> Reservasi @if($reservationData->isNotEmpty())<span class="badge amber">{{ $reservationData->count() }}</span>@endif</button>@endif
         @if($pendingBills->isNotEmpty())<button class="btn btn-soft" onclick="openModal('pending-modal')"><i class="bi bi-hourglass-split"></i> Open bill <span class="badge amber">{{ $pendingBills->count() }}</span></button>@endif
         @if($eposPrinter)<span class="badge" title="Struk dicetak otomatis ke printer Epson ePOS {{ $eposPrinter['url'] }}"><i class="bi bi-printer"></i> {{ $eposPrinter['name'] }}{{ $eposPrinter['auto_print'] ? '' : ' · manual' }}</span>@endif
+        @if($rawbtPrinter)<span class="badge">{{ $rawbtPrinter->name }} · RawBT Android 58 mm</span>@endif
         <a class="btn btn-outline" href="{{ route('pos.close') }}" target="_blank"><i class="bi bi-printer"></i> Tutup kasir</a>
     </div>
 </div>
@@ -82,6 +83,7 @@ const reservations=@json($reservationData);
 window.posReservation=null;
 const chargeConfig=@json($chargeConfig);
 document.addEventListener('DOMContentLoaded',()=>window.PosPrinter?.configure(@json($eposPrinter)));
+const rawbtConfigured = @json((bool) $rawbtPrinter);
 const cart=new Map();let payment='cash',serviceType='dine_in',stream=null,scanning=false,pendingId=null,customSequence=0;
 const byId=id=>products.find(p=>p.id===Number(id));
 document.querySelectorAll('.product-card').forEach(el=>el.addEventListener('click',()=>openProduct(Number(el.dataset.id))));
@@ -128,9 +130,10 @@ async function submitOrder(url, hold = false) {
     const btn = hold ? document.getElementById('hold-btn') : document.getElementById('checkout-btn');
     btn.disabled = true;
     // Printer Epson ePOS mencetak langsung tanpa jendela struk browser.
-    const epos = !hold && Boolean(window.PosPrinter?.isReady?.());
+    const rawbt = !hold && typeof rawbtConfigured !== 'undefined' && rawbtConfigured && Boolean(window.RawbtPrinter?.isAndroid());
+    const epos = !hold && !rawbt && Boolean(window.PosPrinter?.isReady?.());
     // Open during the click gesture so the payment request does not trigger a popup blocker.
-    const printWindow = hold || epos ? null : window.open('about:blank', '_blank', 'width=420,height=720');
+    const printWindow = hold || epos || rawbt ? null : window.open('about:blank', '_blank', 'width=420,height=720');
     if (printWindow) printWindow.document.body.textContent = 'Menyiapkan struk…';
     try {
         const response = await fetch(url, {
@@ -142,6 +145,10 @@ async function submitOrder(url, hold = false) {
         if (!response.ok) throw new Error(data.message || Object.values(data.errors || {})[0]?.[0] || 'Transaksi gagal.');
         if (data.print_url) {
             const printUrl = new URL(data.print_url, location.origin);
+            if (rawbt) {
+                location.assign(printUrl.href);
+                return;
+            }
             printUrl.searchParams.set('autoprint', '1');
             if (epos) {
                 try {

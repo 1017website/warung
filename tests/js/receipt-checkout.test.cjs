@@ -8,7 +8,7 @@ const source = fs.readFileSync(path.join(__dirname, '../../resources/views/pos/i
 const start = source.indexOf('async function submitOrder(');
 const checkout = source.slice(start, source.indexOf('\n}', start) + 2);
 
-for (const mode of ['popup', 'blocked', 'failed', 'hold']) {
+for (const mode of ['popup', 'blocked', 'failed', 'hold', 'rawbt', 'rawbt-ipad', 'rawbt-failed']) {
     test(`checkout printing: ${mode}`, async () => {
         const calls = [];
         const button = { disabled: false };
@@ -18,21 +18,27 @@ for (const mode of ['popup', 'blocked', 'failed', 'hold']) {
             close: () => calls.push(['close'])
         };
         const context = vm.createContext({
+            rawbtConfigured: mode.startsWith('rawbt'),
             URL, cart: new Map([['1', {}]]), payment: 'cash', serviceType: 'takeaway',
             orderPayload: () => ({ payments: [] }), totals: () => ({ total: 0 }),
             document: { getElementById: () => button, querySelector: () => ({ content: 'token' }) },
-            window: { open: () => { calls.push(['open']); return mode === 'blocked' ? null : popup; } },
+            window: { RawbtPrinter: { isAndroid: () => mode !== 'rawbt-ipad' }, open: () => { calls.push(['open']); return mode === 'blocked' ? null : popup; } },
             location: { origin: 'https://warung.test', assign: url => calls.push(['fallback', url]), reload: () => calls.push(['reload']) },
             alert: message => calls.push(['alert', message]),
             fetch: async () => {
                 calls.push(['save']);
-                return { ok: mode !== 'failed', json: async () => mode === 'hold' ? { invoice: 'TRX-1' } : { print_url: '/transaksi/1/print', message: 'Gagal' } };
+                return { ok: !['failed', 'rawbt-failed'].includes(mode), json: async () => mode === 'hold' ? { invoice: 'TRX-1' } : { print_url: '/transaksi/1/print', message: 'Gagal' } };
             }
         });
         vm.runInContext(checkout, context);
         await context.submitOrder('/checkout', mode === 'hold');
         assert.equal(button.disabled, false);
-        if (mode === 'popup') {
+        if (mode === 'rawbt') {
+            assert.deepEqual(calls.map(call => call[0]), ['save', 'fallback']);
+            assert.equal(calls[1][1], 'https://warung.test/transaksi/1/print');
+        } else if (mode === 'rawbt-failed') {
+            assert.deepEqual(calls.map(call => call[0]), ['save', 'alert']);
+        } else if (mode === 'popup' || mode === 'rawbt-ipad') {
             assert.deepEqual(calls.map(call => call[0]), ['open', 'save', 'receipt', 'reload']);
             assert.match(calls[2][1], /autoprint=1/);
         } else if (mode === 'blocked') {

@@ -420,16 +420,27 @@ class WarungController extends Controller
         ])->values();
         $chargeConfig = $this->activeStoreRecord()->chargeConfig();
         $eposPrinter = $this->eposPrinter()?->eposConfig();
+        $rawbtPrinter = $this->rawbtPrinter();
         // Reservasi hari ini dan tamu yang sudah datang (termasuk yang terlambat dari hari sebelumnya).
         $reservationData = Reservation::with('transaction')->where('tenant_id', $this->tenantId())->where('store_id', $storeId)
             ->whereIn('status', Reservation::OPEN_STATUSES)
             ->where(fn ($query) => $query->whereDate('reserved_at', today())->orWhere('status', 'arrived'))
             ->orderBy('reserved_at')->get()->map(fn (Reservation $reservation) => $reservation->posData())->values();
 
-        return $this->view('pos.index', compact('products', 'categories', 'members', 'pendingBills', 'pendingBillData', 'posProducts', 'chargeConfig', 'eposPrinter', 'reservationData'));
+        return $this->view('pos.index', compact('products', 'categories', 'members', 'pendingBills', 'pendingBillData', 'posProducts', 'chargeConfig', 'eposPrinter', 'rawbtPrinter', 'reservationData'));
     }
 
     /** Printer Epson ePOS aktif untuk cabang: printer khusus cabang lebih diutamakan. */
+    private function rawbtPrinter(?int $storeId = null): ?ConnectedDevice
+    {
+        $storeId ??= $this->storeId();
+
+        return ConnectedDevice::where('tenant_id', $this->tenantId())
+            ->where('type', 'receipt_printer')->where('driver', ConnectedDevice::DRIVER_RAWBT)->where('status', 'active')
+            ->where(fn ($query) => $query->where('store_id', $storeId)->orWhereNull('store_id'))
+            ->orderByRaw('store_id is null')->orderBy('id')->first();
+    }
+
     private function eposPrinter(?int $storeId = null): ?ConnectedDevice
     {
         $storeId ??= $this->storeId();
@@ -2240,6 +2251,7 @@ class WarungController extends Controller
         return view('transactions.print', [
             'transaction' => $transaction, 'tenant' => auth()->user()->tenant, 'receiptStore' => $transaction->store,
             'eposPrinter' => $transaction->status === 'completed' ? $this->eposPrinter($transaction->store_id)?->eposConfig() : null,
+            'rawbtPrinter' => $transaction->status === 'completed' ? $this->rawbtPrinter($transaction->store_id) : null,
         ]);
     }
 
@@ -2557,7 +2569,7 @@ class WarungController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:120',
             'type' => ['required', Rule::in(['receipt_printer', 'cash_drawer', 'barcode_scanner', 'customer_display', 'other'])],
-            'driver' => ['nullable', Rule::in(['generic', ConnectedDevice::DRIVER_EPSON_EPOS])],
+            'driver' => ['nullable', Rule::in(['generic', ConnectedDevice::DRIVER_EPSON_EPOS, ConnectedDevice::DRIVER_RAWBT])],
             'connection' => 'nullable|string|max:120',
             'store_id' => 'nullable|integer',
             'epos_host' => ['nullable', 'required_if:driver,'.ConnectedDevice::DRIVER_EPSON_EPOS, 'string', 'max:120', 'regex:/^[A-Za-z0-9.\-]+$/'],
@@ -2568,12 +2580,16 @@ class WarungController extends Controller
             'epos_columns' => 'nullable|integer|min:24|max:64',
         ], [], ['epos_host' => 'alamat IP printer']);
         $epson = ($data['driver'] ?? 'generic') === ConnectedDevice::DRIVER_EPSON_EPOS && $data['type'] === 'receipt_printer';
+        $rawbt = ($data['driver'] ?? 'generic') === ConnectedDevice::DRIVER_RAWBT && $data['type'] === 'receipt_printer';
         $device = [
             'name' => $data['name'], 'type' => $data['type'], 'store_id' => $data['store_id'] ?? null,
-            'driver' => $epson ? ConnectedDevice::DRIVER_EPSON_EPOS : 'generic',
-            'connection' => $epson ? $data['epos_host'] : ($data['connection'] ?? null),
+            'driver' => $epson ? ConnectedDevice::DRIVER_EPSON_EPOS : ($rawbt ? ConnectedDevice::DRIVER_RAWBT : 'generic'),
+            'connection' => $epson ? $data['epos_host'] : ($rawbt ? 'RawBT Android / Bluetooth' : ($data['connection'] ?? null)),
             'settings' => null,
         ];
+        if ($rawbt) {
+            $device['settings'] = ['paper' => 58, 'columns' => 32];
+        }
         if ($epson) {
             $device['settings'] = [
                 'host' => $data['epos_host'],

@@ -10,3 +10,4 @@
 <script defer src="{{ asset('js/app.js') }}?v={{ $assetVersion('js/app.js') }}"></script>
 <script defer src="{{ asset('js/overrides.js') }}?v={{ $assetVersion('js/overrides.js') }}"></script>
 <script defer src="{{ asset('js/epos-printer.js') }}?v={{ $assetVersion('js/epos-printer.js') }}"></script>
+<script defer src="{{ asset('js/rawbt-printer.js') }}?v={{ $assetVersion('js/rawbt-printer.js') }}"></script>

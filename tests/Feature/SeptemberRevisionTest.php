@@ -362,6 +362,42 @@ class SeptemberRevisionTest extends TestCase
         ])->assertSessionHasErrors('epos_host');
     }
 
+    public function test_rawbt_printer_settings_checkout_and_receipt_access(): void
+    {
+        ['storeA' => $storeA, 'storeB' => $storeB, 'admin' => $admin, 'cashierB' => $cashierB, 'menu' => $menu] = $this->setupWarung();
+        $this->actingAs($admin)->withSession(['store_id' => $storeA->id])->post('/pengaturan/perangkat', [
+            'name' => 'Xantri BT-58D Pro', 'type' => 'receipt_printer', 'driver' => 'rawbt', 'store_id' => $storeA->id,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $printer = ConnectedDevice::firstOrFail();
+        $this->assertTrue($printer->isRawbtPrinter());
+        $this->assertSame(32, $printer->settings['columns']);
+        $this->assertSame(58, $printer->settings['paper']);
+        $this->actingAs($admin)->get('/pengaturan')->assertOk()->assertSee('Tes cetak RawBT');
+        $this->actingAs($admin)->get('/kasir')->assertOk()->assertViewHas('rawbtPrinter', fn ($device) => $device->id === $printer->id);
+        $this->checkout($admin, $storeA, [['id' => $menu->id, 'qty' => 2]])->assertOk();
+        $transaction = Transaction::latest('id')->firstOrFail();
+        $this->actingAs($admin)->get(route('transactions.print', $transaction))->assertOk()
+            ->assertSee('Cetak customer + dapur via RawBT')->assertSee('intent:base64,');
+        $this->actingAs($cashierB)->withSession(['store_id' => $storeB->id])->get('/kasir')->assertOk()->assertViewHas('rawbtPrinter', null);
+        $this->actingAs($cashierB)->get(route('transactions.print', $transaction))->assertNotFound();
+        $printer->update(['status' => 'inactive']);
+        $this->actingAs($admin)->withSession(['store_id' => $storeA->id])->get(route('transactions.print', $transaction))->assertOk()->assertDontSee('intent:base64,');
+    }
+
+    public function test_rawbt_bytes_preserve_receipt_layout_and_strip_control_characters(): void
+    {
+        $uri = \App\Support\RawbtReceipt::uri([
+            [['type' => 'text', 'text' => "CUSTOMER\x1b@", 'bold' => true, 'align' => 'center', 'double' => true], ['type' => 'cut']],
+            [['type' => 'text', 'text' => 'DAPUR'], ['type' => 'feed', 'lines' => 3]],
+        ]);
+        $this->assertStringEndsWith('#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;', $uri);
+        $bytes = base64_decode(explode('#', substr($uri, strlen('intent:base64,')))[0], true);
+        $this->assertStringStartsWith("\x1b@\x1bM\x00", $bytes);
+        $this->assertStringContainsString("\x1ba\x01\x1bE\x01\x1d!\x01CUSTOMER@\n", $bytes);
+        $this->assertStringContainsString("\x1ba\x00\x1bE\x00\x1d!\x00DAPUR\n\n\n\n", $bytes);
+        $this->assertStringNotContainsString("\x1dV", $bytes);
+    }
+
     public function test_epos_text_layout_fits_the_paper_width(): void
     {
         $this->assertSame('Subtotal'.str_repeat(' ', 32 - 8 - 9).'Rp 25.000', EposReceipt::pair('Subtotal', 'Rp 25.000', 32));
