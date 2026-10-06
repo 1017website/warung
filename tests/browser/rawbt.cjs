@@ -4,7 +4,8 @@ const assert = require('node:assert/strict');
 
 // Run php tests/browser/rawbt-preview.php first. Uses unsaved models and no live transactions.
 (async () => {
-    const html = fs.readFileSync('storage/app/rawbt-preview.html', 'utf8').replace(/<script src="[^"]+"><\/script>/g, '');
+    const html = fs.readFileSync('storage/app/rawbt-preview.html', 'utf8').replace(/<script src="([^"]+)"><\/script>/g,
+        (tag, src) => src.includes('rawbt-printer.js') ? '<script>' + fs.readFileSync('public/js/rawbt-printer.js', 'utf8') + '</script>' : '');
     const browser = await chromium.launch({ channel: 'msedge', headless: true });
     const errors = [];
     for (const android of [true, false]) {
@@ -12,7 +13,7 @@ const assert = require('node:assert/strict');
         const page = await context.newPage();
         page.on('pageerror', error => errors.push(error.message));
         await page.setContent(html);
-        await page.addScriptTag({ path: 'public/js/rawbt-printer.js' });
+        assert.equal(await page.locator('#receipt-method').inputValue(), android ? 'rawbt' : 'browser');
         await page.evaluate(() => {
             window.printCalls = 0;
             window.print = () => window.printCalls++;
@@ -22,28 +23,43 @@ const assert = require('node:assert/strict');
             await page.setViewportSize({ width, height: 900 });
             assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `Overflow ${width}`);
         }
-        const links = page.locator('.rawbt-link');
-        assert.equal(await links.count(), 3);
+        const link = page.locator('#receipt-print');
+        assert.equal(await page.locator('.print-action').count(), 1);
+        assert.equal(await page.locator('details').getAttribute('open'), null);
+        if (!android) {
+            await page.locator('summary').click();
+            await page.selectOption('#receipt-method', 'rawbt');
+            await page.locator('summary').click();
+        }
         const data = [];
-        for (let i = 0; i < 3; i++) {
-            const href = await links.nth(i).getAttribute('href');
+        for (const copy of ['both', 'customer', 'kitchen']) {
+            await page.selectOption('#receipt-copy', copy);
+            const href = await link.getAttribute('href');
             assert.match(href, /^intent:base64,.*#Intent;scheme=rawbt;package=ru\.a402d\.rawbtprinter;end;$/);
             data.push(Buffer.from(href.split(',')[1].split('#')[0], 'base64').toString('ascii'));
             if (!android) page.once('dialog', dialog => dialog.accept());
-            await links.nth(i).click();
+            await link.click();
         }
         assert(data[0].includes('TOTAL') && data[0].includes('DAPUR'));
         assert(data[1].includes('TOTAL') && !data[1].includes('DAPUR'));
         assert(!data[2].includes('TOTAL') && data[2].includes('DAPUR'));
         if (android) assert.match(await page.locator('#rawbt-status').innerText(), /Membuka RawBT/);
+        await page.locator('summary').click();
+        await page.selectOption('#receipt-method', 'browser');
+        await page.locator('summary').click();
         for (const copy of ['both', 'customer', 'kitchen']) {
-            await page.evaluate(copy => printReceipts(copy), copy);
+            await page.selectOption('#receipt-copy', copy);
+            await link.click();
             assert.equal(await page.locator('body').getAttribute('data-print-copy'), copy);
         }
         assert.equal(await page.evaluate(() => printCalls), 3);
-        await links.first().focus();
-        assert(await links.first().evaluate(link => link === document.activeElement));
+        await link.focus();
+        assert(await link.evaluate(link => link === document.activeElement));
         if (android) {
+            await page.locator('summary').click();
+            await page.selectOption('#receipt-method', 'rawbt');
+            await page.locator('summary').click();
+            await page.selectOption('#receipt-copy', 'both');
             await page.setViewportSize({ width: 768, height: 900 });
             await page.screenshot({ path: 'storage/app/rawbt-preview.png', fullPage: true });
         }

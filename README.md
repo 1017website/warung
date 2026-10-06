@@ -93,8 +93,9 @@ Bug yang diperbaiki pada revisi ini: harga di modal Edit produk terbaca 100× li
 
 1. Pasang [RawBT](https://play.google.com/store/apps/details?id=ru.a402d.rawbtprinter) di tablet Android. Pairing Bluetooth printer, pilih printer di RawBT, lalu lakukan tes cetak.
 2. Pengaturan → Perangkat terhubung → Tambah: jenis **Printer struk**, cara cetak **RawBT · Bluetooth Android, 58 mm**, pilih cabang dan simpan. Buka **Ubah perangkat** untuk mengakses **Tes cetak RawBT**.
-3. Setelah pembayaran di Android, halaman struk terbuka. Ketuk **Cetak customer + dapur via RawBT**, **Cetak customer via RawBT**, atau **Cetak dapur via RawBT**. Pemanggilan RawBT membutuhkan ketukan pengguna agar browser mengizinkan aplikasi eksternal dibuka.
+3. Setelah pembayaran di Android, halaman struk terbuka. Pilih **Customer + dapur**, **Customer saja**, atau **Dapur saja**, lalu ketuk **Cetak struk**. RawBT dipilih otomatis di Android. Cara cetak browser/Epson tersedia di **Pilihan printer & bantuan**. Pemanggilan RawBT membutuhkan ketukan pengguna agar browser mengizinkan aplikasi eksternal dibuka.
 4. Kertas 58 mm, Font A 32 karakter per baris. Pemotongan kertas manual. Website mengirim perintah ESC/POS melalui Android intent; hasil fisik cetak tidak dapat dikonfirmasi website. Periksa kertas sebelum mengulang cetak. RawBT tidak tersedia di iPad; perangkat selain Android tetap memakai alur cetak browser/Epson yang tersedia.
+5. Logo branding dicetak hitam putih pada salinan customer jika **Tampilkan logo di struk** aktif. Konversi gambar membutuhkan GD PHP di server. Logo dibatasi 128 × 96 titik dengan proporsi asli; transparansi menjadi putih. Bila file logo hilang atau GD tidak tersedia, halaman menampilkan penyebabnya dan struk tetap dapat dicetak tanpa logo.
 
 ### Pengaturan Epson ePOS
 

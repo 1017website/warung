@@ -13,7 +13,8 @@ h1{font-size:14px;margin:4px 0}.muted{font-size:10px}.line{border-top:1px dashed
 .total,.copy-label{font-size:13px;font-weight:bold}.stamp{border:2px solid #000;padding:4px;margin:6px 0;font-weight:bold}
 .kitchen .item-name{font-size:14px}.actions{text-align:center;margin:12px auto;max-width:540px;padding:0 12px;font:14px/1.5 sans-serif}
 .actions button{background:#476c5c;color:#fff;border:0;border-radius:6px;padding:10px 14px;margin:3px;cursor:pointer}
-.actions .rawbt-link{display:inline-block;background:#476c5c;color:#fff;border-radius:6px;padding:12px 14px;min-height:44px;text-decoration:none;overflow-wrap:anywhere}
+.actions .print-action{display:inline-block;background:#476c5c;color:#fff;border-radius:6px;padding:12px 24px;min-height:44px;text-decoration:none;overflow-wrap:anywhere}
+.print-controls{display:flex;justify-content:center;align-items:end;gap:12px;flex-wrap:wrap;margin:14px 0}.print-controls label{display:grid;gap:5px;text-align:left}.actions select{font:inherit;max-width:100%;min-height:44px;padding:8px;border:1px solid #798a82;border-radius:6px;background:#fff;color:#111}.actions details{text-align:left;margin:16px auto;max-width:400px}.actions summary{cursor:pointer;padding:8px 0}.actions details label{display:grid;gap:5px}.print-warning{color:#8a3000}
 .actions a:focus-visible,.actions button:focus-visible{outline:3px solid #111;outline-offset:3px}
 /* The printer driver supplies the roll length; select its 58 mm paper form. */
 @page{size:auto;margin:0}
@@ -26,24 +27,44 @@ h1{font-size:14px;margin:4px 0}.muted{font-size:10px}.line{border-top:1px dashed
 </head>
 <body data-print-copy="both">
 <div class="actions">
-@if($rawbtPrinter ?? null)
 @php
-    $rawbtJobs = \App\Support\EposReceipt::jobs($transaction, $receiptStore, 32, true, false);
+    $rawbtUris = [];
+    $rawbtLogoError = null;
+    if ($rawbtPrinter ?? null) {
+        $rawbtJobs = \App\Support\EposReceipt::jobs($transaction, $receiptStore, 32, true, false);
+        $rawbtLogo = null;
+        try {
+            $rawbtLogo = \App\Support\RawbtReceipt::logo($receiptStore);
+        } catch (\RuntimeException $error) {
+            $rawbtLogoError = $error->getMessage();
+        }
+        $rawbtUris = [
+            'both' => \App\Support\RawbtReceipt::uri($rawbtJobs, $rawbtLogo),
+            'customer' => \App\Support\RawbtReceipt::uri([$rawbtJobs[0]], $rawbtLogo),
+            'kitchen' => \App\Support\RawbtReceipt::uri([$rawbtJobs[1]]),
+        ];
+    }
 @endphp
-<p><b>{{ $rawbtPrinter->name }} · RawBT Android · 58 mm</b></p>
-<p>Ketuk untuk membuka RawBT. Pastikan printer Bluetooth sudah dipilih di RawBT.</p>
-<p><a class="rawbt-link" href="{{ \App\Support\RawbtReceipt::uri($rawbtJobs) }}">Cetak customer + dapur via RawBT</a></p>
-<p><a class="rawbt-link" href="{{ \App\Support\RawbtReceipt::uri([$rawbtJobs[0]]) }}">Cetak customer via RawBT</a></p>
-<p><a class="rawbt-link" href="{{ \App\Support\RawbtReceipt::uri([$rawbtJobs[1]]) }}">Cetak dapur via RawBT</a></p>
-<p><a href="https://play.google.com/store/apps/details?id=ru.a402d.rawbtprinter" target="_blank" rel="noopener">Pasang RawBT di Android</a>. Untuk iPad, gunakan printer atau layanan cetak yang kompatibel.</p>
+<div class="print-controls">
+<label for="receipt-copy">Salinan struk<select id="receipt-copy"><option value="both">Customer + dapur</option><option value="customer">Customer saja</option><option value="kitchen">Dapur saja</option></select></label>
+<a class="print-action" id="receipt-print" href="#">Cetak struk</a>
+</div>
+<p id="receipt-printer-label"></p>
+@if($rawbtLogoError)<p class="print-warning" role="status">{{ $rawbtLogoError }} Struk tetap bisa dicetak tanpa logo.</p>@endif
 <p id="rawbt-status" role="status"></p>
+<details><summary>Pilihan printer &amp; bantuan</summary>
+<label for="receipt-method">Cara cetak<select id="receipt-method">
+@if($rawbtPrinter ?? null)<option value="rawbt">RawBT Android · {{ $rawbtPrinter->name }}</option>@endif
+@if($eposPrinter ?? null)<option value="epos">Epson · {{ $eposPrinter['name'] }}</option>@endif
+<option value="browser">Dialog cetak browser</option>
+</select></label>
+@if($rawbtPrinter ?? null)
+<p>Di Android, pilih printer Bluetooth di RawBT. Logo pada struk customer dicetak hitam putih.</p>
+<p><a href="https://play.google.com/store/apps/details?id=ru.a402d.rawbtprinter" target="_blank" rel="noopener">Pasang RawBT di Android</a>. RawBT tidak tersedia untuk iPad.</p>
 <script src="{{ asset('js/rawbt-printer.js') }}?v={{ filemtime(public_path('js/rawbt-printer.js')) }}"></script>
 @endif
-<button type="button" onclick="printReceipts('both')">Cetak customer + dapur (browser)</button>
-<button type="button" onclick="printReceipts('customer')">Cetak customer (browser)</button>
-<button type="button" onclick="printReceipts('kitchen')">Cetak dapur (browser)</button>
-<p>POS 58 mm · Pilih kertas 58 mm, skala 100%, margin tidak ada, serta matikan header/footer browser. Jumlah salinan: 1 (sudah berisi customer + dapur).</p>
-@if($eposPrinter ?? null)<button type="button" id="epos-print" onclick="printEpos()">Cetak ke {{ $eposPrinter['name'] }} (Epson)</button><div id="epos-status" role="status"></div>@endif
+<p>Untuk cetak browser: pilih kertas 58 mm, skala 100%, margin tidak ada, serta matikan header/footer. Jumlah salinan: 1. Isi struk mengikuti pilihan salinan di atas.</p>
+</details>
 <a href="{{ route('pos') }}">Kembali ke kasir</a>
 </div>
 @php
@@ -78,24 +99,52 @@ h1{font-size:14px;margin:4px 0}.muted{font-size:10px}.line{border-top:1px dashed
 <script src="{{ asset('js/epos-printer.js') }}?v={{ is_file(public_path('js/epos-printer.js')) ? filemtime(public_path('js/epos-printer.js')) : 1 }}"></script>
 <script>
 async function printEpos() {
-    const button = document.getElementById('epos-print'), status = document.getElementById('epos-status');
-    button.disabled = true;
+    const button = document.getElementById('receipt-print'), status = document.getElementById('rawbt-status');
+    if (button.getAttribute('aria-disabled') === 'true') return;
+    button.setAttribute('aria-disabled', 'true');
     status.textContent = 'Mengirim ke printer…';
     try {
         const response = await fetch(@json(route('transactions.epos', $transaction)), { headers: { Accept: 'application/json' } });
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.message || 'Data cetak tidak tersedia.');
+        const copy = document.getElementById('receipt-copy').value;
+        if (copy === 'customer') payload.jobs = [payload.jobs[0]];
+        if (copy === 'kitchen') {
+            if (!payload.jobs[1]) throw new Error('Aktifkan lembar dapur di pengaturan printer Epson.');
+            payload.jobs = [payload.jobs[1]];
+        }
         await window.PosPrinter.printJobs(payload);
         status.textContent = 'Struk terkirim ke printer.';
     } catch (error) {
         status.textContent = error.message;
     } finally {
-        button.disabled = false;
+        button.removeAttribute('aria-disabled');
     }
 }
 </script>
 @endif
 <script>
+const rawbtUris = @json($rawbtUris);
+const copySelect = document.getElementById('receipt-copy');
+const methodSelect = document.getElementById('receipt-method');
+const printAction = document.getElementById('receipt-print');
+methodSelect.value = Object.keys(rawbtUris).length && window.RawbtPrinter?.isAndroid() ? 'rawbt' : @json(($eposPrinter ?? null) ? 'epos' : 'browser');
+function updatePrintAction() {
+    const rawbt = methodSelect.value === 'rawbt';
+    printAction.classList.toggle('rawbt-link', rawbt);
+    printAction.href = rawbt ? rawbtUris[copySelect.value] : '#';
+    document.getElementById('receipt-printer-label').textContent = methodSelect.selectedOptions[0].textContent + (rawbt ? ' · 58 mm' : '');
+    document.getElementById('rawbt-status').textContent = '';
+}
+copySelect.addEventListener('change', updatePrintAction);
+methodSelect.addEventListener('change', updatePrintAction);
+printAction.addEventListener('click', event => {
+    if (methodSelect.value === 'rawbt') return;
+    event.preventDefault();
+    if (methodSelect.value === 'epos') printEpos();
+    else printReceipts(copySelect.value);
+});
+updatePrintAction();
 let printing = false;
 function printReceipts(copy) {
     if (printing) return;

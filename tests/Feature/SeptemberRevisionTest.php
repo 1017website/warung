@@ -356,7 +356,7 @@ class SeptemberRevisionTest extends TestCase
 
         $trx = Transaction::latest('id')->firstOrFail();
         $this->actingAs($admin)->getJson(route('transactions.epos', $trx))->assertOk()->assertJsonCount(2, 'jobs');
-        $this->actingAs($admin)->get(route('transactions.print', $trx))->assertOk()->assertSee('Cetak ke TM-m30 Kasir (Epson)');
+        $this->actingAs($admin)->get(route('transactions.print', $trx))->assertOk()->assertSee('Epson · TM-m30 Kasir');
         $this->actingAs($admin)->put("/pengaturan/perangkat/{$printer->id}", [
             'name' => 'TM-m30 Kasir', 'type' => 'receipt_printer', 'driver' => 'epson_epos', 'store_id' => $storeA->id, 'epos_host' => 'bukan host!',
         ])->assertSessionHasErrors('epos_host');
@@ -377,7 +377,30 @@ class SeptemberRevisionTest extends TestCase
         $this->checkout($admin, $storeA, [['id' => $menu->id, 'qty' => 2]])->assertOk();
         $transaction = Transaction::latest('id')->firstOrFail();
         $this->actingAs($admin)->get(route('transactions.print', $transaction))->assertOk()
-            ->assertSee('Cetak customer + dapur via RawBT')->assertSee('intent:base64,');
+            ->assertSee('Cetak struk')->assertSee('Salinan struk')->assertSee('intent:base64,');
+        if (function_exists('imagecreatetruecolor')) {
+            \Illuminate\Support\Facades\Storage::fake('public');
+            $image = imagecreatetruecolor(8, 1);
+            ob_start();
+            imagepng($image);
+            \Illuminate\Support\Facades\Storage::disk('public')->put('branding/rawbt-test.png', ob_get_clean());
+            imagedestroy($image);
+            $storeA->update(['receipt_show_logo' => true, 'logo_path' => 'branding/rawbt-test.png']);
+            $receipt = $this->actingAs($admin)->get(route('transactions.print', $transaction))->assertOk();
+            preg_match('/const rawbtUris = (.*);/', $receipt->getContent(), $matches);
+            $uris = json_decode($matches[1], true, 512, JSON_THROW_ON_ERROR);
+            foreach ($uris as $copy => $uri) {
+                $bytes = base64_decode(explode('#', substr($uri, strlen('intent:base64,')))[0], true);
+                if ($copy === 'kitchen') {
+                    $this->assertStringNotContainsString("\x1dv0\x00", $bytes);
+                } else {
+                    $this->assertStringContainsString("\x1dv0\x00", $bytes);
+                }
+            }
+            $storeA->update(['logo_path' => 'branding/missing.png']);
+            $this->actingAs($admin)->get(route('transactions.print', $transaction))->assertOk()
+                ->assertSee('Unggah ulang logo')->assertSee('intent:base64,');
+        }
         $this->actingAs($cashierB)->withSession(['store_id' => $storeB->id])->get('/kasir')->assertOk()->assertViewHas('rawbtPrinter', null);
         $this->actingAs($cashierB)->get(route('transactions.print', $transaction))->assertNotFound();
         $printer->update(['status' => 'inactive']);
