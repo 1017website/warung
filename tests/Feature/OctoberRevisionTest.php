@@ -189,11 +189,24 @@ class OctoberRevisionTest extends TestCase
         // Sebelum disimpan, rekap tetap bisa dicetak dengan penanda belum rekonsiliasi.
         $this->actingAs($cashier)->get('/kasir/tutup-harian/cetak?paper=58')->assertOk()->assertSee('BELUM DISIMPAN')->assertSee('class="paper-58"', false);
 
+        $this->checkout($cashier, ['items' => [['id' => $menu->id, 'qty' => 2]], 'payments' => [['method' => 'cash', 'amount' => 40000]]])->assertOk();
+        $voided = Transaction::latest('id')->firstOrFail();
+        $this->actingAs($admin)->delete("/transaksi/{$voided->id}", ['reason' => 'Salah input menu'])->assertSessionHasNoErrors();
+        $this->assertSame('voided', $voided->fresh()->status);
+
         $this->actingAs($cashier)->post('/kasir/tutup-harian', ['opening_cash' => 100000, 'actual_cash' => 115000, 'approval_pin' => '1234', 'notes' => 'Uang kurang lima ribu'])->assertSessionHasNoErrors();
         $this->actingAs($cashier)->get('/kasir/tutup-harian/cetak?paper=a4')->assertOk()
             ->assertSee('class="paper-a4"', false)->assertSee('size:A4 portrait', false)
             ->assertSee('Rp 120.000')->assertSee('-Rp 5.000')->assertSee('Ayam Bakar')->assertSee('Uang kurang lima ribu')->assertSee('SPV')
-            ->assertDontSee('BELUM DISIMPAN');
+            ->assertDontSee('BELUM DISIMPAN')->assertDontSee('Detail transaksi (');
+
+        // Versi detail menampilkan semua transaksi hari ini, termasuk yang dibatalkan.
+        $first = Transaction::where('status', 'completed')->firstOrFail();
+        $this->actingAs($cashier)->get('/kasir/tutup-harian/cetak?paper=a4&detail=1')->assertOk()
+            ->assertSee('Detail transaksi (2)')->assertSee($first->invoice_no)->assertSee($voided->invoice_no)
+            ->assertSee('Dibatalkan')->assertSee('Salah input menu')->assertSee('Total penjualan selesai');
+        $this->actingAs($cashier)->get('/kasir/tutup-harian/cetak?paper=58&detail=1')->assertOk()
+            ->assertSee('** DIBATALKAN **')->assertSee('TOTAL PENJUALAN');
 
         // Printer RawBT cabang menerima rekap teks 32 kolom.
         $this->actingAs($admin)->post('/pengaturan/perangkat', ['name' => 'BT-58D', 'type' => 'receipt_printer', 'driver' => 'rawbt', 'store_id' => $cashier->store_id])->assertSessionHasNoErrors();
@@ -202,6 +215,15 @@ class OctoberRevisionTest extends TestCase
         $bytes = base64_decode($match[1]);
         $this->assertStringContainsString('REKAP TUTUP KASIR', $bytes);
         $this->assertStringContainsString(str_pad('SELISIH', 32 - strlen('-Rp 5.000')).'-Rp 5.000', $bytes);
+        $this->assertStringNotContainsString('DETAIL TRANSAKSI', $bytes);
+
+        $detail = $this->actingAs($cashier)->get('/kasir/tutup-harian/cetak?paper=58&detail=1')->viewData('rawbtUri');
+        preg_match('/intent:base64,([^#]+)#/', $detail, $match);
+        $bytes = base64_decode($match[1]);
+        $this->assertStringContainsString('DETAIL TRANSAKSI', $bytes);
+        $this->assertStringContainsString($voided->invoice_no, $bytes);
+        $this->assertStringContainsString('** DIBATALKAN **', $bytes);
+        $this->assertStringContainsString(str_pad('TOTAL PENJUALAN', 32 - strlen('Rp 20.000')).'Rp 20.000', $bytes);
     }
 
     public function test_reservations_are_isolated_per_store(): void

@@ -920,14 +920,21 @@ class WarungController extends Controller
     public function printCashierClosing(Request $request)
     {
         $paper = $request->query('paper') === 'a4' ? 'a4' : '58';
+        $detail = $request->boolean('detail');
         $store = $this->activeStoreRecord();
         $data = $this->cashierClosingData();
-        $job = fn (int $columns) => EposReceipt::closing($store, $data['summary'], $data['sales'], $data['closing'], $columns);
+        // Versi detail memuat seluruh transaksi hari ini, termasuk yang dibatalkan dan open bill.
+        $transactions = $detail ? Transaction::with(['items', 'payments', 'user'])
+            ->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())
+            ->whereDate('transacted_at', today())->orderBy('transacted_at')->orderBy('id')->get() : null;
+        $job = fn (int $columns) => EposReceipt::closing($store, $data['summary'], $data['sales'], $data['closing'], $columns, $transactions);
         $rawbtPrinter = $this->rawbtPrinter();
         $eposPrinter = $this->eposPrinter();
 
         return view('pos.close-print', $data + [
             'paper' => $paper,
+            'detail' => $detail,
+            'transactions' => $transactions,
             'store' => $store,
             'rawbtPrinter' => $rawbtPrinter,
             'rawbtUri' => $rawbtPrinter ? RawbtReceipt::uri([$job(32)]) : null,
@@ -937,7 +944,7 @@ class WarungController extends Controller
 
     private function cashierClosingData(): array
     {
-        $sales =DB::table('transaction_items')->join('transactions', 'transactions.id', '=', 'transaction_items.transaction_id')
+        $sales = DB::table('transaction_items')->join('transactions', 'transactions.id', '=', 'transaction_items.transaction_id')
             ->leftJoin('products', 'products.id', '=', 'transaction_items.product_id')
             ->where('transactions.tenant_id', $this->tenantId())->where('transactions.store_id', $this->storeId())
             ->where('transactions.status', 'completed')->where('transactions.transaction_type', 'sale')

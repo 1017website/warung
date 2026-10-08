@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\CashierClosing;
 use App\Models\Store;
 use App\Models\Transaction;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 /**
@@ -124,7 +125,7 @@ final class EposReceipt
     }
 
     /** Rekap tutup kasir harian untuk printer struk (RawBT/Epson). */
-    public static function closing(Store $store, array $summary, iterable $sales, ?CashierClosing $closing, int $columns): array
+    public static function closing(Store $store, array $summary, iterable $sales, ?CashierClosing $closing, int $columns, ?Collection $transactions = null): array
     {
         $lines = [
             self::text('REKAP TUTUP KASIR', 'center', true, true),
@@ -183,6 +184,38 @@ final class EposReceipt
         if (! $sold) {
             $lines[] = self::text('Belum ada produk terjual.');
         }
+        if ($transactions !== null) {
+            $lines[] = self::rule($columns);
+            $lines[] = self::text('DETAIL TRANSAKSI', 'left', true);
+            $completedTotal = 0.0;
+            foreach ($transactions as $transaction) {
+                $lines[] = self::rule($columns);
+                $lines[] = self::text(self::pair($transaction->invoice_no, $transaction->transacted_at->format('H:i'), $columns), 'left', true);
+                $lines[] = self::text(self::pair(self::serviceLabel($transaction), $transaction->user?->name ?? '-', $columns));
+                if ($transaction->status !== 'completed' || $transaction->transaction_type === 'replacement') {
+                    $lines[] = self::text('** '.self::statusLabel($transaction).' **');
+                }
+                foreach ($transaction->items as $item) {
+                    $name = self::wrap(Qty::format($item->quantity).' x '.$item->product_name, max(8, $columns - strlen(self::money($item->subtotal)) - 1));
+                    $lines[] = self::text(self::pair('  '.array_shift($name), self::money($item->subtotal), $columns));
+                    foreach ($name as $rest) {
+                        $lines[] = self::text('  '.$rest);
+                    }
+                }
+                foreach ($transaction->payments as $payment) {
+                    $lines[] = self::text(self::pair('  '.Str::upper($payment->method).($payment->provider ? ' '.$payment->provider : ''), self::money($payment->amount), $columns));
+                }
+                $lines[] = self::text(self::pair('Total', 'Rp '.self::money($transaction->total), $columns), 'left', true);
+                if ($transaction->status === 'completed' && $transaction->transaction_type === 'sale') {
+                    $completedTotal += (float) $transaction->total;
+                }
+            }
+            if ($transactions->isEmpty()) {
+                $lines[] = self::text('Belum ada transaksi.');
+            }
+            $lines[] = self::rule($columns);
+            $lines[] = self::text(self::pair('TOTAL PENJUALAN', 'Rp '.self::money($completedTotal), $columns), 'left', true);
+        }
         if ($closing?->notes) {
             $lines[] = self::rule($columns);
             foreach (self::wrap('Catatan: '.$closing->notes, $columns) as $line) {
@@ -205,12 +238,21 @@ final class EposReceipt
         return $transaction->items->groupBy(fn ($item) => trim($item->category_name ?? '') ?: 'Umum')->sortKeys();
     }
 
-    private static function serviceLabel(Transaction $transaction): string
+    public static function serviceLabel(Transaction $transaction): string
     {
         return match ($transaction->service_type) {
             'takeaway' => 'Take Away',
             'online' => 'Ojek Online'.($transaction->online_platform ? ' - '.$transaction->online_platform : ''),
             default => 'Dine In - Meja '.($transaction->table_number ?: '-'),
+        };
+    }
+
+    public static function statusLabel(Transaction $transaction): string
+    {
+        return match ($transaction->status) {
+            'voided' => 'DIBATALKAN',
+            'pending' => 'OPEN BILL',
+            default => $transaction->transaction_type === 'replacement' ? 'RETUR / PENGGANTI' : 'SELESAI',
         };
     }
 

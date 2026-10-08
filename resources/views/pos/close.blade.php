@@ -6,6 +6,7 @@
     <div class="actions">
         <a class="btn btn-outline" href="{{ route('pos.close.print', ['paper' => 'a4', 'autoprint' => 1]) }}" target="_blank" rel="noopener"><i class="bi bi-printer"></i> Cetak A4</a>
         <a class="btn btn-outline" href="{{ route('pos.close.print', ['paper' => '58']) }}" target="_blank" rel="noopener"><i class="bi bi-receipt"></i> Cetak POS 58 mm</a>
+        <a class="btn btn-outline" href="{{ route('pos.close.print', ['paper' => 'a4', 'detail' => 1]) }}" target="_blank" rel="noopener"><i class="bi bi-list-ul"></i> Cetak detail transaksi</a>
     </div>
 </div>
 <div class="grid stats">

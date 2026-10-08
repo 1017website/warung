@@ -30,7 +30,10 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:t
 .paper-a4 .kv.strong{font-size:14px;border-top:1px solid #000;border-bottom:0;margin-top:2px;padding-top:5px}
 .paper-a4 th,.paper-a4 td{padding:5px 6px;border-bottom:1px solid #ddd}.paper-a4 th{background:#f2f2f2;font-size:11px;text-transform:uppercase}
 .paper-a4 .status{border:2px solid #000;padding:6px;margin-bottom:14px}
-.paper-a4 .notes{margin-bottom:14px}
+.paper-a4 .notes,.paper-a4 .detail{margin-bottom:14px}
+.paper-a4 .trx-table{font-size:11px}.paper-a4 .trx-table tr{break-inside:avoid}.paper-a4 .trx-table td:first-child{color:#555;width:24px}.paper-a4 .trx-table td:last-child,.paper-a4 .trx-table .nowrap{white-space:nowrap}
+.paper-a4 .trx-table .muted td{color:#555}.paper-a4 .trx-table .muted td:last-child{text-decoration:line-through}
+.paper-a4 .trx-table tfoot td{font-weight:bold;font-size:12px;border-top:2px solid #000;border-bottom:0}
 .paper-a4 .sign{margin-top:28px;width:70%;margin-left:auto}.paper-a4 .sign div{height:80px}
 
 /* POS 58 mm: printer struk thermal */
@@ -40,6 +43,9 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:t
 .paper-58 .grid{display:block}.paper-58 .net{display:none}
 .paper-58 .section,.paper-58 .head,.paper-58 .notes{border-top:1px dashed #000;padding-top:5px;margin-top:6px}
 .paper-58 .head{border-top:0;padding-top:0;margin-top:0}
+.paper-58 .detail{border-top:1px dashed #000;padding-top:5px;margin-top:6px}
+.paper-58 .trx{border-top:1px dotted #000;padding:4px 0;break-inside:avoid}.paper-58 .trx-head,.paper-58 .trx-status{font-weight:bold}
+.paper-58 .trx-total{border-top:1px dashed #000;padding-top:4px}
 .paper-58 h2{font-size:11px;text-transform:uppercase;margin-bottom:2px}
 .paper-58 .kv.strong{font-size:12px}
 .paper-58 th{font-size:10px;border-bottom:1px solid #000}.paper-58 td{padding:1px 0}.paper-58 th:last-child,.paper-58 td:last-child{padding-left:4px;white-space:nowrap}
@@ -68,8 +74,12 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:t
 <body class="paper-{{ $paper }}">
 <div class="actions">
     <nav class="paper-switch" aria-label="Ukuran kertas">
-        <a href="{{ route('pos.close.print', ['paper' => 'a4']) }}" @if($paper === 'a4') aria-current="page" @endif>A4</a>
-        <a href="{{ route('pos.close.print', ['paper' => '58']) }}" @if($paper === '58') aria-current="page" @endif>POS 58 mm</a>
+        <a href="{{ route('pos.close.print', array_filter(['paper' => 'a4', 'detail' => $detail ? 1 : null])) }}" @if($paper === 'a4') aria-current="page" @endif>A4</a>
+        <a href="{{ route('pos.close.print', array_filter(['paper' => '58', 'detail' => $detail ? 1 : null])) }}" @if($paper === '58') aria-current="page" @endif>POS 58 mm</a>
+    </nav>
+    <nav class="paper-switch" aria-label="Isi rekap">
+        <a href="{{ route('pos.close.print', ['paper' => $paper]) }}" @unless($detail) aria-current="page" @endunless>Ringkas</a>
+        <a href="{{ route('pos.close.print', ['paper' => $paper, 'detail' => 1]) }}" @if($detail) aria-current="page" @endif>Detail transaksi</a>
     </nav>
     <div class="print-controls">
         @if($paper === '58' && ($rawbtPrinter || $eposPayload))
@@ -96,7 +106,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:t
 <article class="sheet">
     <header class="head">
         <div>
-            <h1>Rekap Tutup Kasir</h1>
+            <h1>Rekap Tutup Kasir{{ $detail ? ' · Detail' : '' }}</h1>
             <div class="brand">{{ $store->brandName() }}</div>
             <div>{{ $store->name }}</div>
             @if($paper === 'a4' && $store->address)<div>{{ $store->address }}</div>@endif
@@ -158,6 +168,55 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:t
             </tbody></table>
         </section>
     </div>
+
+    @if($detail)
+        @php
+            $statusLabel = fn ($trx) => ['voided' => 'Dibatalkan', 'pending' => 'Open bill'][$trx->status] ?? ($trx->transaction_type === 'replacement' ? 'Retur' : 'Selesai');
+            $salesTotal = $transactions->where('status', 'completed')->where('transaction_type', 'sale')->sum('total');
+        @endphp
+        <section class="detail">
+            <h2>Detail transaksi ({{ $transactions->count() }})</h2>
+            @if($paper === 'a4')
+                <table class="trx-table">
+                    <thead><tr><th>#</th><th>Invoice</th><th>Kasir · pesanan</th><th>Item</th><th>Pembayaran</th><th>Status</th><th>Total</th></tr></thead>
+                    <tbody>
+                    @forelse($transactions as $trx)
+                        <tr class="{{ $trx->status !== 'completed' ? 'muted' : '' }}">
+                            <td>{{ $loop->iteration }}</td>
+                            <td class="nowrap"><b>{{ $trx->invoice_no }}</b><br>{{ $trx->transacted_at->format('H:i') }}</td>
+                            <td>{{ $trx->user?->name ?? '—' }}<br>{{ \App\Support\EposReceipt::serviceLabel($trx) }}</td>
+                            <td>@foreach($trx->items as $item)<div>@qty($item->quantity) × {{ $item->product_name }}</div>@endforeach</td>
+                            <td>@foreach($trx->payments as $pay)<div>{{ strtoupper($pay->method) }}{{ $pay->provider ? ' · '.$pay->provider : '' }} <span class="nowrap">{{ $rp($pay->amount) }}</span></div>@endforeach @if($trx->payments->isEmpty() && $trx->payment_method)<div>{{ strtoupper($trx->payment_method) }}</div>@endif @if($trx->change_amount > 0)<div>Kembali <span class="nowrap">{{ $rp($trx->change_amount) }}</span></div>@endif</td>
+                            <td>{{ $statusLabel($trx) }}@if($trx->status === 'voided' && $trx->cancel_reason)<br><small>{{ $trx->cancel_reason }}</small>@endif</td>
+                            <td>{{ $rp($trx->total) }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="7">Belum ada transaksi hari ini.</td></tr>
+                    @endforelse
+                    </tbody>
+                    <tfoot><tr><td colspan="6">Total penjualan selesai</td><td>{{ $rp($salesTotal) }}</td></tr></tfoot>
+                </table>
+            @else
+                @forelse($transactions as $trx)
+                    <div class="trx">
+                        <div class="kv trx-head"><span>{{ $trx->invoice_no }}</span><span>{{ $trx->transacted_at->format('H:i') }}</span></div>
+                        <div>{{ \App\Support\EposReceipt::serviceLabel($trx) }} · {{ $trx->user?->name ?? '—' }}</div>
+                        @if($trx->status !== 'completed' || $trx->transaction_type === 'replacement')<div class="trx-status">** {{ strtoupper($statusLabel($trx)) }} **</div>@endif
+                        @foreach($trx->items as $item)
+                            <div class="kv"><span>@qty($item->quantity) × {{ $item->product_name }}</span><span>{{ number_format($item->subtotal, 0, ',', '.') }}</span></div>
+                        @endforeach
+                        @foreach($trx->payments as $pay)
+                            <div class="kv"><span>{{ strtoupper($pay->method) }}{{ $pay->provider ? ' '.$pay->provider : '' }}</span><span>{{ number_format($pay->amount, 0, ',', '.') }}</span></div>
+                        @endforeach
+                        <div class="kv strong"><span>Total</span><span>{{ $rp($trx->total) }}</span></div>
+                    </div>
+                @empty
+                    <p>Belum ada transaksi hari ini.</p>
+                @endforelse
+                <div class="kv strong trx-total"><span>TOTAL PENJUALAN</span><span>{{ $rp($salesTotal) }}</span></div>
+            @endif
+        </section>
+    @endif
 
     @if($closing?->notes)
         <section class="notes"><h2>Catatan</h2><p>{{ $closing->notes }}</p></section>
