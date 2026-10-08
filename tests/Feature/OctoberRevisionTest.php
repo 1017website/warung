@@ -179,6 +179,31 @@ class OctoberRevisionTest extends TestCase
         $this->actingAs($cashier)->get('/kasir/tutup-harian')->assertOk()->assertSee('Rp 30.000', false);
     }
 
+    public function test_cashier_closing_recap_prints_on_a4_and_pos_58(): void
+    {
+        ['cashier' => $cashier, 'admin' => $admin, 'menu' => $menu] = $this->setupWarung();
+        $this->checkout($cashier, ['items' => [['id' => $menu->id, 'qty' => 1]], 'payments' => [['method' => 'cash', 'amount' => 20000]]])->assertOk();
+
+        $this->actingAs($cashier)->get('/kasir/tutup-harian')->assertOk()
+            ->assertSee('/kasir/tutup-harian/cetak?paper=a4', false)->assertSee('/kasir/tutup-harian/cetak?paper=58', false);
+        // Sebelum disimpan, rekap tetap bisa dicetak dengan penanda belum rekonsiliasi.
+        $this->actingAs($cashier)->get('/kasir/tutup-harian/cetak?paper=58')->assertOk()->assertSee('BELUM DISIMPAN')->assertSee('class="paper-58"', false);
+
+        $this->actingAs($cashier)->post('/kasir/tutup-harian', ['opening_cash' => 100000, 'actual_cash' => 115000, 'approval_pin' => '1234', 'notes' => 'Uang kurang lima ribu'])->assertSessionHasNoErrors();
+        $this->actingAs($cashier)->get('/kasir/tutup-harian/cetak?paper=a4')->assertOk()
+            ->assertSee('class="paper-a4"', false)->assertSee('size:A4 portrait', false)
+            ->assertSee('Rp 120.000')->assertSee('-Rp 5.000')->assertSee('Ayam Bakar')->assertSee('Uang kurang lima ribu')->assertSee('SPV')
+            ->assertDontSee('BELUM DISIMPAN');
+
+        // Printer RawBT cabang menerima rekap teks 32 kolom.
+        $this->actingAs($admin)->post('/pengaturan/perangkat', ['name' => 'BT-58D', 'type' => 'receipt_printer', 'driver' => 'rawbt', 'store_id' => $cashier->store_id])->assertSessionHasNoErrors();
+        $response = $this->actingAs($cashier)->get('/kasir/tutup-harian/cetak?paper=58')->assertOk()->assertViewHas('rawbtUri');
+        preg_match('/intent:base64,([^#]+)#/', $response->viewData('rawbtUri'), $match);
+        $bytes = base64_decode($match[1]);
+        $this->assertStringContainsString('REKAP TUTUP KASIR', $bytes);
+        $this->assertStringContainsString(str_pad('SELISIH', 32 - strlen('-Rp 5.000')).'-Rp 5.000', $bytes);
+    }
+
     public function test_reservations_are_isolated_per_store(): void
     {
         ['tenant' => $tenant, 'otherStore' => $otherStore, 'cashier' => $cashier] = $this->setupWarung();

@@ -3,7 +3,10 @@
 @section('content')
 <div class="page-head">
     <div><h1>Rekonsiliasi kas harian</h1><p>{{ $activeStore->name }} · {{ today()->translatedFormat('d F Y') }}</p></div>
-    <button class="btn btn-outline" onclick="window.print()"><i class="bi bi-printer"></i> Cetak rekap</button>
+    <div class="actions">
+        <a class="btn btn-outline" href="{{ route('pos.close.print', ['paper' => 'a4', 'autoprint' => 1]) }}" target="_blank" rel="noopener"><i class="bi bi-printer"></i> Cetak A4</a>
+        <a class="btn btn-outline" href="{{ route('pos.close.print', ['paper' => '58']) }}" target="_blank" rel="noopener"><i class="bi bi-receipt"></i> Cetak POS 58 mm</a>
+    </div>
 </div>
 <div class="grid stats">
     <div class="card stat"><div class="stat-label">Transaksi selesai</div><div class="stat-value">{{ $summary['transactions'] }}</div></div>

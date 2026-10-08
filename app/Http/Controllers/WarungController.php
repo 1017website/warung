@@ -30,6 +30,7 @@ use App\Support\EposReceipt;
 use App\Support\ImportTemplate;
 use App\Support\MenuIcon;
 use App\Support\Qty;
+use App\Support\RawbtReceipt;
 use App\Support\SheetValue;
 use App\Support\SpreadsheetDownload;
 use Carbon\Carbon;
@@ -912,7 +913,31 @@ class WarungController extends Controller
 
     public function closeCashier()
     {
-        $sales = DB::table('transaction_items')->join('transactions', 'transactions.id', '=', 'transaction_items.transaction_id')
+        return $this->view('pos.close', $this->cashierClosingData());
+    }
+
+    /** Rekap tutup kasir siap cetak: A4 untuk arsip, 58 mm untuk printer struk. */
+    public function printCashierClosing(Request $request)
+    {
+        $paper = $request->query('paper') === 'a4' ? 'a4' : '58';
+        $store = $this->activeStoreRecord();
+        $data = $this->cashierClosingData();
+        $job = fn (int $columns) => EposReceipt::closing($store, $data['summary'], $data['sales'], $data['closing'], $columns);
+        $rawbtPrinter = $this->rawbtPrinter();
+        $eposPrinter = $this->eposPrinter();
+
+        return view('pos.close-print', $data + [
+            'paper' => $paper,
+            'store' => $store,
+            'rawbtPrinter' => $rawbtPrinter,
+            'rawbtUri' => $rawbtPrinter ? RawbtReceipt::uri([$job(32)]) : null,
+            'eposPayload' => $eposPrinter ? ['printer' => $eposPrinter->eposConfig(), 'jobs' => [$job($eposPrinter->eposColumns())]] : null,
+        ]);
+    }
+
+    private function cashierClosingData(): array
+    {
+        $sales =DB::table('transaction_items')->join('transactions', 'transactions.id', '=', 'transaction_items.transaction_id')
             ->leftJoin('products', 'products.id', '=', 'transaction_items.product_id')
             ->where('transactions.tenant_id', $this->tenantId())->where('transactions.store_id', $this->storeId())
             ->where('transactions.status', 'completed')->where('transactions.transaction_type', 'sale')
@@ -926,7 +951,7 @@ class WarungController extends Controller
             ->whereDate('closing_date', today())
             ->first();
 
-        return $this->view('pos.close', compact('sales', 'summary', 'closing'));
+        return compact('sales', 'summary', 'closing');
     }
 
     public function storeCashierClosing(Request $request)

@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\CashierClosing;
 use App\Models\Store;
 use App\Models\Transaction;
 use Illuminate\Support\Str;
@@ -116,6 +117,83 @@ final class EposReceipt
                 $lines[] = self::text($line);
             }
         }
+        $lines[] = ['type' => 'feed', 'lines' => 3];
+        $lines[] = ['type' => 'cut'];
+
+        return $lines;
+    }
+
+    /** Rekap tutup kasir harian untuk printer struk (RawBT/Epson). */
+    public static function closing(Store $store, array $summary, iterable $sales, ?CashierClosing $closing, int $columns): array
+    {
+        $lines = [
+            self::text('REKAP TUTUP KASIR', 'center', true, true),
+            self::text($store->brandName(), 'center', true),
+            self::text($store->name, 'center'),
+            self::rule($columns),
+            self::text(self::pair('Tanggal', ($closing?->closing_date ?? today())->format('d/m/Y'), $columns)),
+            self::text(self::pair('Dicetak', now()->format('d/m/Y H:i'), $columns)),
+        ];
+        if ($closing) {
+            $lines[] = self::text(self::pair('Ditutup', $closing->closed_at?->format('H:i') ?? '-', $columns));
+            $lines[] = self::text(self::pair('Kasir', $closing->user?->name ?? '-', $columns));
+            $lines[] = self::text(self::pair('Otorisasi', $closing->authorizer?->name ?? '-', $columns));
+        }
+        $lines[] = self::rule($columns);
+        $lines[] = self::text(self::pair('Transaksi selesai', (string) $summary['transactions'], $columns));
+        foreach ([
+            'Tunai penjualan' => $summary['cashSales'],
+            'Top up tunai' => $summary['cashTopups'],
+            'DP reservasi tunai' => $summary['cashReservationDp'],
+            'Pengeluaran tunai' => -$summary['cashExpenses'],
+        ] as $label => $value) {
+            $lines[] = self::text(self::pair($label, ($value < 0 ? '-Rp ' : 'Rp ').self::money(abs($value)), $columns));
+        }
+        $lines[] = self::rule($columns);
+        if ($closing) {
+            $difference = (float) $closing->difference;
+            $lines[] = self::text(self::pair('Modal awal', 'Rp '.self::money($closing->opening_cash), $columns));
+            $lines[] = self::text(self::pair('Kas seharusnya', 'Rp '.self::money($closing->expected_cash), $columns));
+            $lines[] = self::text(self::pair('Kas fisik', 'Rp '.self::money($closing->actual_cash), $columns));
+            $lines[] = self::text(self::pair('SELISIH', ($difference < 0 ? '-Rp ' : 'Rp ').self::money(abs($difference)), $columns), 'left', true);
+        } else {
+            $lines[] = self::text('BELUM DISIMPAN', 'center', true);
+            $lines[] = self::text('Kas fisik belum direkonsiliasi.', 'center');
+        }
+        $lines[] = self::rule($columns);
+        $lines[] = self::text('RINCIAN PEMBAYARAN', 'left', true);
+        foreach ($summary['paymentSummary'] as $payment) {
+            $lines[] = self::text(self::pair(Str::upper($payment['method']).($payment['provider'] ? ' '.$payment['provider'] : ''), 'Rp '.self::money($payment['total']), $columns));
+        }
+        if (! count($summary['paymentSummary'])) {
+            $lines[] = self::text('Belum ada pembayaran.');
+        }
+        $lines[] = self::rule($columns);
+        $lines[] = self::text('PRODUK TERJUAL', 'left', true);
+        $sold = 0;
+        foreach ($sales as $item) {
+            $sold++;
+            $quantity = Qty::format($item->quantity).' '.$item->unit;
+            $name = self::wrap($item->product_name, max(8, $columns - strlen(self::ascii($quantity)) - 1));
+            $lines[] = self::text(self::pair(array_shift($name), $quantity, $columns));
+            foreach ($name as $rest) {
+                $lines[] = self::text($rest);
+            }
+        }
+        if (! $sold) {
+            $lines[] = self::text('Belum ada produk terjual.');
+        }
+        if ($closing?->notes) {
+            $lines[] = self::rule($columns);
+            foreach (self::wrap('Catatan: '.$closing->notes, $columns) as $line) {
+                $lines[] = self::text($line);
+            }
+        }
+        $lines[] = ['type' => 'feed', 'lines' => 2];
+        $half = intdiv($columns, 2);
+        $lines[] = self::text(str_pad('Kasir', $half).'Manager/SPV');
+        $lines[] = ['type' => 'feed', 'lines' => 3];
+        $lines[] = self::text(str_pad(str_repeat('_', $half - 2), $half).str_repeat('_', $columns - $half));
         $lines[] = ['type' => 'feed', 'lines' => 3];
         $lines[] = ['type' => 'cut'];
 

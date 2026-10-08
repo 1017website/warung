@@ -33,6 +33,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureInitialSetup::class])->gro
         Route::delete('/kasir/pending/{transaction}', [WarungController::class, 'cancelPendingBill'])->name('pos.pending.cancel');
         Route::post('/kasir/custom-amount', [WarungController::class, 'toggleCustomAmount'])->name('pos.custom-amount');
         Route::get('/kasir/tutup-harian', [WarungController::class, 'closeCashier'])->name('pos.close');
+        Route::get('/kasir/tutup-harian/cetak', [WarungController::class, 'printCashierClosing'])->name('pos.close.print');
         Route::post('/kasir/tutup-harian', [WarungController::class, 'storeCashierClosing'])->middleware('throttle:10,1')->name('pos.close.store');
     });
 
