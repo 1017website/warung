@@ -226,6 +226,71 @@ class OctoberRevisionTest extends TestCase
         $this->assertStringContainsString(str_pad('TOTAL PENJUALAN', 32 - strlen('Rp 20.000')).'Rp 20.000', $bytes);
     }
 
+    public function test_cashier_closing_shows_daily_turnover_on_screen_and_receipt(): void
+    {
+        ['cashier' => $cashier, 'admin' => $admin, 'menu' => $menu] = $this->setupWarung();
+        $this->checkout($cashier, ['items' => [['id' => $menu->id, 'qty' => 2]], 'payments' => [['method' => 'qris', 'provider' => 'QRIS BCA', 'amount' => 40000]]])->assertOk();
+        $this->checkout($cashier, ['items' => [['id' => $menu->id, 'qty' => 1]], 'payments' => [['method' => 'cash', 'amount' => 50000]]])->assertOk();
+
+        // Omzet = seluruh nota selesai (tunai + non-tunai), bukan hanya kas laci.
+        $this->actingAs($cashier)->get('/kasir/tutup-harian')->assertOk()
+            ->assertSee('Omzet hari ini')->assertSee('Rp 60.000')->assertSee('/laporan/produk-terjual/cetak?paper=58', false);
+        $this->actingAs($cashier)->get('/kasir/tutup-harian/cetak?paper=a4')->assertOk()
+            ->assertSee('Omzet harian')->assertSee('Rp 60.000');
+
+        $this->actingAs($admin)->post('/pengaturan/perangkat', ['name' => 'BT-58D', 'type' => 'receipt_printer', 'driver' => 'rawbt', 'store_id' => $cashier->store_id])->assertSessionHasNoErrors();
+        preg_match('/intent:base64,([^#]+)#/', $this->actingAs($cashier)->get('/kasir/tutup-harian/cetak?paper=58')->viewData('rawbtUri'), $match);
+        $bytes = base64_decode($match[1]);
+        $this->assertStringContainsString('OMZET HARIAN', $bytes);
+        $this->assertStringContainsString(str_pad('OMZET', 32 - strlen('Rp 60.000')).'Rp 60.000', $bytes);
+        $this->assertStringContainsString(str_pad('Tunai penjualan', 32 - strlen('Rp 20.000')).'Rp 20.000', $bytes);
+    }
+
+    public function test_product_sales_report_prints_for_a_custom_date_range(): void
+    {
+        ['cashier' => $cashier, 'admin' => $admin, 'menu' => $menu, 'tenant' => $tenant, 'otherStore' => $otherStore] = $this->setupWarung();
+        $this->checkout($cashier, ['items' => [['id' => $menu->id, 'qty' => 2]], 'payments' => [['method' => 'cash', 'amount' => 40000]]])->assertOk();
+        $this->checkout($cashier, ['items' => [['id' => $menu->id, 'qty' => 1]], 'payments' => [['method' => 'cash', 'amount' => 20000]]])->assertOk();
+        Transaction::latest('id')->firstOrFail()->update(['transacted_at' => now()->subDays(2)]);
+        $this->checkout($cashier, ['items' => [['id' => $menu->id, 'qty' => 5]], 'payments' => [['method' => 'cash', 'amount' => 100000]]])->assertOk();
+        $voided = Transaction::latest('id')->firstOrFail();
+        $this->actingAs($admin)->delete("/transaksi/{$voided->id}", ['reason' => 'Salah input'])->assertSessionHasNoErrors();
+        // Penjualan cabang lain tidak ikut.
+        Transaction::create([
+            'tenant_id' => $tenant->id, 'store_id' => $otherStore->id, 'user_id' => $admin->id, 'invoice_no' => 'INV-LAIN', 'status' => 'completed',
+            'transaction_type' => 'sale', 'report_type' => 'real', 'service_type' => 'takeaway', 'subtotal' => 900000, 'total' => 900000,
+            'payment_method' => 'cash', 'paid_amount' => 900000, 'change_amount' => 0, 'transacted_at' => now(),
+        ])->items()->create(['product_id' => $menu->id, 'product_name' => 'Ayam Bakar', 'quantity' => 45, 'price' => 20000, 'subtotal' => 900000, 'category_name' => 'Makanan']);
+
+        // Default hari ini, POS 58: hanya transaksi selesai hari ini di cabang aktif.
+        $today = $this->actingAs($cashier)->get('/laporan/produk-terjual/cetak')->assertOk()
+            ->assertSee('class="paper-58"', false)->assertSee('Laporan Produk Terjual')->assertSee('Ayam Bakar')->assertSee('Rp 40.000')
+            ->assertDontSee('Rp 140.000')->assertDontSee('900.000');
+        $this->assertEquals(2, $today->viewData('totals')['quantity']);
+
+        $from = now()->subDays(2)->toDateString();
+        $range = $this->actingAs($cashier)->get('/laporan/produk-terjual/cetak?paper=a4&from='.$from.'&to='.today()->toDateString())->assertOk()
+            ->assertSee('class="paper-a4"', false)->assertSee('size:A4 portrait', false)->assertSee('Simpan sebagai PDF')
+            ->assertSee('Makanan')->assertSee('Subtotal Makanan')->assertSee('Rp 60.000');
+        $this->assertSame(['transactions' => 2, 'quantity' => 3.0, 'grossSales' => 60000.0, 'discount' => 0.0, 'serviceCharge' => 0.0, 'tax' => 0.0, 'turnover' => 60000.0], $range->viewData('totals'));
+
+        $this->actingAs($cashier)->from('/kasir/tutup-harian')->get('/laporan/produk-terjual/cetak?from='.today()->toDateString().'&to='.$from)
+            ->assertRedirect('/kasir/tutup-harian')->assertSessionHasErrors('to');
+
+        // RawBT menerima laporan teks 32 kolom per kategori.
+        $this->actingAs($admin)->post('/pengaturan/perangkat', ['name' => 'BT-58D', 'type' => 'receipt_printer', 'driver' => 'rawbt', 'store_id' => $cashier->store_id])->assertSessionHasNoErrors();
+        preg_match('/intent:base64,([^#]+)#/', $this->actingAs($cashier)->get('/laporan/produk-terjual/cetak?from='.$from)->viewData('rawbtUri'), $match);
+        $bytes = base64_decode($match[1]);
+        $this->assertStringContainsString('PRODUK TERJUAL', $bytes);
+        $this->assertStringContainsString('MAKANAN', $bytes);
+        $this->assertStringContainsString(str_pad('  3 pcs', 32 - strlen('60.000')).'60.000', $bytes);
+        $this->assertStringContainsString(str_pad('OMZET', 32 - strlen('Rp 60.000')).'Rp 60.000', $bytes);
+
+        // Laporan juga bisa dibuka dari halaman Laporan dengan periode yang sedang dipilih.
+        $this->actingAs($admin)->get('/laporan?period=custom&from='.$from.'&to='.today()->toDateString())->assertOk()
+            ->assertSee('/laporan/produk-terjual/cetak?paper=a4', false);
+    }
+
     public function test_reservations_are_isolated_per_store(): void
     {
         ['tenant' => $tenant, 'otherStore' => $otherStore, 'cashier' => $cashier] = $this->setupWarung();

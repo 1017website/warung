@@ -7,10 +7,11 @@
         <a class="btn btn-outline" href="{{ route('pos.close.print', ['paper' => 'a4', 'autoprint' => 1]) }}" target="_blank" rel="noopener"><i class="bi bi-printer"></i> Cetak A4</a>
         <a class="btn btn-outline" href="{{ route('pos.close.print', ['paper' => '58']) }}" target="_blank" rel="noopener"><i class="bi bi-receipt"></i> Cetak POS 58 mm</a>
         <a class="btn btn-outline" href="{{ route('pos.close.print', ['paper' => 'a4', 'detail' => 1]) }}" target="_blank" rel="noopener"><i class="bi bi-list-ul"></i> Cetak detail transaksi</a>
+        <a class="btn btn-outline" href="{{ route('reports.product-sales', ['paper' => '58']) }}" target="_blank" rel="noopener"><i class="bi bi-box-seam"></i> Laporan produk terjual</a>
     </div>
 </div>
 <div class="grid stats">
-    <div class="card stat"><div class="stat-label">Transaksi selesai</div><div class="stat-value">{{ $summary['transactions'] }}</div></div>
+    <div class="card stat"><div class="stat-label">Omzet hari ini</div><div class="stat-value">Rp {{ number_format($summary['turnover'],0,',','.') }}</div><div class="stat-note">{{ $summary['transactions'] }} transaksi · produk Rp {{ number_format($summary['grossSales'],0,',','.') }}{{ $summary['discount'] > 0 ? ' · diskon −Rp '.number_format($summary['discount'],0,',','.') : '' }}{{ $summary['serviceCharge'] > 0 ? ' · service Rp '.number_format($summary['serviceCharge'],0,',','.') : '' }}{{ $summary['tax'] > 0 ? ' · pajak Rp '.number_format($summary['tax'],0,',','.') : '' }}</div></div>
     <div class="card stat"><div class="stat-label">Tunai penjualan (net)</div><div class="stat-value">Rp {{ number_format($summary['cashSales'],0,',','.') }}</div></div>
     <div class="card stat"><div class="stat-label">Top up tunai</div><div class="stat-value">Rp {{ number_format($summary['cashTopups'],0,',','.') }}</div></div>
     <div class="card stat"><div class="stat-label">DP reservasi tunai (net)</div><div class="stat-value">Rp {{ number_format($summary['cashReservationDp'],0,',','.') }}</div></div>

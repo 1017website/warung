@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\CashierClosing;
 use App\Models\Store;
 use App\Models\Transaction;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -141,7 +142,11 @@ final class EposReceipt
             $lines[] = self::text(self::pair('Otorisasi', $closing->authorizer?->name ?? '-', $columns));
         }
         $lines[] = self::rule($columns);
+        $lines[] = self::text('OMZET HARIAN', 'left', true);
         $lines[] = self::text(self::pair('Transaksi selesai', (string) $summary['transactions'], $columns));
+        array_push($lines, ...self::turnoverLines($summary, $columns));
+        $lines[] = self::rule($columns);
+        $lines[] = self::text('KAS TUNAI', 'left', true);
         foreach ([
             'Tunai penjualan' => $summary['cashSales'],
             'Top up tunai' => $summary['cashTopups'],
@@ -229,6 +234,60 @@ final class EposReceipt
         $lines[] = self::text(str_pad(str_repeat('_', $half - 2), $half).str_repeat('_', $columns - $half));
         $lines[] = ['type' => 'feed', 'lines' => 3];
         $lines[] = ['type' => 'cut'];
+
+        return $lines;
+    }
+
+    /** Laporan produk terjual untuk rentang tanggal, per kategori, untuk printer struk. */
+    public static function productSales(string $brand, string $scope, Carbon $from, Carbon $to, array $data, int $columns, bool $nonReal = false): array
+    {
+        $lines = [
+            self::text('PRODUK TERJUAL', 'center', true, true),
+            self::text($brand, 'center', true),
+            self::text($scope, 'center'),
+        ];
+        if ($nonReal) {
+            $lines[] = self::text('Laporan non-riil', 'center');
+        }
+        $lines[] = self::rule($columns);
+        $lines[] = self::text(self::pair('Periode', $from->isSameDay($to) ? $from->format('d/m/Y') : $from->format('d/m/Y').' - '.$to->format('d/m/Y'), $columns));
+        $lines[] = self::text(self::pair('Dicetak', now()->format('d/m/Y H:i'), $columns));
+        foreach ($data['categories'] as $category => $items) {
+            $lines[] = self::rule($columns);
+            $lines[] = self::text(Str::upper($category), 'left', true);
+            foreach ($items as $item) {
+                foreach (self::wrap($item->product_name, $columns) as $nameLine) {
+                    $lines[] = self::text($nameLine);
+                }
+                $lines[] = self::text(self::pair('  '.Qty::format($item->quantity).' '.$item->unit, self::money($item->sales), $columns));
+            }
+            $lines[] = self::text(self::pair('  Subtotal '.Qty::format($items->sum('quantity')).' item', self::money($items->sum('sales')), $columns), 'left', true);
+        }
+        if ($data['products']->isEmpty()) {
+            $lines[] = self::rule($columns);
+            $lines[] = self::text('Belum ada produk terjual.');
+        }
+        $totals = $data['totals'];
+        $lines[] = self::rule($columns);
+        $lines[] = self::text(self::pair('Transaksi selesai', (string) $totals['transactions'], $columns));
+        $lines[] = self::text(self::pair('Total qty', Qty::format($totals['quantity']), $columns));
+        array_push($lines, ...self::turnoverLines($totals, $columns));
+        $lines[] = ['type' => 'feed', 'lines' => 3];
+        $lines[] = ['type' => 'cut'];
+
+        return $lines;
+    }
+
+    /** Penjualan produk − diskon + service + pajak = omzet. */
+    private static function turnoverLines(array $totals, int $columns): array
+    {
+        $lines = [self::text(self::pair('Penjualan produk', 'Rp '.self::money($totals['grossSales']), $columns))];
+        foreach (['discount' => 'Diskon', 'serviceCharge' => 'Service', 'tax' => 'Pajak'] as $key => $label) {
+            if ((float) $totals[$key] > 0) {
+                $lines[] = self::text(self::pair($label, ($key === 'discount' ? '-Rp ' : 'Rp ').self::money($totals[$key]), $columns));
+            }
+        }
+        $lines[] = self::text(self::pair('OMZET', 'Rp '.self::money($totals['turnover']), $columns), 'left', true);
 
         return $lines;
     }

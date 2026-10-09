@@ -308,6 +308,12 @@ class WarungController extends Controller
 
         return [
             'transactions' => $transactions->count(),
+            // Omzet harian: penjualan produk − diskon + service + pajak = total nota selesai.
+            'grossSales' => round((float) $transactions->sum('subtotal'), 2),
+            'discount' => round((float) $transactions->sum('discount'), 2),
+            'serviceCharge' => round((float) $transactions->sum('service_charge'), 2),
+            'tax' => round((float) $transactions->sum('tax_amount'), 2),
+            'turnover' => round((float) $transactions->sum('total'), 2),
             'paymentSummary' => $paymentSummary,
             'cashSales' => round($paymentRows->where('method', 'cash')->sum('amount'), 2),
             'cashTopups' => round($cashTopups, 2),
@@ -2353,6 +2359,88 @@ class WarungController extends Controller
         $filename = 'laporan-transaksi-'.str_replace('_', '-', $type).'-'.$from->format('Ymd').'-'.$to->format('Ymd').'.xlsx';
 
         return SpreadsheetDownload::response($spreadsheet, $filename);
+    }
+
+    /** Laporan produk terjual untuk rentang tanggal bebas, siap cetak A4 (PDF) atau POS 58 mm. */
+    public function printProductSales(Request $request)
+    {
+        $filters = $request->validate([
+            'from' => 'nullable|date',
+            'to' => 'nullable|date|after_or_equal:from',
+            'paper' => ['nullable', Rule::in(['a4', '58'])],
+            'type' => ['nullable', Rule::in(['real', 'non_real'])],
+        ], [], ['from' => 'tanggal awal', 'to' => 'tanggal akhir']);
+        $paper = $filters['paper'] ?? '58';
+        $type = auth()->user()->canSeeNonRealReport() && ($filters['type'] ?? null) === 'non_real' ? 'non_real' : 'real';
+        $factor = $this->reportFactor($type);
+        $from = Carbon::parse($filters['from'] ?? today())->startOfDay();
+        $to = Carbon::parse($filters['to'] ?? max(today(), $from))->endOfDay();
+        $consolidated = $this->isConsolidated();
+        $storeId = $consolidated ? null : $this->storeId();
+        $store = $this->activeStoreRecord();
+        $scopeLabel = $consolidated ? 'Semua warung' : $store->name;
+        $data = $this->productSalesData($storeId, $from, $to, $factor);
+        $job = fn (int $columns) => EposReceipt::productSales($store->brandName(), $scopeLabel, $from, $to, $data, $columns, $type === 'non_real');
+        $rawbtPrinter = $this->rawbtPrinter();
+        $eposPrinter = $this->eposPrinter();
+
+        return view('reports.product-sales-print', $data + [
+            'paper' => $paper,
+            'type' => $type,
+            'from' => $from,
+            'to' => $to,
+            'store' => $store,
+            'scopeLabel' => $scopeLabel,
+            'backUrl' => auth()->user()->canAccess('reports') ? route('reports', ['type' => $type, 'period' => 'custom', 'from' => $from->toDateString(), 'to' => $to->toDateString()]) : route('pos.close'),
+            'rawbtPrinter' => $rawbtPrinter,
+            'rawbtUri' => $rawbtPrinter ? RawbtReceipt::uri([$job(32)]) : null,
+            'eposPayload' => $eposPrinter ? ['printer' => $eposPrinter->eposConfig(), 'jobs' => [$job($eposPrinter->eposColumns())]] : null,
+        ]);
+    }
+
+    /**
+     * Rekap qty dan nilai jual per produk dari transaksi penjualan selesai, dikelompokkan
+     * per kategori. Nilai rupiah mengikuti faktor laporan non-riil; qty tetap apa adanya.
+     */
+    private function productSalesData(?int $storeId, Carbon $from, Carbon $to, float|array $factor): array
+    {
+        $factorFor = fn ($id): float => is_array($factor) ? (float) ($factor[(int) $id] ?? 1) : (float) $factor;
+        $sales = fn ($query, string $table) => $query->where("{$table}.tenant_id", $this->tenantId())
+            ->where("{$table}.status", 'completed')->where("{$table}.transaction_type", 'sale')
+            ->when($storeId, fn ($query) => $query->where("{$table}.store_id", $storeId))
+            ->whereBetween("{$table}.transacted_at", [$from, $to]);
+        $rows = $sales(DB::table('transaction_items')->join('transactions', 'transactions.id', '=', 'transaction_items.transaction_id'), 'transactions')
+            ->leftJoin('products', 'products.id', '=', 'transaction_items.product_id')
+            ->select('transactions.store_id', 'transaction_items.product_name', 'transaction_items.category_name', DB::raw("COALESCE(products.unit, 'item') as unit"),
+                DB::raw('SUM(transaction_items.quantity) as quantity'), DB::raw('SUM(transaction_items.subtotal) as sales'))
+            ->groupBy('transactions.store_id', 'transaction_items.product_name', 'transaction_items.category_name', 'products.unit')
+            ->get();
+        $products = $rows->groupBy(fn ($row) => (trim((string) $row->category_name) ?: 'Umum').'|'.$row->product_name.'|'.$row->unit)
+            ->map(fn ($group) => (object) [
+                'category' => trim((string) $group->first()->category_name) ?: 'Umum',
+                'product_name' => $group->first()->product_name,
+                'unit' => $group->first()->unit,
+                'quantity' => (float) $group->sum('quantity'),
+                'sales' => round($group->sum(fn ($row) => (float) $row->sales * $factorFor($row->store_id)), 2),
+            ])
+            ->sortBy([['category', 'asc'], ['quantity', 'desc'], ['product_name', 'asc']])->values();
+        $totals = $sales(Transaction::query(), 'transactions')->selectRaw('store_id, COUNT(*) as count, SUM(subtotal) as subtotal, SUM(discount) as discount, SUM(service_charge) as service, SUM(tax_amount) as tax, SUM(total) as total')
+            ->groupBy('store_id')->get();
+        $sum = fn (string $column) => round($totals->sum(fn ($row) => (float) $row->{$column} * $factorFor($row->store_id)), 2);
+
+        return [
+            'products' => $products,
+            'categories' => $products->groupBy('category'),
+            'totals' => [
+                'transactions' => (int) $totals->sum('count'),
+                'quantity' => (float) $products->sum('quantity'),
+                'grossSales' => $sum('subtotal'),
+                'discount' => $sum('discount'),
+                'serviceCharge' => $sum('service'),
+                'tax' => $sum('tax'),
+                'turnover' => $sum('total'),
+            ],
+        ];
     }
 
     private function roles()

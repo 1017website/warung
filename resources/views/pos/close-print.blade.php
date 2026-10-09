@@ -30,7 +30,11 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:t
 .paper-a4 .kv.strong{font-size:14px;border-top:1px solid #000;border-bottom:0;margin-top:2px;padding-top:5px}
 .paper-a4 th,.paper-a4 td{padding:5px 6px;border-bottom:1px solid #ddd}.paper-a4 th{background:#f2f2f2;font-size:11px;text-transform:uppercase}
 .paper-a4 .status{border:2px solid #000;padding:6px;margin-bottom:14px}
-.paper-a4 .notes,.paper-a4 .detail{margin-bottom:14px}
+.paper-a4 .notes,.paper-a4 .detail,.paper-a4 .turnover{margin-bottom:14px}
+.paper-a4 .turnover .figures{display:flex;flex-wrap:wrap}
+.paper-a4 .turnover .kv{flex:1 1 0;display:block;border:0;border-left:1px solid #ddd;margin:0;padding:2px 10px}.paper-a4 .turnover .kv:first-child{border-left:0;padding-left:0}
+.paper-a4 .turnover .kv>span{display:block;text-align:left}.paper-a4 .turnover .kv>span:first-child{font-size:10px;text-transform:uppercase;color:#444}
+.paper-a4 .turnover .kv>span:last-child{font-size:14px;font-weight:bold}.paper-a4 .turnover .kv.strong>span:last-child{font-size:18px}
 .paper-a4 .trx-table{font-size:11px}.paper-a4 .trx-table tr{break-inside:avoid}.paper-a4 .trx-table td:first-child{color:#555;width:24px}.paper-a4 .trx-table td:last-child,.paper-a4 .trx-table .nowrap{white-space:nowrap}
 .paper-a4 .trx-table .muted td{color:#555}.paper-a4 .trx-table .muted td:last-child{text-decoration:line-through}
 .paper-a4 .trx-table tfoot td{font-weight:bold;font-size:12px;border-top:2px solid #000;border-bottom:0}
@@ -94,7 +98,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:t
     <p id="print-status" role="status"></p>
     <details><summary>Bantuan cetak</summary>
         @if($paper === 'a4')
-            <p>Pada dialog cetak pilih kertas <b>A4</b>, orientasi potret, skala 100%, dan matikan header/footer.</p>
+            <p>Pada dialog cetak pilih kertas <b>A4</b>, orientasi potret, skala 100%, dan matikan header/footer. Untuk file PDF, pilih tujuan <b>Simpan sebagai PDF</b>.</p>
         @else
             <p>Pada dialog cetak pilih printer struk dengan kertas <b>58 mm</b>, skala 100%, margin tidak ada, dan matikan header/footer.</p>
             @if($rawbtPrinter)<p>Di Android, gunakan RawBT agar rekap langsung terkirim ke printer Bluetooth.</p>@endif
@@ -126,10 +130,21 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:t
         <div class="status">BELUM DISIMPAN — kas fisik belum direkonsiliasi.</div>
     @endunless
 
+    <section class="section turnover">
+        <h2>Omzet harian</h2>
+        <div class="figures">
+            <div class="kv"><span>Transaksi selesai</span><span>{{ $summary['transactions'] }}</span></div>
+            <div class="kv"><span>Penjualan produk</span><span>{{ $rp($summary['grossSales']) }}</span></div>
+            @if($summary['discount'] > 0)<div class="kv"><span>Diskon</span><span>{{ $rp(-$summary['discount']) }}</span></div>@endif
+            @if($summary['serviceCharge'] > 0)<div class="kv"><span>Service</span><span>{{ $rp($summary['serviceCharge']) }}</span></div>@endif
+            @if($summary['tax'] > 0)<div class="kv"><span>Pajak</span><span>{{ $rp($summary['tax']) }}</span></div>@endif
+            <div class="kv strong"><span>Omzet</span><span>{{ $rp($summary['turnover']) }}</span></div>
+        </div>
+    </section>
+
     <div class="grid">
         <section class="section">
             <h2>Ringkasan kas</h2>
-            <div class="kv"><span>Transaksi selesai</span><span>{{ $summary['transactions'] }}</span></div>
             <div class="kv"><span>Tunai penjualan<span class="net"> (net)</span></span><span>{{ $rp($summary['cashSales']) }}</span></div>
             <div class="kv"><span>Top up tunai</span><span>{{ $rp($summary['cashTopups']) }}</span></div>
             <div class="kv"><span>DP reservasi tunai<span class="net"> (net)</span></span><span>{{ $rp($summary['cashReservationDp']) }}</span></div>

@@ -47,6 +47,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureInitialSetup::class])->gro
     // Read-only POS dependencies remain available to custom cashier roles.
     Route::get('/transaksi/{transaction}/print', [WarungController::class, 'print'])->middleware('module:transactions,pos,reports')->name('transactions.print');
     Route::get('/transaksi/{transaction}/epos', [WarungController::class, 'eposReceipt'])->middleware('module:transactions,pos,reports')->name('transactions.epos');
+    Route::get('/laporan/produk-terjual/cetak', [WarungController::class, 'printProductSales'])->middleware('module:reports,pos')->name('reports.product-sales');
     Route::get('/member/find/{code}', [WarungController::class, 'findMember'])->middleware('module:members,pos')->name('members.find');
 
     Route::middleware('module:transactions')->group(function () {
