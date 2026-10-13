@@ -16,6 +16,12 @@
     </div>
 </div>
 
+<div class="card card-pad inventory-search-bar">
+    <div class="search"><input id="inventory-search" type="search" placeholder="Cari bahan baku / olahan: nama, SKU, kategori…" autocomplete="off" aria-label="Cari stok"></div>
+    <select id="inventory-status-filter" aria-label="Filter status"><option value="">Semua status</option><option value="alert">Perlu perhatian / tidak aman / kosong</option><option value="unbalanced">Olahan tidak balance</option></select>
+    <span class="hint" id="inventory-search-count" aria-live="polite"></span>
+</div>
+
 <section class="card card-pad" style="margin-bottom:16px">
     <div class="card-title"><div><h2>Stok bahan baku</h2><p>Stok terolah dihitung dari produksi; stok terpakai dan keterangan dapat di-live edit.</p></div><span class="badge gray">{{ $ingredientStocks->count() }} bahan</span></div>
     <div class="inventory-note"><i class="bi bi-info-circle"></i><span>Stok awal otomatis mengambil sisa hari sebelumnya. Koreksi stok awal hanya tersedia bagi Admin Operasional dan jenjang di atasnya. Kolom <b>Rusak / tidak layak</b> diisi manual untuk bahan yang tidak bisa diproses ulang dan langsung mengurangi sisa stok. Stock opname mereset saldo sistem ke sisa fisik.</span></div>
@@ -24,7 +30,7 @@
         @php($min=$stock->product->minimum_stock)
         @php($status=$stock->quantity<=0?'KOSONG':($stock->quantity<=max(1,$min/2)?'Tidak aman':($stock->quantity<=$min?'Perlu perhatian':'Aman')))
         @php($class=$status==='Aman'?'':($status==='Perlu perhatian'?'amber':'red'))
-        <tr>
+        <tr data-stock-row data-search="{{ \Illuminate\Support\Str::lower($stock->product->name.' '.$stock->product->sku.' '.$stock->product->ingredient_sku.' '.($stock->product->category?->name ?? 'Bahan baku')) }}" data-alert="{{ $status==='Aman'?0:1 }}">
             <td><div class="cell-main">{{ $stock->product->name }}</div><div class="cell-sub">{{ $stock->product->sku }} · {{ $stock->product->unit }}</div></td>
             <td>{{ $stock->product->category?->name ?? 'Bahan baku' }}</td>
             <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="opening_quantity" value="{{ (float)$stock->opening }}" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}" @disabled(!$canEditOpening) title="{{ $canEditOpening?'Edit stok awal':'Khusus Admin Operasional' }}"></td>
@@ -39,6 +45,7 @@
     @empty
         <tr><td colspan="10"><div class="cart-empty">Belum ada bahan baku.</div></td></tr>
     @endforelse
+    <tr class="inventory-search-empty" hidden><td colspan="10"><div class="cart-empty">Tidak ada bahan baku yang cocok dengan pencarian.</div></td></tr>
     </tbody></table></div>
 </section>
 
@@ -49,7 +56,7 @@
         @php($actual=$stock->count?->actual_quantity)
         @php($difference=$actual===null?null:(float)$stock->count->expected_quantity-(float)$actual)
         @php($balanced=$difference!==null&&abs((float)$difference)<0.001)
-        <tr>
+        <tr data-stock-row data-search="{{ \Illuminate\Support\Str::lower($stock->product->name.' '.$stock->product->sku.' '.$stock->product->ingredient_sku.' '.($stock->product->category?->name ?? 'Menu')) }}" data-alert="{{ (float)$stock->quantity<=(float)$stock->product->minimum_stock?1:0 }}" data-unbalanced="{{ $difference!==null&&!$balanced?1:0 }}">
             <td><div class="cell-main">{{ $stock->product->name }}</div><div class="cell-sub">{{ $stock->product->sku }} · {{ $stock->product->unit }}</div></td>
             <td>{{ $stock->product->category?->name ?? 'Menu' }}</td>
             <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="opening_quantity" value="{{ (float)$stock->opening }}" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}" @disabled(!$canEditOpening) title="{{ $canEditOpening?'Edit stok awal':'Khusus Admin Operasional' }}"></td>
@@ -67,6 +74,7 @@
     @empty
         <tr><td colspan="13"><div class="cart-empty">Belum ada menu aktif.</div></td></tr>
     @endforelse
+    <tr class="inventory-search-empty" hidden><td colspan="13"><div class="cart-empty">Tidak ada olahan yang cocok dengan pencarian.</div></td></tr>
     </tbody></table></div>
 </section>
 
@@ -99,6 +107,25 @@ function filterWasteProducts(){
 }
 document.querySelectorAll('#waste-modal [name=stock_type]').forEach(input=>input.addEventListener('change',filterWasteProducts));
 filterWasteProducts();
+const inventorySearch=document.getElementById('inventory-search'),inventoryStatus=document.getElementById('inventory-status-filter');
+function filterInventory(){
+    const terms=inventorySearch.value.trim().toLowerCase().split(/\s+/).filter(Boolean),status=inventoryStatus.value;let shown=0,total=0;
+    document.querySelectorAll('.inventory-live-table tbody').forEach(body=>{
+        const rows=[...body.querySelectorAll('tr[data-stock-row]')];let visible=0;
+        rows.forEach(row=>{
+            const match=terms.every(term=>row.dataset.search.includes(term))&&(status!=='alert'||row.dataset.alert==='1')&&(status!=='unbalanced'||row.dataset.unbalanced==='1');
+            row.hidden=!match;if(match)visible++;
+        });
+        shown+=visible;total+=rows.length;
+        const empty=body.querySelector('.inventory-search-empty');if(empty)empty.hidden=!rows.length||visible>0;
+    });
+    document.getElementById('inventory-search-count').textContent=terms.length||status?shown+' dari '+total+' produk':'';
+    try{sessionStorage.setItem('inventory-filter',JSON.stringify({q:inventorySearch.value,status}))}catch(error){}
+}
+try{const saved=JSON.parse(sessionStorage.getItem('inventory-filter')||'{}');inventorySearch.value=saved.q||'';inventoryStatus.value=saved.status||''}catch(error){}
+inventorySearch.addEventListener('input',filterInventory);inventoryStatus.addEventListener('change',filterInventory);
+inventorySearch.addEventListener('keydown',event=>{if(event.key==='Escape'){inventorySearch.value='';filterInventory()}});
+filterInventory();
 document.querySelectorAll('[data-live-stock]').forEach(input=>{
     let savedValue=input.value;
     input.addEventListener('change',async()=>{

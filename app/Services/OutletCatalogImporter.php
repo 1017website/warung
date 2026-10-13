@@ -72,7 +72,14 @@ final class OutletCatalogImporter
 
     private array $notes = [];
 
-    public function __construct(private int $tenantId, private int $storeId, private int $userId) {}
+    /** @var list<int> */
+    private array $storeIds;
+
+    /** @param int|list<int> $storeIds Warung yang menerima stok dari kolom STOK. */
+    public function __construct(private int $tenantId, int|array $storeIds, private int $userId)
+    {
+        $this->storeIds = array_values(array_unique(array_map('intval', (array) $storeIds)));
+    }
 
     /** Workbook dikenali dari nama sheet atau judul kolom khas file outlet. */
     public static function detects(Spreadsheet $book): bool
@@ -294,53 +301,57 @@ final class OutletCatalogImporter
     }
 
     /**
-     * Stok cabang aktif selalu tersedia. Bila kolom stok diisi, saldo disetel ke angka itu
-     * dan selisihnya dicatat sebagai stock opname (terlihat di riwayat pergerakan stok).
+     * Stok setiap warung tujuan selalu tersedia. Bila kolom stok diisi, saldo tiap warung
+     * disetel ke angka itu dan selisihnya dicatat sebagai stock opname (terlihat di riwayat
+     * pergerakan stok cabang masing-masing).
      */
     private function applyStock(Product $product, array $record, string $sheet): void
     {
-        $stock = $product->product_type === 'menu' ? $this->menuStock($product) : ProductStock::firstOrCreate(
-            ['tenant_id' => $this->tenantId, 'store_id' => $this->storeId, 'product_id' => $product->id], ['quantity' => 0]
-        );
         $quantity = SheetValue::number($record['quantity'] ?? null);
-        if ($quantity === null) {
-            return;
-        }
-        if ($quantity < 0) {
+        if ($quantity !== null && $quantity < 0) {
             $this->notes[] = "{$sheet} baris {$record['row']}: stok {$product->name} negatif, dilewati.";
-
-            return;
+            $quantity = null;
         }
-        $stock = $stock->newQuery()->whereKey($stock->id)->lockForUpdate()->firstOrFail();
-        $expected = (float) $stock->quantity;
-        StockCount::updateOrCreate(
-            ['store_id' => $this->storeId, 'product_id' => $product->id, 'count_date' => today()],
-            ['tenant_id' => $this->tenantId, 'user_id' => $this->userId, 'expected_quantity' => $expected, 'actual_quantity' => $quantity, 'notes' => 'Impor Excel '.$sheet]
-        );
-        $delta = $quantity - $expected;
-        if (abs($delta) > 0.0005) {
-            $stock->update(['quantity' => $quantity]);
-            DB::table('stock_movements')->insert([
-                'tenant_id' => $this->tenantId, 'store_id' => $this->storeId, 'product_id' => $product->id,
-                'user_id' => $this->userId, 'type' => $delta > 0 ? 'adjustment_in' : 'adjustment_out',
-                'activity' => 'stock_opname', 'quantity' => $delta, 'reference' => 'IMPORT-'.today()->format('Ymd'),
-                'notes' => 'Stok diimpor dari Excel ('.$sheet.')', 'created_at' => now(), 'updated_at' => now(),
-            ]);
+        foreach ($this->storeIds as $storeId) {
+            $stock = $product->product_type === 'menu' ? $this->menuStock($product, $storeId) : ProductStock::firstOrCreate(
+                ['tenant_id' => $this->tenantId, 'store_id' => $storeId, 'product_id' => $product->id], ['quantity' => 0]
+            );
+            if ($quantity === null) {
+                continue;
+            }
+            $stock = $stock->newQuery()->whereKey($stock->id)->lockForUpdate()->firstOrFail();
+            $expected = (float) $stock->quantity;
+            StockCount::updateOrCreate(
+                ['store_id' => $storeId, 'product_id' => $product->id, 'count_date' => today()],
+                ['tenant_id' => $this->tenantId, 'user_id' => $this->userId, 'expected_quantity' => $expected, 'actual_quantity' => $quantity, 'notes' => 'Impor Excel '.$sheet]
+            );
+            $delta = $quantity - $expected;
+            if (abs($delta) > 0.0005) {
+                $stock->update(['quantity' => $quantity]);
+                DB::table('stock_movements')->insert([
+                    'tenant_id' => $this->tenantId, 'store_id' => $storeId, 'product_id' => $product->id,
+                    'user_id' => $this->userId, 'type' => $delta > 0 ? 'adjustment_in' : 'adjustment_out',
+                    'activity' => 'stock_opname', 'quantity' => $delta, 'reference' => 'IMPORT-'.today()->format('Ymd'),
+                    'notes' => 'Stok diimpor dari Excel ('.$sheet.')', 'created_at' => now(), 'updated_at' => now(),
+                ]);
+            }
         }
-        $this->stats['stock']++;
+        if ($quantity !== null) {
+            $this->stats['stock']++;
+        }
     }
 
     /** Stok olahan hari ini; sisa hari sebelumnya dibawa seperti WarungController::menuStockForDate(). */
-    private function menuStock(Product $product): DailyMenuStock
+    private function menuStock(Product $product, int $storeId): DailyMenuStock
     {
-        $query = fn () => DailyMenuStock::where('tenant_id', $this->tenantId)->where('store_id', $this->storeId)->where('product_id', $product->id);
+        $query = fn () => DailyMenuStock::where('tenant_id', $this->tenantId)->where('store_id', $storeId)->where('product_id', $product->id);
         if ($stock = $query()->whereDate('stock_date', today())->first()) {
             return $stock;
         }
         $carryOver = (float) ($query()->whereDate('stock_date', '<', today())->latest('stock_date')->value('quantity') ?? 0);
 
         return DailyMenuStock::create([
-            'tenant_id' => $this->tenantId, 'store_id' => $this->storeId, 'product_id' => $product->id,
+            'tenant_id' => $this->tenantId, 'store_id' => $storeId, 'product_id' => $product->id,
             'stock_date' => today()->toDateString(), 'quantity' => $carryOver,
         ]);
     }

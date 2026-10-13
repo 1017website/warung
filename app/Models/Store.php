@@ -22,9 +22,14 @@ class Store extends Model
         'service_charge_types' => 'array',
         'tax_percent' => 'decimal:2',
         'tax_types' => 'array',
+        'rounding_unit' => 'integer',
     ];
 
     public const SERVICE_TYPES = ['dine_in' => 'Dine in', 'takeaway' => 'Take away', 'online' => 'Ojek online'];
+
+    public const ROUNDING_MODES = ['none' => 'Tanpa pembulatan', 'up' => 'Ke atas', 'down' => 'Ke bawah', 'nearest' => 'Terdekat'];
+
+    public const ROUNDING_UNITS = [100, 500, 1000];
 
     protected static function booted(): void
     {
@@ -86,7 +91,8 @@ class Store extends Model
 
     /**
      * Service dihitung dari total setelah diskon; pajak dihitung dari total setelah
-     * diskon ditambah service, seperti PB1 restoran. Hasil dibulatkan ke rupiah.
+     * diskon ditambah service, seperti PB1 restoran. Hasil dibulatkan ke rupiah, lalu
+     * total akhirnya mengikuti pembulatan cabang (rounding_amount, boleh negatif).
      * Rumus yang sama dipakai layar kasir (lihat totals() di pos/index.blade.php).
      */
     public function chargesFor(float $base, string $serviceType): array
@@ -96,13 +102,49 @@ class Store extends Model
         $service = $base > 0 ? round($base * $servicePercent / 100) : 0.0;
         $tax = $base > 0 ? round(($base + $service) * $taxPercent / 100) : 0.0;
 
+        $total = $base + $service + $tax;
+
         return [
             'service_charge_percent' => $servicePercent,
             'service_charge' => $service,
             'tax_percent' => $taxPercent,
             'tax_label' => $taxPercent > 0 ? $this->taxLabel() : null,
             'tax_amount' => $tax,
+            'rounding_amount' => round($this->roundTotal($total) - $total, 2),
         ];
+    }
+
+    public function roundingMode(): string
+    {
+        return array_key_exists((string) $this->rounding_mode, self::ROUNDING_MODES) ? $this->rounding_mode : 'none';
+    }
+
+    public function roundingUnit(): int
+    {
+        return in_array((int) $this->rounding_unit, self::ROUNDING_UNITS, true) ? (int) $this->rounding_unit : 100;
+    }
+
+    /**
+     * Pembulatan total tagihan ke kelipatan Rp100/500/1.000. Pembulatan ke bawah
+     * tidak pernah membuat tagihan menjadi nol. Rumus yang sama dipakai totals()
+     * di pos/index.blade.php.
+     */
+    public function roundTotal(float $total): float
+    {
+        $mode = $this->roundingMode();
+        if ($total <= 0 || $mode === 'none') {
+            return $total;
+        }
+        $unit = $this->roundingUnit();
+        // round(..., 6) menghindari 1000.0000001 dibulatkan ke atas menjadi 2000.
+        $steps = round($total / $unit, 6);
+        $rounded = match ($mode) {
+            'up' => ceil($steps),
+            'down' => floor($steps),
+            default => floor($steps + 0.5),
+        } * $unit;
+
+        return $rounded > 0 ? (float) $rounded : $total;
     }
 
     /** Konfigurasi pajak & service untuk perhitungan di layar kasir. */
@@ -114,6 +156,8 @@ class Store extends Model
             'tax_percent' => (float) $this->tax_percent,
             'tax_types' => $this->taxTypes(),
             'tax_label' => $this->taxLabel(),
+            'rounding_mode' => $this->roundingMode(),
+            'rounding_unit' => $this->roundingUnit(),
         ];
     }
 }

@@ -646,7 +646,7 @@ class WarungController extends Controller
                 $discount = $subtotal;
             }
             $charges = $this->activeStoreRecord()->chargesFor($transactionType === 'replacement' ? 0 : $subtotal - $discount, $data['service_type']);
-            $total = $transactionType === 'replacement' ? 0 : $subtotal - $discount + $charges['service_charge'] + $charges['tax_amount'];
+            $total = $transactionType === 'replacement' ? 0 : $subtotal - $discount + $charges['service_charge'] + $charges['tax_amount'] + $charges['rounding_amount'];
             $reservation = $this->reservationForOrder($data);
             abort_if($reservation && $transactionType === 'replacement', 422, 'Reservasi tidak dapat dipakai untuk retur pengganti.');
             // DP reservasi sudah diterima sebelumnya: memotong tagihan, sisanya dibayar seperti biasa.
@@ -758,7 +758,7 @@ class WarungController extends Controller
                 'invoice_no' => $trx?->invoice_no ?? 'BILL-'.now()->format('ymd-His').'-'.strtoupper(Str::random(2)), 'status' => 'pending', 'transaction_type' => 'sale',
                 'report_type' => 'real', 'service_type' => $data['service_type'], 'table_number' => $data['table_number'] ?? null,
                 'online_platform' => $data['online_platform'] ?? null, 'subtotal' => $subtotal, 'discount_type' => $discountType,
-                'discount_value' => $discountValue, 'discount' => $discount, 'total' => $subtotal - $discount + $charges['service_charge'] + $charges['tax_amount'],
+                'discount_value' => $discountValue, 'discount' => $discount, 'total' => $subtotal - $discount + $charges['service_charge'] + $charges['tax_amount'] + $charges['rounding_amount'],
                 'payment_method' => 'cash', 'paid_amount' => 0, 'change_amount' => 0, 'notes' => $data['notes'] ?? null, 'transacted_at' => now(),
             ] + $charges;
             $reservation = $this->reservationForOrder($data);
@@ -1013,10 +1013,17 @@ class WarungController extends Controller
 
     public function products(Request $request)
     {
-        $this->prepareDailyMenuStocks();
+        $priceStores = $this->stores();
+        $consolidated = $this->isConsolidated();
+        $this->prepareDailyMenuStocks($consolidated ? $priceStores->pluck('id')->all() : null);
         $filters = $request->validate(['q' => 'nullable|string|max:80', 'type' => ['nullable', Rule::in(['menu', 'ingredient'])], 'category' => 'nullable|integer']);
         // Pencarian di server: katalog outlet berisi ratusan produk sehingga tidak cukup mencari di halaman aktif.
         $products = Product::with(['category', 'storePrices', 'prices'])
+            // Mode consolidated menampilkan rincian stok setiap warung, bukan hanya cabang aktif.
+            ->when($consolidated, fn ($query) => $query->with([
+                'stocks' => fn ($q) => $q->whereIn('store_id', $priceStores->pluck('id')),
+                'dailyStocks' => fn ($q) => $q->whereIn('store_id', $priceStores->pluck('id'))->whereDate('stock_date', today()),
+            ]))
             ->withSum(['stocks as warehouse_stock' => fn ($q) => $q->where('store_id', $this->storeId())], 'quantity')
             ->withSum(['dailyStocks as daily_stock' => fn ($q) => $q->where('store_id', $this->storeId())->whereDate('stock_date', today())], 'quantity')
             ->where('tenant_id', $this->tenantId())
@@ -1029,8 +1036,7 @@ class WarungController extends Controller
             ->where('tenant_id', $this->tenantId())->latest('deleted_at')->take(20)->get();
         $archivedCategories = Category::onlyTrashed()->where('tenant_id', $this->tenantId())
             ->latest('deleted_at')->take(20)->get();
-        $priceStores = $this->stores();
-        $priceStoreId = $this->isConsolidated() ? null : $this->storeId();
+        $priceStoreId = $consolidated ? null : $this->storeId();
 
         return $this->view('products.index', compact('products', 'categories', 'archivedProducts', 'archivedCategories', 'priceStores', 'priceStoreId', 'filters'));
     }
@@ -1114,20 +1120,41 @@ class WarungController extends Controller
         ]);
     }
 
+    /**
+     * Warung yang menerima stok awal / stok impor. Pengguna memilih sendiri (bisa beberapa
+     * warung sekaligus dari mode consolidated); tanpa pilihan, stok masuk ke cabang aktif.
+     */
+    private function stockTargetStores(Request $request)
+    {
+        $stores = $this->stores();
+        $data = $request->validate([
+            'stock_store_ids' => ['nullable', 'array'],
+            'stock_store_ids.*' => ['integer', Rule::in($stores->pluck('id')->all())],
+        ], [], ['stock_store_ids.*' => 'warung tujuan stok']);
+        $ids = array_map('intval', $data['stock_store_ids'] ?? []);
+
+        return $ids ? $stores->whereIn('id', $ids)->values() : $stores->where('id', $this->storeId())->values();
+    }
+
     public function storeProduct(Request $request)
     {
         $data = $this->productData($request);
+        $targets = $this->stockTargetStores($request);
         $initial = $data['initial_stock'] ?? 0;
         unset($data['initial_stock']);
         $data['online_selling_price'] = $data['online_selling_price'] ?? $data['selling_price'];
-        $product = Product::create($data + ['tenant_id' => $this->tenantId(), 'is_active' => true]);
-        if ($product->product_type === 'menu') {
-            DailyMenuStock::create(['tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id, 'stock_date' => today(), 'quantity' => $initial]);
-        } else {
-            ProductStock::create(['tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id, 'quantity' => $initial]);
-        }
+        DB::transaction(function () use ($data, $targets, $initial) {
+            $product = Product::create($data + ['tenant_id' => $this->tenantId(), 'is_active' => true]);
+            foreach ($targets as $store) {
+                if ($product->product_type === 'menu') {
+                    DailyMenuStock::create(['tenant_id' => $this->tenantId(), 'store_id' => $store->id, 'product_id' => $product->id, 'stock_date' => today(), 'quantity' => $initial]);
+                } else {
+                    ProductStock::create(['tenant_id' => $this->tenantId(), 'store_id' => $store->id, 'product_id' => $product->id, 'quantity' => $initial]);
+                }
+            }
+        });
 
-        return back()->with('success', 'Produk berhasil ditambahkan.');
+        return back()->with('success', 'Produk berhasil ditambahkan'.((float) $initial > 0 ? ' dengan stok awal di '.$targets->pluck('name')->join(', ', ' dan ') : '').'.');
     }
 
     public function updateProduct(Request $request, Product $product)
@@ -1290,6 +1317,7 @@ class WarungController extends Controller
     public function importProducts(Request $request)
     {
         $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv,txt|max:5120']);
+        $targets = $this->stockTargetStores($request);
         $file = $request->file('file');
         if (in_array(strtolower($file->getClientOriginalExtension()), ['csv', 'txt'], true)) {
             // CSV dibaca sebagai teks: "12.500" tidak berubah menjadi 12,5 dan SKU 000777 tetap utuh.
@@ -1301,7 +1329,7 @@ class WarungController extends Controller
         }
         // Workbook outlet (sheet MATANG/MENTAH/SUPPORT/CV atau file "Stok ...") memakai format sendiri.
         if (OutletCatalogImporter::detects($book)) {
-            $result = (new OutletCatalogImporter($this->tenantId(), $this->storeId(), (int) auth()->id()))->import($book);
+            $result = (new OutletCatalogImporter($this->tenantId(), $targets->pluck('id')->all(), (int) auth()->id()))->import($book);
             $book->disconnectWorksheets();
 
             return back()->with('success', $result['message'])->with('import_notes', $result['notes']);
@@ -1316,7 +1344,7 @@ class WarungController extends Controller
         $priceRecords = $this->sheetRecords($book->getSheetByName('Pilihan Harga'));
         $book->disconnectWorksheets();
         $count = 0;
-        DB::transaction(function () use ($records, $storeRecords, $priceRecords, &$count) {
+        DB::transaction(function () use ($records, $storeRecords, $priceRecords, $targets, &$count) {
             foreach ($records as $record) {
                 $sku = $this->sheetText($record->get('sku'));
                 $name = $this->sheetText($record->get('name'));
@@ -1341,10 +1369,12 @@ class WarungController extends Controller
                     + ($record->has('icon') ? ['icon' => $icon] : [])
                 );
                 $initial = (float) ($this->sheetNumber($record->get('initial_stock')) ?? 0);
-                if ($product->product_type === 'menu') {
-                    DailyMenuStock::firstOrCreate(['tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id, 'stock_date' => today()], ['quantity' => $initial]);
-                } else {
-                    ProductStock::firstOrCreate(['tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id], ['quantity' => $initial]);
+                foreach ($targets as $store) {
+                    if ($product->product_type === 'menu') {
+                        DailyMenuStock::firstOrCreate(['tenant_id' => $this->tenantId(), 'store_id' => $store->id, 'product_id' => $product->id, 'stock_date' => today()], ['quantity' => $initial]);
+                    } else {
+                        ProductStock::firstOrCreate(['tenant_id' => $this->tenantId(), 'store_id' => $store->id, 'product_id' => $product->id], ['quantity' => $initial]);
+                    }
                 }
                 $count++;
             }
@@ -1352,7 +1382,7 @@ class WarungController extends Controller
             $this->importProductPrices($storeRecords, $priceRecords);
         });
 
-        return back()->with('success', $count.' produk berhasil diimpor/diperbarui.');
+        return back()->with('success', $count.' produk berhasil diimpor/diperbarui'.($targets->count() > 1 ? '; stok masuk ke '.$targets->pluck('name')->join(', ', ' dan ') : '').'.');
     }
 
     /** Sheet Harga Warung dan Pilihan Harga bersifat opsional; baris yang tidak dikenali dilewati. */
@@ -2599,6 +2629,8 @@ class WarungController extends Controller
             'tax_label' => 'required|string|max:30',
             'tax_types' => ['nullable', 'array'],
             'tax_types.*' => [Rule::in($types)],
+            'rounding_mode' => ['nullable', Rule::in(array_keys(Store::ROUNDING_MODES))],
+            'rounding_unit' => ['nullable', 'integer', Rule::in(Store::ROUNDING_UNITS)],
         ]);
         $store->update([
             'service_charge_percent' => $data['service_charge_percent'],
@@ -2606,9 +2638,11 @@ class WarungController extends Controller
             'tax_percent' => $data['tax_percent'],
             'tax_label' => trim($data['tax_label']),
             'tax_types' => array_values(array_intersect($types, $data['tax_types'] ?? [])),
+            'rounding_mode' => $data['rounding_mode'] ?? 'none',
+            'rounding_unit' => $data['rounding_unit'] ?? 100,
         ]);
 
-        return back()->with('success', 'Pajak & service '.$store->name.' berhasil diperbarui.');
+        return back()->with('success', 'Pajak, service & pembulatan '.$store->name.' berhasil diperbarui.');
     }
 
     public function storeBranch(Request $request)

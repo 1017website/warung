@@ -76,6 +76,9 @@ final class EposReceipt
         if ((float) $transaction->tax_amount > 0) {
             $lines[] = self::text(self::pair(($transaction->tax_label ?: 'Pajak').' ('.Qty::format($transaction->tax_percent).'%)', 'Rp '.self::money($transaction->tax_amount), $columns));
         }
+        if ((float) $transaction->rounding_amount != 0) {
+            $lines[] = self::text(self::pair('Pembulatan', ((float) $transaction->rounding_amount < 0 ? '-' : '').'Rp '.self::money(abs((float) $transaction->rounding_amount)), $columns));
+        }
         $lines[] = self::text(self::pair('TOTAL', 'Rp '.self::money($transaction->total), $columns), 'left', true);
         foreach ($transaction->payments as $payment) {
             $lines[] = self::text(self::pair(Str::upper($payment->method).($payment->provider ? ' '.$payment->provider : ''), 'Rp '.self::money($payment->amount), $columns));
@@ -142,9 +145,10 @@ final class EposReceipt
             $lines[] = self::text(self::pair('Otorisasi', $closing->authorizer?->name ?? '-', $columns));
         }
         $lines[] = self::rule($columns);
-        $lines[] = self::text('OMZET HARIAN', 'left', true);
+        // Rekap tutup kasir tidak mencetak penjualan produk & omzet (revisi 14 Oktober 2026).
+        $lines[] = self::text('RINGKASAN TRANSAKSI', 'left', true);
         $lines[] = self::text(self::pair('Transaksi selesai', (string) $summary['transactions'], $columns));
-        array_push($lines, ...self::turnoverLines($summary, $columns));
+        array_push($lines, ...self::turnoverLines($summary, $columns, false));
         $lines[] = self::rule($columns);
         $lines[] = self::text('KAS TUNAI', 'left', true);
         foreach ([
@@ -278,16 +282,18 @@ final class EposReceipt
         return $lines;
     }
 
-    /** Penjualan produk − diskon + service + pajak = omzet. */
-    private static function turnoverLines(array $totals, int $columns): array
+    /** Penjualan produk − diskon + service + pajak = omzet; tanpa $withTotals hanya diskon, service, dan pajak. */
+    private static function turnoverLines(array $totals, int $columns, bool $withTotals = true): array
     {
-        $lines = [self::text(self::pair('Penjualan produk', 'Rp '.self::money($totals['grossSales']), $columns))];
+        $lines = $withTotals ? [self::text(self::pair('Penjualan produk', 'Rp '.self::money($totals['grossSales']), $columns))] : [];
         foreach (['discount' => 'Diskon', 'serviceCharge' => 'Service', 'tax' => 'Pajak'] as $key => $label) {
             if ((float) $totals[$key] > 0) {
                 $lines[] = self::text(self::pair($label, ($key === 'discount' ? '-Rp ' : 'Rp ').self::money($totals[$key]), $columns));
             }
         }
-        $lines[] = self::text(self::pair('OMZET', 'Rp '.self::money($totals['turnover']), $columns), 'left', true);
+        if ($withTotals) {
+            $lines[] = self::text(self::pair('OMZET', 'Rp '.self::money($totals['turnover']), $columns), 'left', true);
+        }
 
         return $lines;
     }

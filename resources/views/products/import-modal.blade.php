@@ -32,7 +32,12 @@
                 <ul class="import-rules">@foreach($format['rules'] as $rule)<li>{{ $rule }}</li>@endforeach</ul>
             </div>
         @endforeach
-        <div class="import-step"><span class="import-step-no">2</span><div><b>Upload file</b><small>Stok dari kolom STOK / Stok Awal masuk ke cabang <strong>{{ $activeStore->name }}</strong>. Ganti cabang di kanan atas bila perlu.</small></div></div>
+        @if($priceStores->count() > 1)
+        <div class="import-step"><span class="import-step-no">2</span><div><b>Upload file &amp; pilih warung</b><small>Stok dari kolom STOK / Stok Awal dicatat di setiap warung yang dicentang.</small></div></div>
+        @include('products.stock-stores', ['label' => 'Stok masuk ke warung', 'hint' => 'Data produk dan harga tetap berlaku untuk semua warung; hanya stok yang mengikuti pilihan ini.'])
+        @else
+        <div class="import-step"><span class="import-step-no">2</span><div><b>Upload file</b><small>Stok dari kolom STOK / Stok Awal masuk ke cabang <strong>{{ $activeStore->name }}</strong>.</small></div></div>
+        @endif
         <input type="file" name="file" accept=".xlsx,.xls,.csv" required data-file-hint="Excel .xlsx / .xls atau .csv" data-max-mb="5">
         <button class="btn btn-primary import-submit"><i class="bi bi-upload"></i> Import &amp; perbarui</button>
     </form>

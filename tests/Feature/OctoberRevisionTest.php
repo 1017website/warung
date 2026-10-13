@@ -235,14 +235,16 @@ class OctoberRevisionTest extends TestCase
         // Omzet = seluruh nota selesai (tunai + non-tunai), bukan hanya kas laci.
         $this->actingAs($cashier)->get('/kasir/tutup-harian')->assertOk()
             ->assertSee('Omzet hari ini')->assertSee('Rp 60.000')->assertSee('/laporan/produk-terjual/cetak?paper=58', false);
+        // Cetakan rekap tutup kasir tidak menampilkan penjualan produk & omzet.
         $this->actingAs($cashier)->get('/kasir/tutup-harian/cetak?paper=a4')->assertOk()
-            ->assertSee('Omzet harian')->assertSee('Rp 60.000');
+            ->assertSee('Ringkasan transaksi')->assertDontSee('Omzet')->assertDontSee('Penjualan produk');
 
         $this->actingAs($admin)->post('/pengaturan/perangkat', ['name' => 'BT-58D', 'type' => 'receipt_printer', 'driver' => 'rawbt', 'store_id' => $cashier->store_id])->assertSessionHasNoErrors();
         preg_match('/intent:base64,([^#]+)#/', $this->actingAs($cashier)->get('/kasir/tutup-harian/cetak?paper=58')->viewData('rawbtUri'), $match);
         $bytes = base64_decode($match[1]);
-        $this->assertStringContainsString('OMZET HARIAN', $bytes);
-        $this->assertStringContainsString(str_pad('OMZET', 32 - strlen('Rp 60.000')).'Rp 60.000', $bytes);
+        $this->assertStringContainsString('RINGKASAN TRANSAKSI', $bytes);
+        $this->assertStringNotContainsString('OMZET', $bytes);
+        $this->assertStringNotContainsString('Penjualan produk', $bytes);
         $this->assertStringContainsString(str_pad('Tunai penjualan', 32 - strlen('Rp 20.000')).'Rp 20.000', $bytes);
     }
 

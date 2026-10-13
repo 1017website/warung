@@ -131,14 +131,12 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:t
     @endunless
 
     <section class="section turnover">
-        <h2>Omzet harian</h2>
+        <h2>Ringkasan transaksi</h2>
         <div class="figures">
             <div class="kv"><span>Transaksi selesai</span><span>{{ $summary['transactions'] }}</span></div>
-            <div class="kv"><span>Penjualan produk</span><span>{{ $rp($summary['grossSales']) }}</span></div>
             @if($summary['discount'] > 0)<div class="kv"><span>Diskon</span><span>{{ $rp(-$summary['discount']) }}</span></div>@endif
             @if($summary['serviceCharge'] > 0)<div class="kv"><span>Service</span><span>{{ $rp($summary['serviceCharge']) }}</span></div>@endif
             @if($summary['tax'] > 0)<div class="kv"><span>Pajak</span><span>{{ $rp($summary['tax']) }}</span></div>@endif
-            <div class="kv strong"><span>Omzet</span><span>{{ $rp($summary['turnover']) }}</span></div>
         </div>
     </section>
 

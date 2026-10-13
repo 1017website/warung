@@ -9,7 +9,7 @@ const line = (name) => source.match(new RegExp(`^function ${name}\\(.*$`, 'm'))[
 const start = source.indexOf('async function submitOrder(');
 const submitFunction = source.slice(start, source.indexOf('\n}', start) + 2);
 
-function totalsContext({ subtotal, serviceType, discountType = 'amount', discount = '0', replacement = false }) {
+function totalsContext({ subtotal, serviceType, discountType = 'amount', discount = '0', replacement = false, rounding = {} }) {
     const elements = {
         'discount-type': { value: discountType }, discount: { value: discount },
         'member-id': { selectedOptions: [{ dataset: { discount: '10' } }] }, 'replacement-mode': { checked: replacement },
@@ -17,7 +17,7 @@ function totalsContext({ subtotal, serviceType, discountType = 'amount', discoun
     const context = vm.createContext({
         serviceType,
         cart: new Map([['p1', { price: subtotal, qty: 1 }]]),
-        chargeConfig: { service_percent: 5, service_types: ['dine_in'], tax_percent: 10, tax_types: ['dine_in', 'takeaway', 'online'], tax_label: 'PB1' },
+        chargeConfig: { service_percent: 5, service_types: ['dine_in'], tax_percent: 10, tax_types: ['dine_in', 'takeaway', 'online'], tax_label: 'PB1', ...rounding },
         moneyValue: (input) => Number(String(input.value).replace(/\D/g, '') || 0),
         document: { getElementById: (id) => elements[id] },
     });
@@ -37,6 +37,27 @@ test('cashier totals match Store::chargesFor for service and tax', () => {
     assert.equal(takeaway.total, 99000);
 
     assert.equal(totalsContext({ subtotal: 100000, serviceType: 'dine_in', replacement: true }).total, 100000);
+});
+
+test('cashier rounding matches Store::roundTotal', () => {
+    // 20.000 + PB1 10% = 22.000; 20.200 + 2.020 = 22.220.
+    const run = (subtotal, mode, unit) => totalsContext({ subtotal, serviceType: 'takeaway', rounding: { rounding_mode: mode, rounding_unit: unit } });
+    assert.equal(run(20200, 'none', 500).total, 22220);
+    assert.equal(run(20200, 'none', 500).rounding, 0);
+    const up = run(20200, 'up', 500);
+    assert.equal(up.total, 22500);
+    assert.equal(up.rounding, 280);
+    assert.equal(run(20000, 'up', 500).rounding, 0);
+    const down = run(20200, 'down', 1000);
+    assert.equal(down.total, 22000);
+    assert.equal(down.rounding, -220);
+    assert.equal(run(20200, 'nearest', 500).total, 22000);
+    assert.equal(run(20500, 'nearest', 100).total, 22600);
+    // Pembulatan ke bawah tidak membuat tagihan menjadi nol; keranjang kosong tetap nol.
+    assert.equal(run(200, 'down', 1000).total, 220);
+    assert.equal(run(0, 'up', 1000).total, 0);
+    // Konfigurasi lama tanpa pembulatan tetap berjalan.
+    assert.equal(totalsContext({ subtotal: 20200, serviceType: 'takeaway' }).total, 22220);
 });
 
 function cartContext() {

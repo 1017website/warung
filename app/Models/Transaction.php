@@ -18,6 +18,7 @@ class Transaction extends Model
         'discount' => 'decimal:2',
         'service_charge' => 'decimal:2',
         'tax_amount' => 'decimal:2',
+        'rounding_amount' => 'decimal:2',
         'total' => 'decimal:2',
     ];
 
