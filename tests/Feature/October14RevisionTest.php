@@ -123,6 +123,71 @@ class October14RevisionTest extends TestCase
         $this->assertNull($this->menuStock($bakwan, $wts));
     }
 
+    private function stockFile(array $rows): UploadedFile
+    {
+        $book = new Spreadsheet;
+        $book->getActiveSheet()->setTitle('Stok')->fromArray(array_merge([['SKU', 'Nama', 'Jenis', 'Satuan', 'Stok Sistem', 'Jumlah']], $rows));
+        $path = tempnam(sys_get_temp_dir(), 'stok').'.xlsx';
+        (new Xlsx($book))->save($path);
+
+        return new UploadedFile($path, 'stok.xlsx', null, null, true);
+    }
+
+    public function test_stock_template_lists_products_with_current_balance(): void
+    {
+        ['admin' => $admin, 'wts' => $wts] = $this->setupWarung();
+        $this->actingAs($admin)->withSession(['store_id' => $wts->id])->get('/gudang')->assertOk()
+            ->assertSee('Import stok dari Excel')->assertSee(route('inventory.import-template'), false);
+
+        $response = $this->actingAs($admin)->withSession(['store_id' => $wts->id])->get('/gudang/import/template')->assertOk();
+        $path = tempnam(sys_get_temp_dir(), 'tpl').'.xlsx';
+        file_put_contents($path, $response->streamedContent());
+        $rows = \PhpOffice\PhpSpreadsheet\IOFactory::load($path)->getSheetByName('Stok')->toArray();
+        $this->assertSame(['SKU', 'Nama', 'Jenis', 'Satuan', 'Stok Sistem', 'Jumlah'], $rows[0]);
+        $this->assertSame(['NA-1', 'Nasi Ayam', 'Olahan', 'porsi', '20', null], $rows[1]);
+    }
+
+    public function test_stock_import_sets_or_adds_stock_in_selected_stores(): void
+    {
+        ['tenant' => $tenant, 'admin' => $admin, 'wts' => $wts, 'psl' => $psl, 'wka' => $wka, 'menu' => $menu] = $this->setupWarung();
+        // SKU yang sama dipakai bahan baku dan menu (format workbook outlet).
+        $ayam = Product::create([
+            'tenant_id' => $tenant->id, 'name' => 'Ayam Karkas', 'product_type' => 'ingredient', 'sku' => 'NA-1',
+            'unit' => 'ekor', 'purchase_price' => 30000, 'selling_price' => 0, 'minimum_stock' => 1, 'is_active' => true,
+        ]);
+        ProductStock::create(['tenant_id' => $tenant->id, 'store_id' => $wts->id, 'product_id' => $ayam->id, 'quantity' => 4]);
+
+        $this->actingAs($admin)->withSession(['store_id' => $wts->id])->post('/gudang/import', [
+            'mode' => 'set', 'stock_store_ids' => [$wts->id, $psl->id],
+            'file' => $this->stockFile([
+                ['NA-1', 'Nasi Ayam', 'Olahan', 'porsi', 20, 12],
+                ['NA-1', 'Ayam Karkas', 'Bahan baku', 'ekor', 4, 9],
+                ['XX-9', 'Tidak Ada', '', '', 0, 5],
+                ['NA-1', 'Nasi Ayam', 'Olahan', 'porsi', 20, null],
+            ]),
+        ])->assertSessionHasNoErrors()->assertSessionHas('success', 'Stok 2 produk disetel di PSL dan WTS.')
+            ->assertSessionHas('import_notes', ['Baris 4: SKU XX-9 tidak ditemukan, dilewati.']);
+
+        $this->assertSame(12.0, $this->menuStock($menu, $wts));
+        $this->assertSame(12.0, $this->menuStock($menu, $psl));
+        $this->assertNull($this->menuStock($menu, $wka));
+        $this->assertEquals(9, ProductStock::where('store_id', $wts->id)->where('product_id', $ayam->id)->value('quantity'));
+        $this->assertEquals(9, ProductStock::where('store_id', $psl->id)->where('product_id', $ayam->id)->value('quantity'));
+        $this->assertDatabaseHas('stock_counts', ['store_id' => $wts->id, 'product_id' => $menu->id, 'expected_quantity' => 20, 'actual_quantity' => 12]);
+        $this->assertDatabaseHas('stock_movements', ['store_id' => $wts->id, 'product_id' => $menu->id, 'activity' => 'stock_opname', 'quantity' => -8]);
+
+        // Mode tambah: jumlah ditambahkan dan tercatat sebagai stok datang. Tanpa kolom Jenis, SKU ganda dibedakan lewat nama.
+        $this->actingAs($admin)->withSession(['store_id' => $wts->id])->post('/gudang/import', [
+            'mode' => 'add', 'file' => $this->stockFile([['NA-1', 'Ayam Karkas', '', '', '', 3], ['NA-1', 'Lain', '', '', '', 1]]),
+        ])->assertSessionHas('success', 'Stok 1 produk ditambah di WTS.')
+            ->assertSessionHas('import_notes', ['Baris 3: SKU NA-1 dipakai beberapa produk; isi kolom Jenis, dilewati.']);
+        $this->assertEquals(12, ProductStock::where('store_id', $wts->id)->where('product_id', $ayam->id)->value('quantity'));
+        $this->assertEquals(9, ProductStock::where('store_id', $psl->id)->where('product_id', $ayam->id)->value('quantity'));
+        $this->assertDatabaseHas('stock_movements', ['store_id' => $wts->id, 'product_id' => $ayam->id, 'activity' => 'adjustment', 'quantity' => 3]);
+
+        $this->actingAs($admin)->post('/gudang/import', ['mode' => 'replace', 'file' => $this->stockFile([])])->assertSessionHasErrors('mode');
+    }
+
     public function test_round_total_modes(): void
     {
         $store = new Store(['rounding_mode' => 'up', 'rounding_unit' => 500]);

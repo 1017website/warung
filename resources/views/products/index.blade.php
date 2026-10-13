@@ -81,8 +81,6 @@
 @push('scripts')
 <script>
 window.MENU_ICONS={bootstrap:@json(\App\Support\MenuIcon::OPTIONS),emoji:@json(\App\Support\MenuIcon::EMOJI)};
-document.querySelectorAll('[data-store-check]').forEach(button=>button.addEventListener('click',()=>button.closest('.stock-store-picker').querySelectorAll('input[name="stock_store_ids[]"]').forEach(input=>input.checked=button.dataset.storeCheck==='all')));
-document.querySelectorAll('.stock-store-picker').forEach(picker=>picker.closest('form').addEventListener('submit',event=>{if(!picker.querySelector('input:checked')){event.preventDefault();alert('Pilih minimal satu warung tujuan stok.')}}));
 function filterRows(q){document.querySelectorAll('#product-table tbody tr').forEach(r=>r.style.display=r.innerText.toLowerCase().includes(q.toLowerCase())?'':'none')}
 document.querySelectorAll('.edit-product').forEach(button=>button.addEventListener('click',()=>{
     const d=button.dataset;

@@ -332,3 +332,21 @@ document.addEventListener('click', (event) => {
         panel.hidden = panel.dataset.importPanel !== tab.dataset.importTab;
     });
 });
+
+// Pemilih warung tujuan stok (Produk & Gudang): tombol pilih semua/kosongkan dan minimal satu warung.
+window.initializeStockStorePickers = (root = document) => {
+    root.querySelectorAll('.stock-store-picker:not([data-ready])').forEach((picker) => {
+        picker.dataset.ready = '1';
+        const boxes = () => picker.querySelectorAll('input[name="stock_store_ids[]"]');
+        picker.querySelectorAll('[data-store-check]').forEach((button) => button.addEventListener('click', () => {
+            boxes().forEach((input) => { input.checked = button.dataset.storeCheck === 'all'; });
+        }));
+        picker.closest('form')?.addEventListener('submit', (event) => {
+            if (![...boxes()].some((input) => input.checked)) {
+                event.preventDefault();
+                alert('Pilih minimal satu warung tujuan stok.');
+            }
+        });
+    });
+};
+document.addEventListener('DOMContentLoaded', () => window.initializeStockStorePickers());

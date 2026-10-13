@@ -183,17 +183,29 @@
 @media (max-width:760px){.product-filter{grid-template-columns:1fr 1fr}.product-filter .search{grid-column:1/-1}}
 .reservation-pick .list-body{display:flex;flex-direction:column;flex:1;min-width:0}
 .reservation-pick .list-body small{color:var(--muted,#6b7a8c)}
-/* Scrollbar tipis sesuai tema (revisi Oktober 2026): scrollbar bawaan Windows tampil tebal dan terang di sidebar gelap. */
-:root{--scroll-thumb:#c5cedb;--scroll-thumb-hover:#9aa8bd}
-html,.table-wrap,.modal-card,.cart-items,.price-picker-list,.list{scrollbar-width:thin;scrollbar-color:var(--scroll-thumb) transparent}
+/* Scrollbar sesuai tema (revisi 14 Oktober 2026). Chrome/Edge 121+ mengabaikan ::-webkit-scrollbar
+   bila scrollbar-width/scrollbar-color diisi, jadi properti standar hanya dipakai browser tanpa
+   ::-webkit-scrollbar (Firefox). */
+:root{--scroll-track:#eef2f8;--scroll-thumb:#b9c4d8;--scroll-thumb-hover:#637ba8;--scroll-thumb-active:#465d8b}
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--scroll-thumb);border:2px solid transparent;border-radius:10px;background-clip:padding-box}
+::-webkit-scrollbar-thumb{background-color:var(--scroll-thumb);border:2px solid transparent;border-radius:999px;background-clip:padding-box;min-height:40px;min-width:40px}
 ::-webkit-scrollbar-thumb:hover{background-color:var(--scroll-thumb-hover)}
-.sidebar .nav{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent;margin-right:-8px;padding-right:4px}
+::-webkit-scrollbar-thumb:active{background-color:var(--scroll-thumb-active)}
+::-webkit-scrollbar-corner{background:transparent}
+::-webkit-scrollbar-button{display:none;width:0;height:0}
+.table-wrap::-webkit-scrollbar-track,.modal-card::-webkit-scrollbar-track,.cart-items::-webkit-scrollbar-track{background:var(--scroll-track);border-radius:999px}
+.table-wrap::-webkit-scrollbar{height:12px}
+.table-wrap::-webkit-scrollbar-thumb{border-width:3px}
+.modal-card::-webkit-scrollbar-track{margin:14px 0}
+.sidebar .nav{margin-right:-8px;padding-right:4px}
 .sidebar .nav::-webkit-scrollbar{width:6px}
-.sidebar .nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border:0}
-.sidebar .nav::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.38)}
+.sidebar .nav::-webkit-scrollbar-thumb{background-color:rgba(255,255,255,.22);border:0}
+.sidebar .nav::-webkit-scrollbar-thumb:hover{background-color:rgba(255,255,255,.4)}
+@supports not selector(::-webkit-scrollbar){
+    html,.table-wrap,.modal-card,.cart-items,.price-picker-list,.list{scrollbar-width:thin;scrollbar-color:var(--scroll-thumb) var(--scroll-track)}
+    .sidebar .nav{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.22) transparent}
+}
 /* Layar laptop pendek: menu dirapatkan agar seluruh menu Superadmin muat tanpa scroll. */
 @media (max-height:760px){.sidebar{padding-top:16px;padding-bottom:14px}.sidebar .brand{padding-bottom:12px}.sidebar .nav-label{padding-top:2px}.sidebar .nav{gap:2px}.sidebar .nav a{min-height:34px}.sidebar .nav-icon{width:24px;height:24px}.sidebar-footer{padding-top:10px}}
 /* Upload file (revisi Oktober 2026): area klik/seret untuk semua <input type="file">. */
@@ -269,3 +281,13 @@ html,.table-wrap,.modal-card,.cart-items,.price-picker-list,.list{scrollbar-widt
 .store-target-list .inventory-note{margin:0;cursor:pointer}
 .store-target-actions{display:flex;gap:8px;margin-top:6px}
 .store-stock-list{display:flex;flex-wrap:wrap;gap:4px;max-width:260px}
+/* Tabel stok lebar: header dan kolom nama tetap terlihat, scrollbar horizontal selalu di layar. */
+.inventory-table-wrap{max-height:calc(100vh - 170px);overflow:auto;border-radius:12px}
+.inventory-table-wrap thead th{position:sticky;top:0;z-index:2}
+.inventory-table-wrap tbody td:first-child{position:sticky;left:0;z-index:1;background:#fff;box-shadow:1px 0 0 var(--line,#e2e7f0)}
+.inventory-table-wrap thead th:first-child{left:0;z-index:3;box-shadow:1px 0 0 var(--line,#e2e7f0)}
+@media(max-width:760px){.inventory-table-wrap{max-height:70vh}.inventory-table-wrap tbody td:first-child{position:static;box-shadow:none}.inventory-table-wrap thead th:first-child{left:auto;box-shadow:none}}
+.stock-import-mode{grid-template-columns:1fr 1fr;margin:4px 0 12px}
+.stock-import-mode .service-option span{line-height:1.3}
+.stock-import-mode .service-option small{font-weight:500;color:var(--muted,#74819a)}
+.import-form .stock-store-picker{margin-bottom:12px}

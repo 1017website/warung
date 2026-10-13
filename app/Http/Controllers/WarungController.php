@@ -1462,8 +1462,9 @@ class WarungController extends Controller
             ->select('stock_movements.*', 'products.name as product_name')->latest('stock_movements.created_at')->take(12)->get();
         $productions = StockProduction::with(['ingredient', 'menu'])->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->latest()->take(10)->get();
         $canEditOpening = auth()->user()->canManageOpeningStock();
+        $priceStores = $this->stores();
 
-        return $this->view('inventory.index', compact('ingredientStocks', 'menuStocks', 'inventoryProducts', 'movements', 'productions', 'canEditOpening'));
+        return $this->view('inventory.index', compact('ingredientStocks', 'menuStocks', 'inventoryProducts', 'movements', 'productions', 'canEditOpening', 'priceStores'));
     }
 
     public function adjustStock(Request $request)
@@ -1711,6 +1712,145 @@ class WarungController extends Controller
         });
 
         return back()->with('success', 'Stock opname tersimpan dan saldo sistem direset ke stok fisik.');
+    }
+
+    /**
+     * Template impor stok: semua produk aktif beserta saldo cabang aktif. Kolom Jumlah
+     * sengaja kosong; baris yang tidak diisi dilewati saat impor sehingga stok lain aman.
+     */
+    public function stockImportTemplate()
+    {
+        $this->prepareDailyMenuStocks();
+        $storeId = $this->storeId();
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet()->setTitle('Stok');
+        $sheet->fromArray(['SKU', 'Nama', 'Jenis', 'Satuan', 'Stok Sistem', 'Jumlah'], null, 'A1');
+        $row = 2;
+        Product::with([
+            'stocks' => fn ($q) => $q->where('store_id', $storeId),
+            'dailyStocks' => fn ($q) => $q->where('store_id', $storeId)->whereDate('stock_date', today()),
+        ])->where('tenant_id', $this->tenantId())->where('is_active', true)->orderBy('product_type')->orderBy('name')
+            ->each(function (Product $product) use ($sheet, &$row) {
+                $isMenu = $product->product_type === 'menu';
+                $balance = (float) (($isMenu ? $product->dailyStocks : $product->stocks)->first()?->quantity ?? 0);
+                $sheet->setCellValueExplicit('A'.$row, $product->sku, DataType::TYPE_STRING);
+                $sheet->fromArray([[$product->name, $isMenu ? 'Olahan' : 'Bahan baku', $product->unit, $balance]], null, 'B'.$row++);
+            });
+        $sheet->getStyle('A1:F1')->getFont()->setBold(true);
+        $sheet->getStyle('F1:F'.max(2, $row - 1))->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('FFF4D6');
+        $sheet->freezePane('A2');
+        foreach (range('A', 'F') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+        $sheet->getComment('F1')->getText()->createText('Isi hanya baris yang ingin diubah. Kosong = dilewati.');
+
+        return SpreadsheetDownload::response($spreadsheet, 'stok-'.Str::slug($this->activeStoreRecord()->name).'-'.now()->format('Ymd').'.xlsx');
+    }
+
+    /**
+     * Impor stok dari Excel ke satu atau beberapa warung. Mode "set" menyetel sisa stok ke
+     * angka di file (dicatat sebagai stock opname); mode "add" menambah stok seperti barang
+     * datang. Produk dicocokkan lewat SKU; kolom Jenis/Nama membedakan SKU yang dipakai
+     * bahan baku sekaligus menu.
+     */
+    public function importStock(Request $request)
+    {
+        $data = $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv,txt|max:5120',
+            'mode' => ['required', Rule::in(['set', 'add'])],
+        ]);
+        $targets = $this->stockTargetStores($request);
+        $file = $request->file('file');
+        if (in_array(strtolower($file->getClientOriginalExtension()), ['csv', 'txt'], true)) {
+            $reader = IOFactory::createReader('Csv');
+            $reader->setValueBinder(new StringValueBinder);
+            $book = $reader->load($file->getRealPath());
+        } else {
+            $book = IOFactory::load($file->getRealPath());
+        }
+        $records = $this->sheetRecords($book->getSheetByName('Stok') ?? $book->getSheet(0), [
+            'nama' => 'name', 'nama_produk' => 'name', 'jenis' => 'product_type', 'jumlah' => 'quantity', 'qty' => 'quantity',
+            'stok' => 'quantity', 'stok_fisik' => 'quantity', 'stok_baru' => 'quantity', 'sisa_stok' => 'quantity',
+        ]);
+        $book->disconnectWorksheets();
+
+        $products = Product::where('tenant_id', $this->tenantId())->where('is_active', true)->get();
+        $notes = [];
+        $count = 0;
+        DB::transaction(function () use ($records, $products, $targets, $data, &$notes, &$count) {
+            foreach ($records as $index => $record) {
+                $line = 'Baris '.($index + 2);
+                $sku = $this->sheetText($record->get('sku'));
+                $quantity = $this->sheetNumber($record->get('quantity'));
+                if ($sku === '' || $quantity === null) {
+                    continue;
+                }
+                if ($quantity < 0 || ($data['mode'] === 'add' && $quantity == 0)) {
+                    $notes[] = "{$line}: jumlah {$sku} tidak valid, dilewati.";
+
+                    continue;
+                }
+                $type = $this->stockImportType($this->sheetText($record->get('product_type')));
+                $matches = $products->filter(fn (Product $product) => strcasecmp($product->sku, $sku) === 0 && (! $type || $product->product_type === $type));
+                $ambiguous = $matches->count() > 1;
+                if ($ambiguous) {
+                    $name = Str::lower($this->sheetText($record->get('name')));
+                    $matches = $matches->filter(fn (Product $product) => Str::lower($product->name) === $name);
+                }
+                if ($matches->count() !== 1) {
+                    $notes[] = "{$line}: SKU {$sku} ".($ambiguous ? 'dipakai beberapa produk; isi kolom Jenis' : 'tidak ditemukan').', dilewati.';
+
+                    continue;
+                }
+                foreach ($targets as $store) {
+                    $this->applyImportedStock($matches->first(), $store->id, (float) $quantity, $data['mode']);
+                }
+                $count++;
+            }
+        }, 3);
+
+        $verb = $data['mode'] === 'set' ? 'disetel' : 'ditambah';
+
+        return back()->with('success', $count ? "Stok {$count} produk {$verb} di ".$targets->pluck('name')->join(', ', ' dan ').'.' : 'Tidak ada baris stok yang diimpor. Isi kolom Jumlah pada produk yang ingin diubah.')
+            ->with('import_notes', array_slice($notes, 0, 30));
+    }
+
+    private function stockImportType(string $value): ?string
+    {
+        $value = Str::lower($value);
+
+        return match (true) {
+            $value === '' => null,
+            in_array($value, ['menu', 'olahan', 'matang', 'menu harian'], true) => 'menu',
+            in_array($value, ['ingredient', 'bahan baku', 'bahan', 'mentah'], true) => 'ingredient',
+            default => null,
+        };
+    }
+
+    private function applyImportedStock(Product $product, int $storeId, float $quantity, string $mode): void
+    {
+        $stock = $product->product_type === 'menu'
+            ? $this->menuStockForDate($product->id, null, $storeId)
+            : ProductStock::firstOrCreate(['tenant_id' => $this->tenantId(), 'store_id' => $storeId, 'product_id' => $product->id], ['quantity' => 0]);
+        $stock = $stock->newQuery()->whereKey($stock->id)->lockForUpdate()->firstOrFail();
+        $expected = (float) $stock->quantity;
+        if ($mode === 'set') {
+            StockCount::updateOrCreate(
+                ['store_id' => $storeId, 'product_id' => $product->id, 'count_date' => today()],
+                ['tenant_id' => $this->tenantId(), 'user_id' => auth()->id(), 'expected_quantity' => $expected, 'actual_quantity' => $quantity, 'notes' => 'Impor Excel stok']
+            );
+        }
+        $delta = $mode === 'set' ? $quantity - $expected : $quantity;
+        if (abs($delta) <= 0.0005) {
+            return;
+        }
+        $stock->update(['quantity' => $expected + $delta]);
+        DB::table('stock_movements')->insert([
+            'tenant_id' => $this->tenantId(), 'store_id' => $storeId, 'product_id' => $product->id, 'user_id' => auth()->id(),
+            'type' => $delta > 0 ? 'adjustment_in' : 'adjustment_out', 'activity' => $mode === 'set' ? 'stock_opname' : 'adjustment',
+            'quantity' => $delta, 'reference' => 'IMPORT-STOK-'.today()->format('Ymd'),
+            'notes' => $mode === 'set' ? 'Stok disetel dari impor Excel' : 'Stok ditambah dari impor Excel', 'created_at' => now(), 'updated_at' => now(),
+        ]);
     }
 
     public function purchases()

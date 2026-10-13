@@ -99,6 +99,8 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureInitialSetup::class])->gro
         Route::post('/gudang/reprocess', [WarungController::class, 'reprocessStock'])->name('inventory.reprocess');
         Route::post('/gudang/count', [WarungController::class, 'storeStockCount'])->name('inventory.count');
         Route::post('/gudang/rusak', [WarungController::class, 'storeWaste'])->name('inventory.waste');
+        Route::get('/gudang/import/template', [WarungController::class, 'stockImportTemplate'])->name('inventory.import-template');
+        Route::post('/gudang/import', [WarungController::class, 'importStock'])->name('inventory.import');
     });
 
     Route::middleware('module:assets')->group(function () {

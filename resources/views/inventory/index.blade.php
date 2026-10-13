@@ -2,12 +2,14 @@
 @section('title', 'Stok / Gudang')
 @section('content')
 @php($qtyFmt=fn($value)=>rtrim(rtrim(number_format((float)$value,3,',','.'),'0'),','))
+@if(session('import_notes'))<div class="alert alert-error"><b>Catatan impor:</b><ul style="margin:6px 0 0 18px">@foreach(session('import_notes') as $note)<li>{{ $note }}</li>@endforeach</ul></div>@endif
 <div class="page-head">
     <div>
         <h1><i class="bi bi-box-seam"></i> Stok bahan baku & olahan</h1>
         <p>Kolom input dapat diedit langsung; kolom perhitungan diperbarui otomatis dari pergerakan stok.</p>
     </div>
     <div class="actions">
+        <button class="btn btn-soft" onclick="openModal('stock-import-modal')"><i class="bi bi-file-earmark-arrow-up"></i> Import Excel</button>
         <button class="btn btn-soft" onclick="openModal('count-modal')"><i class="bi bi-clipboard-check"></i> Stock opname</button>
         <button class="btn btn-soft" onclick="openModal('adjust-modal')"><i class="bi bi-sliders2"></i> Penyesuaian</button>
         <button class="btn btn-soft" onclick="openModal('reprocess-modal')"><i class="bi bi-recycle"></i> Proses ulang</button>
@@ -25,7 +27,7 @@
 <section class="card card-pad" style="margin-bottom:16px">
     <div class="card-title"><div><h2>Stok bahan baku</h2><p>Stok terolah dihitung dari produksi; stok terpakai dan keterangan dapat di-live edit.</p></div><span class="badge gray">{{ $ingredientStocks->count() }} bahan</span></div>
     <div class="inventory-note"><i class="bi bi-info-circle"></i><span>Stok awal otomatis mengambil sisa hari sebelumnya. Koreksi stok awal hanya tersedia bagi Admin Operasional dan jenjang di atasnya. Kolom <b>Rusak / tidak layak</b> diisi manual untuk bahan yang tidak bisa diproses ulang dan langsung mengurangi sisa stok. Stock opname mereset saldo sistem ke sisa fisik.</span></div>
-    <div class="table-wrap"><table class="inventory-live-table"><thead><tr><th>SKU / bahan baku</th><th>Kategori</th><th>Stok awal</th><th>Stok datang</th><th>Stok terpakai</th><th>Stok terolah</th><th>Rusak / tidak layak</th><th>Sisa stok</th><th>Keterangan</th><th>Status</th></tr></thead><tbody>
+    <div class="table-wrap inventory-table-wrap"><table class="inventory-live-table"><thead><tr><th>SKU / bahan baku</th><th>Kategori</th><th>Stok awal</th><th>Stok datang</th><th>Stok terpakai</th><th>Stok terolah</th><th>Rusak / tidak layak</th><th>Sisa stok</th><th>Keterangan</th><th>Status</th></tr></thead><tbody>
     @forelse($ingredientStocks as $stock)
         @php($min=$stock->product->minimum_stock)
         @php($status=$stock->quantity<=0?'KOSONG':($stock->quantity<=max(1,$min/2)?'Tidak aman':($stock->quantity<=$min?'Perlu perhatian':'Aman')))
@@ -51,7 +53,7 @@
 
 <section class="card card-pad">
     <div class="card-title"><div><h2>Stok olahan hari ini</h2><p>Rumus: stok awal + tambahan/hasil proses ulang − terjual − konsumsi − diproses ulang − rusak / tidak layak.</p></div><span class="badge">{{ today()->translatedFormat('d F Y') }}</span></div>
-    <div class="table-wrap"><table class="inventory-live-table"><thead><tr><th>SKU / olahan</th><th>Kategori</th><th>Stok awal</th><th>Tambahan olahan</th><th>Terjual</th><th>Konsumsi</th><th>Diproses ulang</th><th>Rusak / tidak layak</th><th>Sisa sistem</th><th>Sisa fisik</th><th>Selisih SO</th><th>Keterangan</th><th>Status</th></tr></thead><tbody>
+    <div class="table-wrap inventory-table-wrap"><table class="inventory-live-table"><thead><tr><th>SKU / olahan</th><th>Kategori</th><th>Stok awal</th><th>Tambahan olahan</th><th>Terjual</th><th>Konsumsi</th><th>Diproses ulang</th><th>Rusak / tidak layak</th><th>Sisa sistem</th><th>Sisa fisik</th><th>Selisih SO</th><th>Keterangan</th><th>Status</th></tr></thead><tbody>
     @forelse($menuStocks as $stock)
         @php($actual=$stock->count?->actual_quantity)
         @php($difference=$actual===null?null:(float)$stock->count->expected_quantity-(float)$actual)
@@ -85,6 +87,20 @@
 @endsection
 
 @push('modals')
+<div class="modal" id="stock-import-modal"><div class="modal-card import-card">
+    <div class="modal-head"><div><h2>Import stok dari Excel</h2><div class="hint">Perbarui stok banyak bahan baku & olahan sekaligus.</div></div><button class="modal-close" type="button" onclick="closeModal('stock-import-modal')" aria-label="Tutup">×</button></div>
+    <form method="POST" action="{{ route('inventory.import') }}" enctype="multipart/form-data" class="import-form">@csrf
+        <div class="import-step"><span class="import-step-no">1</span><div><b>Download template</b><small>Berisi semua produk aktif dan stok sistem {{ $activeStore->name }} saat ini. Isi kolom <b>Jumlah</b> hanya pada produk yang ingin diubah; baris kosong dilewati.</small></div></div>
+        <div class="actions"><a class="btn btn-soft btn-sm" href="{{ route('inventory.import-template') }}"><i class="bi bi-file-earmark-arrow-down"></i> Download template stok</a></div>
+        <ul class="import-rules"><li>Kolom wajib: <code>SKU</code> dan <code>Jumlah</code>. Kolom <code>Jenis</code> (Olahan / Bahan baku) membedakan SKU yang dipakai menu sekaligus bahan baku.</li><li>Produk baru ditambahkan lewat menu Produk → Import Excel.</li></ul>
+        <div class="import-step"><span class="import-step-no">2</span><div><b>Pilih cara impor</b><small>Semua perubahan tercatat di pergerakan stok.</small></div></div>
+        <div class="service-grid stock-import-mode"><label class="service-option active"><input type="radio" name="mode" value="set" checked hidden><i class="bi bi-clipboard-check"></i><span>Setel sisa stok<br><small>Jumlah = stok fisik (stock opname)</small></span></label><label class="service-option"><input type="radio" name="mode" value="add" hidden><i class="bi bi-plus-circle"></i><span>Tambah stok<br><small>Jumlah ditambahkan ke stok sekarang</small></span></label></div>
+        @include('products.stock-stores', ['label' => 'Stok diperbarui di warung', 'hint' => 'Jumlah yang sama diterapkan ke setiap warung yang dicentang.', 'isConsolidated' => false])
+        <div class="import-step"><span class="import-step-no">3</span><div><b>Upload file</b><small>Excel .xlsx / .xls atau .csv, maksimal 5 MB.</small></div></div>
+        <input type="file" name="file" accept=".xlsx,.xls,.csv" required data-file-hint="Excel .xlsx / .xls atau .csv" data-max-mb="5">
+        <button class="btn btn-primary import-submit"><i class="bi bi-upload"></i> Import stok</button>
+    </form>
+</div></div>
 <div class="modal" id="production-modal"><div class="modal-card"><div class="modal-head"><div><h2>Catat produksi olahan</h2><div class="hint">Bahan baku berkurang dan stok menu bertambah dalam satu proses.</div></div><button class="modal-close" onclick="closeModal('production-modal')">×</button></div><form method="POST" action="{{ route('inventory.production') }}" class="form-grid">@csrf<div class="field full"><label>Bahan baku</label><select name="ingredient_product_id" required>@foreach($inventoryProducts->where('product_type','ingredient') as $product)<option value="{{ $product->id }}">{{ $product->name }} ({{ $product->unit }})</option>@endforeach</select></div><div class="field"><label>Jumlah terolah</label><input type="number" name="ingredient_quantity" min="0.001" step="0.001" required></div><div class="field"><label>Olahan / menu tujuan</label><select name="menu_product_id" required>@foreach($inventoryProducts->where('product_type','menu') as $product)<option value="{{ $product->id }}">{{ $product->name }}</option>@endforeach</select></div><div class="field"><label>Tambahan olahan</label><input type="number" name="output_quantity" min="0.001" step="0.001" required></div><div class="field"><label>Keterangan</label><input name="notes" placeholder="Opsional"></div><div class="field full"><button class="btn btn-primary">Simpan produksi</button></div></form></div></div>
 <div class="modal" id="reprocess-modal"><div class="modal-card"><div class="modal-head"><div><h2>Catat proses ulang</h2><div class="hint">Stok olahan sumber berkurang dan stok olahan tujuan bertambah.</div></div><button class="modal-close" onclick="closeModal('reprocess-modal')">×</button></div><form method="POST" action="{{ route('inventory.reprocess') }}" class="form-grid">@csrf<div class="field full"><label>Olahan sumber</label><select name="source_product_id" required>@foreach($inventoryProducts->where('product_type','menu') as $product)<option value="{{ $product->id }}">{{ $product->name }} ({{ $product->unit }})</option>@endforeach</select></div><div class="field"><label>Qty diproses ulang</label><input type="number" name="source_quantity" min="0.001" step="0.001" required></div><div class="field"><label>Olahan tujuan</label><select name="target_product_id" required>@foreach($inventoryProducts->where('product_type','menu') as $product)<option value="{{ $product->id }}">{{ $product->name }} ({{ $product->unit }})</option>@endforeach</select></div><div class="field"><label>Qty hasil</label><input type="number" name="output_quantity" min="0.001" step="0.001" required></div><div class="field full"><label>Keterangan</label><input name="notes" required placeholder="Contoh: lauk hancur diolah menjadi nasi goreng"></div><div class="field full"><button class="btn btn-primary">Simpan proses ulang</button></div></form></div></div>
 <div class="modal" id="waste-modal"><div class="modal-card" style="max-width:520px"><div class="modal-head"><div><h2>Catat bahan rusak / tidak layak</h2><div class="hint">Untuk bahan yang tidak bisa diproses ulang. Jumlah menambah kolom Rusak hari ini dan mengurangi sisa stok.</div></div><button class="modal-close" onclick="closeModal('waste-modal')">×</button></div><form method="POST" action="{{ route('inventory.waste') }}" class="form-grid">@csrf
@@ -106,6 +122,7 @@ function filterWasteProducts(){
     if(select.selectedOptions[0]?.hidden)select.value=[...select.options].find(option=>!option.hidden)?.value||'';
 }
 document.querySelectorAll('#waste-modal [name=stock_type]').forEach(input=>input.addEventListener('change',filterWasteProducts));
+document.querySelectorAll('#stock-import-modal [name=mode]').forEach(input=>input.addEventListener('change',()=>document.querySelectorAll('#stock-import-modal .service-option').forEach(option=>option.classList.toggle('active',option.querySelector('input').checked))));
 filterWasteProducts();
 const inventorySearch=document.getElementById('inventory-search'),inventoryStatus=document.getElementById('inventory-status-filter');
 function filterInventory(){
