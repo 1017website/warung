@@ -62,10 +62,10 @@
             <td><div class="cell-main">{{ $stock->product->name }}</div><div class="cell-sub">{{ $stock->product->sku }} · {{ $stock->product->unit }}</div></td>
             <td>{{ $stock->product->category?->name ?? 'Menu' }}</td>
             <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="opening_quantity" value="{{ (float)$stock->opening }}" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}" @disabled(!$canEditOpening) title="{{ $canEditOpening?'Edit stok awal':'Khusus Admin Operasional' }}"></td>
-            <td>{{ $qtyFmt($stock->produced) }}</td>
+            <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="produced_quantity" value="{{ (float)$stock->produced }}" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}" title="Total tambahan olahan hari ini"></td>
             <td>{{ $qtyFmt($stock->sold) }}</td>
-            <td>{{ $qtyFmt($stock->consumption) }}</td>
-            <td>{{ $qtyFmt($stock->reprocessed) }}</td>
+            <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="consumption_quantity" value="{{ (float)$stock->consumption }}" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}" title="Total konsumsi owner/karyawan hari ini"></td>
+            <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="reprocessed_quantity" value="{{ (float)$stock->reprocessed }}" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}" title="Total diproses ulang hari ini"></td>
             <td><input class="inventory-live-input waste-input" type="number" min="0" step="0.001" name="waste_quantity" value="{{ (float)$stock->waste }}" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}" title="Total rusak / tidak layak hari ini"></td>
             <td class="money"><span data-stock-balance="{{ $stock->product_id }}">{{ $qtyFmt($stock->quantity) }}</span> {{ $stock->product->unit }}</td>
             <td class="money">{{ $actual===null?'—':$qtyFmt($actual).' '.$stock->product->unit }}</td>
@@ -77,6 +77,27 @@
         <tr><td colspan="13"><div class="cart-empty">Belum ada menu aktif.</div></td></tr>
     @endforelse
     <tr class="inventory-search-empty" hidden><td colspan="13"><div class="cart-empty">Tidak ada olahan yang cocok dengan pencarian.</div></td></tr>
+    </tbody></table></div>
+</section>
+
+<section class="card card-pad" id="riwayat-edit" style="margin-top:16px">
+    <div class="card-title"><div><h2>Riwayat edit stok</h2><p>Setiap perubahan kolom yang diedit langsung di tabel: siapa, kapan, dan nilai sebelum → sesudah.</p></div>
+        <form method="GET" action="{{ route('inventory') }}#riwayat-edit" class="actions"><input type="date" name="riwayat_tanggal" value="{{ $historyDate->toDateString() }}" max="{{ today()->toDateString() }}" onchange="this.form.submit()" aria-label="Tanggal riwayat"><span class="badge gray">{{ $editLogs->count() }} perubahan</span></form>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>Waktu</th><th>Pengguna</th><th>Produk</th><th>Kolom</th><th>Sebelum</th><th>Sesudah</th></tr></thead><tbody>
+    @forelse($editLogs as $log)
+        @php($isNotes=$log->field==='notes')
+        <tr>
+            <td>{{ $log->created_at->format('H:i') }}<div class="cell-sub">{{ $log->created_at->translatedFormat('d M Y') }}</div></td>
+            <td><div class="cell-main">{{ $log->user?->name ?? 'Sistem' }}</div>@if($log->user)<div class="cell-sub">{{ $log->user->roleLabel() }}</div>@endif</td>
+            <td><div class="cell-main">{{ $log->product?->name ?? 'Produk' }}</div><div class="cell-sub">{{ $log->product?->sku }}</div></td>
+            <td>{{ $log->fieldLabel() }}@if($log->reason)<div class="cell-sub">{{ $log->reason }}</div>@endif</td>
+            <td class="{{ $isNotes?'':'money' }}">{{ $isNotes?($log->old_value ?? '—'):$qtyFmt($log->old_value) }}</td>
+            <td class="{{ $isNotes?'':'money' }}"><b>{{ $isNotes?($log->new_value ?? '—'):$qtyFmt($log->new_value) }}</b></td>
+        </tr>
+    @empty
+        <tr><td colspan="6"><div class="cart-empty">Belum ada edit stok pada {{ $historyDate->translatedFormat('d F Y') }}.</div></td></tr>
+    @endforelse
     </tbody></table></div>
 </section>
 

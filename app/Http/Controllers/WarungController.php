@@ -10,6 +10,7 @@ use App\Models\Expense;
 use App\Models\InventoryAsset;
 use App\Models\InventoryAssetLog;
 use App\Models\InventoryDailyRecord;
+use App\Models\InventoryEditLog;
 use App\Models\Member;
 use App\Models\MemberCard;
 use App\Models\Product;
@@ -1419,8 +1420,9 @@ class WarungController extends Controller
         }
     }
 
-    public function inventory()
+    public function inventory(Request $request)
     {
+        $request->validate(['riwayat_tanggal' => 'nullable|date|before_or_equal:today']);
         Product::where('tenant_id', $this->tenantId())->where('is_active', true)->each(function ($product) {
             $product->product_type === 'menu'
                 ? $this->menuStockForDate($product->id)
@@ -1446,10 +1448,11 @@ class WarungController extends Controller
                 $moves = $movementsToday->get($stock->product_id, collect());
                 $record = $this->inventoryRecordFor($stock->product, (float) $stock->quantity - (float) $moves->sum('quantity'));
                 $stock->opening = $record->opening_quantity;
-                $stock->produced = $moves->where('activity', 'production')->where('quantity', '>', 0)->sum('quantity');
+                // Total bersih per aktivitas, supaya koreksi live edit (gerakan berlawanan arah) ikut terhitung.
+                $stock->produced = max(0, (float) $moves->where('activity', 'production')->sum('quantity'));
                 $stock->sold = abs($moves->where('activity', 'sale')->sum('quantity'));
-                $stock->consumption = abs($moves->where('activity', 'consumption')->sum('quantity'));
-                $stock->reprocessed = abs($moves->where('activity', 'reprocess_out')->sum('quantity'));
+                $stock->consumption = max(0, -(float) $moves->where('activity', 'consumption')->sum('quantity'));
+                $stock->reprocessed = max(0, -(float) $moves->where('activity', 'reprocess_out')->sum('quantity'));
                 $stock->waste = (float) $record->waste_quantity;
                 $stock->inventory_notes = $record->notes;
                 $stock->count = $counts->get($stock->product_id);
@@ -1463,8 +1466,11 @@ class WarungController extends Controller
         $productions = StockProduction::with(['ingredient', 'menu'])->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->latest()->take(10)->get();
         $canEditOpening = auth()->user()->canManageOpeningStock();
         $priceStores = $this->stores();
+        $historyDate = Carbon::parse($request->input('riwayat_tanggal', today()))->startOfDay();
+        $editLogs = InventoryEditLog::with(['product', 'user'])->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())
+            ->whereDate('created_at', $historyDate)->latest()->latest('id')->get();
 
-        return $this->view('inventory.index', compact('ingredientStocks', 'menuStocks', 'inventoryProducts', 'movements', 'productions', 'canEditOpening', 'priceStores'));
+        return $this->view('inventory.index', compact('ingredientStocks', 'menuStocks', 'inventoryProducts', 'movements', 'productions', 'canEditOpening', 'priceStores', 'historyDate', 'editLogs'));
     }
 
     public function adjustStock(Request $request)
@@ -1497,9 +1503,15 @@ class WarungController extends Controller
             'opening_quantity' => 'sometimes|numeric|min:0',
             'used_quantity' => 'sometimes|numeric|min:0',
             'waste_quantity' => 'sometimes|numeric|min:0',
+            'produced_quantity' => 'sometimes|numeric|min:0',
+            'consumption_quantity' => 'sometimes|numeric|min:0',
+            'reprocessed_quantity' => 'sometimes|numeric|min:0',
             'notes' => 'sometimes|nullable|string|max:500',
         ]);
         abort_if($data === [], 422, 'Tidak ada perubahan stok yang dikirim.');
+        if (array_intersect_key($data, array_flip(['produced_quantity', 'consumption_quantity', 'reprocessed_quantity']))) {
+            abort_unless($product->product_type === 'menu', 422, 'Tambahan olahan, konsumsi, dan diproses ulang hanya berlaku untuk olahan.');
+        }
         if (array_key_exists('opening_quantity', $data)) {
             abort_unless(auth()->user()->canManageOpeningStock(), 403, 'Stok awal hanya dapat diubah Admin Operasional atau jenjang di atasnya.');
         }
@@ -1552,8 +1564,10 @@ class WarungController extends Controller
             $record = $this->inventoryRecordFor($product, (float) $stock->quantity - $movementTotal);
             $record = InventoryDailyRecord::lockForUpdate()->findOrFail($record->id);
             $balance = (float) $stock->quantity;
+            $changes = [];
 
             if (array_key_exists('opening_quantity', $data)) {
+                $changes['opening_quantity'] = [(float) $record->opening_quantity, (float) $data['opening_quantity']];
                 $openingDelta = (float) $data['opening_quantity'] - (float) $record->opening_quantity;
                 abort_if($balance + $openingDelta < 0, 422, 'Koreksi stok awal membuat sisa stok negatif.');
                 $balance += $openingDelta;
@@ -1570,6 +1584,7 @@ class WarungController extends Controller
             }
 
             if (array_key_exists('used_quantity', $data)) {
+                $changes['used_quantity'] = [(float) $record->used_quantity, (float) $data['used_quantity']];
                 $usedDelta = (float) $data['used_quantity'] - (float) $record->used_quantity;
                 abort_if($balance - $usedDelta < 0, 422, 'Stok terpakai melebihi sisa bahan baku.');
                 $balance -= $usedDelta;
@@ -1584,10 +1599,39 @@ class WarungController extends Controller
                 }
             }
 
+            // Live edit kolom olahan: nilai baru = total hari ini, selisihnya dicatat sebagai
+            // gerakan stok dengan aktivitas yang sama sehingga tabel dan audit tetap sinkron.
+            $todayMoves = DB::table('stock_movements')->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())
+                ->where('product_id', $product->id)->whereDate('created_at', today());
+            foreach ([
+                'produced_quantity' => ['production', 1, 'PROD', 'Live edit tambahan olahan', 'Tambahan olahan'],
+                'consumption_quantity' => ['consumption', -1, 'CONS', 'Live edit konsumsi', 'Konsumsi'],
+                'reprocessed_quantity' => ['reprocess_out', -1, 'REPROC', 'Live edit diproses ulang', 'Diproses ulang'],
+            ] as $field => [$activity, $sign, $prefix, $notes, $label]) {
+                if (! array_key_exists($field, $data)) {
+                    continue;
+                }
+                $current = max(0, $sign * (float) (clone $todayMoves)->where('activity', $activity)->sum('quantity'));
+                $delta = (float) $data[$field] - $current;
+                $changes[$field] = [$current, (float) $data[$field]];
+                $balanceDelta = $sign * $delta;
+                abort_if($balance + $balanceDelta < -0.0005, 422, $label.' membuat sisa stok negatif.');
+                $balance += $balanceDelta;
+                if (abs($delta) > 0.0005) {
+                    DB::table('stock_movements')->insert([
+                        'tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id,
+                        'user_id' => auth()->id(), 'type' => $balanceDelta > 0 ? 'adjustment_in' : 'adjustment_out',
+                        'activity' => $activity, 'quantity' => $balanceDelta, 'reference' => $prefix.'-EDIT-'.today()->format('Ymd'),
+                        'notes' => $notes, 'created_at' => now(), 'updated_at' => now(),
+                    ]);
+                }
+            }
+
             if (array_key_exists('waste_add', $data)) {
                 $data['waste_quantity'] = (float) $record->waste_quantity + (float) $data['waste_add'];
             }
             if (array_key_exists('waste_quantity', $data)) {
+                $changes['waste_quantity'] = [(float) $record->waste_quantity, (float) $data['waste_quantity']];
                 $wasteDelta = (float) $data['waste_quantity'] - (float) $record->waste_quantity;
                 abort_if($balance - $wasteDelta < -0.0005, 422, 'Jumlah rusak melebihi sisa stok.');
                 $balance -= $wasteDelta;
@@ -1604,12 +1648,26 @@ class WarungController extends Controller
             }
 
             if (array_key_exists('notes', $data)) {
-                $record->notes = trim((string) ($data['notes'] ?? '')) ?: null;
+                $notes = trim((string) ($data['notes'] ?? '')) ?: null;
+                $changes['notes'] = [$record->notes, $notes];
+                $record->notes = $notes;
             }
 
             $stock->quantity = max(0, $balance);
             $stock->save();
             $record->save();
+
+            // Semua pengguna boleh live edit, jadi setiap nilai yang benar-benar berubah dicatat ke riwayat.
+            foreach ($changes as $field => [$old, $new]) {
+                $unchanged = $field === 'notes' ? $old === $new : abs((float) $new - (float) $old) < 0.0005;
+                if (! $unchanged) {
+                    InventoryEditLog::create([
+                        'tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id,
+                        'user_id' => auth()->id(), 'field' => $field, 'old_value' => $old, 'new_value' => $new,
+                        'reason' => $field === 'waste_quantity' ? $wasteReason : null,
+                    ]);
+                }
+            }
 
             return [
                 'quantity' => max(0, $balance),
