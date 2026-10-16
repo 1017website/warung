@@ -92,10 +92,11 @@
 @media(max-width:520px){.membership-steps{grid-template-columns:1fr}}
 /* Master role: matriks centang hak akses menu */
 .role-matrix th,.role-matrix td{white-space:nowrap}
-/* Label menu ditulis vertikal agar setiap label tepat di atas centangnya dan tidak menabrak kolom sebelah. */
-.role-matrix-module{vertical-align:bottom;text-align:center;width:44px;padding:12px 6px 10px}
-.role-matrix-module span{display:inline-block;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;font-size:10px;line-height:1.2;text-align:left}
-.role-matrix-cell{text-align:center;padding-left:6px;padding-right:6px}
+/* Label menu horizontal, di tengah tepat di atas centangnya. Kolom selebar kata terpanjang
+   (kata tidak dipatah), label dua kata boleh turun baris, sehingga tidak menabrak kolom sebelah. */
+.role-matrix th.role-matrix-module{vertical-align:bottom;text-align:center;white-space:normal;padding:11px 5px}
+.role-matrix-module span{display:block;font-size:10px;line-height:1.35;letter-spacing:.01em;word-break:keep-all;overflow-wrap:normal}
+.role-matrix-cell{text-align:center;padding-left:5px;padding-right:5px}
 .role-matrix-cell input{width:18px;min-height:18px;height:18px;margin:0;padding:0;accent-color:var(--forest,#637ba8);cursor:pointer}
 .role-matrix-cell input:disabled{cursor:not-allowed;opacity:.45}
 .role-matrix td.money{text-align:center}
@@ -104,7 +105,7 @@
 .role-matrix th:first-child{background:#f8f9fc}
 .role-matrix tr:hover td:first-child{background:#fafbfe}
 .role-module-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px}
-@media(max-width:760px){.role-matrix-module{width:36px;padding-left:4px;padding-right:4px}.role-matrix-module span{font-size:9px}.role-matrix td:first-child{white-space:normal;min-width:140px;max-width:170px}}
+@media(max-width:760px){.role-matrix th.role-matrix-module,.role-matrix-cell{padding-left:4px;padding-right:4px}.role-matrix-module span{font-size:9px}.role-matrix td:first-child{white-space:normal;min-width:140px;max-width:170px}}
 /* Cabang terkunci: peran selain superadmin & head of ops tidak dapat berpindah warung */
 .store-switch-static{display:inline-flex;align-items:center;min-width:180px;min-height:41px;padding:0 12px;border:1px solid #dce2ed;border-radius:10px;background:var(--mist,#f5f7fb);color:var(--ink,#26334d);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:760px){.store-switch-static{width:min(132px,48vw);min-width:0;min-height:38px;padding:0 9px;font-size:11px}}

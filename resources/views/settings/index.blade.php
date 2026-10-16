@@ -35,7 +35,7 @@
 @if($canManageRoles)
 @php($moduleList = \App\Models\Role::MODULES)
 <section class="card card-pad" id="master-role" style="margin-top:16px"><div class="card-title"><div><h2>Master role & hak akses menu</h2><p>Centang menu yang boleh dibuka tiap role. Perubahan langsung berlaku pada permintaan berikutnya.</p></div>@if($canManageRoles)<button class="btn btn-primary" onclick="openModal('role-modal')"><i class="bi bi-plus-circle"></i> Tambah role</button>@endif</div>
-<div class="table-wrap"><table class="role-matrix"><thead><tr><th>Role</th>@foreach($moduleList as $moduleKey=>$moduleLabel)<th class="role-matrix-module"><span>{{ $moduleLabel }}</span></th>@endforeach<th class="role-matrix-module"><span>Non-riil</span></th><th class="role-matrix-module"><span>PIN otorisasi</span></th><th>Akun</th><th></th></tr></thead><tbody>
+<div class="table-wrap"><table class="role-matrix"><thead><tr><th>Role</th>@foreach($moduleList as $moduleKey=>$moduleLabel)<th class="role-matrix-module"><span>{{ $moduleLabel }}</span></th>@endforeach<th class="role-matrix-module"><span style="white-space:nowrap">Non-riil</span></th><th class="role-matrix-module"><span>PIN otorisasi</span></th><th>Akun</th><th></th></tr></thead><tbody>
 @foreach($roles as $role)
 @php($usedBy = $userCountPerRole[$role->key] ?? 0)
 @if($canManageRoles && !$role->is_system)<form method="POST" action="{{ route('settings.role.update',$role) }}" id="role-form-{{ $role->id }}">@csrf @method('PUT')<input type="hidden" name="name" value="{{ $role->name }}"><input type="hidden" name="summary" value="{{ $role->summary }}"></form>@endif
