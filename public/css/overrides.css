@@ -3,6 +3,57 @@
  * File dibaca langsung oleh browser sehingga tidak memerlukan npm run build.
  */
 
+.pagination nav { max-width: 100%; }
+.pagination nav > div:last-child { align-items: flex-end; }
+.pagination nav p { color: var(--ink); font-size: 12px; }
+.pagination nav > div:last-child > div:last-child > span {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 4px;
+    box-shadow: none;
+}
+.pagination nav a,
+.pagination nav span[aria-current] > span,
+.pagination nav span[aria-disabled] > span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    min-height: 40px;
+    margin: 0;
+    padding: 8px;
+    border: 1px solid #a1acc0;
+    border-radius: 8px;
+    background: #fff;
+    color: var(--ink);
+    font-size: 12px;
+    line-height: 1;
+}
+.pagination nav a:hover { background: var(--sage); color: var(--ink); border-color: var(--forest-dark); }
+.pagination nav a:focus-visible { outline: 2px solid var(--forest-dark); outline-offset: 2px; }
+.pagination nav span[aria-current] > span { background: var(--forest-dark); border-color: var(--forest-dark); color: #fff; font-weight: 700; }
+.pagination nav span[aria-disabled] > span { background: var(--mist); color: #65718a; cursor: default; }
+@media (max-width: 590px) {
+    .pagination nav a,
+    .pagination nav span[aria-current] > span,
+    .pagination nav span[aria-disabled] > span { min-width: 44px; min-height: 44px; }
+}
+/* Markup partials/pagination.blade.php: ringkasan di kiri, tombol halaman di kanan. */
+.pagination { justify-content: stretch; }
+.pagination nav.pager { display: flex; flex: 1; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
+.pagination nav.pager .pager-summary { margin: 0; color: var(--muted); }
+.pagination nav.pager .pager-summary b { color: var(--ink); font-weight: 700; }
+.pagination nav.pager > div.pager-links { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 4px; }
+.pagination nav.pager .pager-page { display: none; }
+@media (max-width: 590px) {
+    /* Di HP cukup Sebelumnya · halaman aktif · Berikutnya, dengan keterangan "Halaman x dari y". */
+    .pagination nav.pager { justify-content: center; text-align: center; }
+    .pagination nav.pager .pager-page { display: inline; }
+    .pagination nav.pager > div.pager-links { justify-content: center; width: 100%; }
+    .pagination nav.pager .pager-num { display: none; }
+}
+
 .mobile-account { display: none; }
 @media (max-width: 820px) {
     .mobile-account { display: flex; align-items: center; gap: 12px; padding: 10px 16px; }
