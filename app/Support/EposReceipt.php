@@ -142,7 +142,9 @@ final class EposReceipt
         if ($closing) {
             $lines[] = self::text(self::pair('Ditutup', $closing->closed_at?->format('H:i') ?? '-', $columns));
             $lines[] = self::text(self::pair('Kasir', $closing->user?->name ?? '-', $columns));
-            $lines[] = self::text(self::pair('Otorisasi', $closing->authorizer?->name ?? '-', $columns));
+            if ($closing->authorizer) {
+                $lines[] = self::text(self::pair('Otorisasi', $closing->authorizer->name, $columns));
+            }
         }
         $lines[] = self::rule($columns);
         // Rekap tutup kasir tidak mencetak penjualan produk & omzet (revisi 14 Oktober 2026).
@@ -243,7 +245,7 @@ final class EposReceipt
     }
 
     /** Laporan produk terjual untuk rentang tanggal, per kategori, untuk printer struk. */
-    public static function productSales(string $brand, string $scope, Carbon $from, Carbon $to, array $data, int $columns, bool $nonReal = false): array
+    public static function productSales(string $brand, string $scope, Carbon $from, Carbon $to, array $data, int $columns, bool $nonReal = false, bool $withMoney = true): array
     {
         $lines = [
             self::text('PRODUK TERJUAL', 'center', true, true),
@@ -263,9 +265,9 @@ final class EposReceipt
                 foreach (self::wrap($item->product_name, $columns) as $nameLine) {
                     $lines[] = self::text($nameLine);
                 }
-                $lines[] = self::text(self::pair('  '.Qty::format($item->quantity).' '.$item->unit, self::money($item->sales), $columns));
+                $lines[] = self::text(self::pair('  '.Qty::format($item->quantity).' '.$item->unit, $withMoney ? self::money($item->sales) : '', $columns));
             }
-            $lines[] = self::text(self::pair('  Subtotal '.Qty::format($items->sum('quantity')).' item', self::money($items->sum('sales')), $columns), 'left', true);
+            $lines[] = self::text(self::pair('  Subtotal '.Qty::format($items->sum('quantity')).' item', $withMoney ? self::money($items->sum('sales')) : '', $columns), 'left', true);
         }
         if ($data['products']->isEmpty()) {
             $lines[] = self::rule($columns);
@@ -275,7 +277,9 @@ final class EposReceipt
         $lines[] = self::rule($columns);
         $lines[] = self::text(self::pair('Transaksi selesai', (string) $totals['transactions'], $columns));
         $lines[] = self::text(self::pair('Total qty', Qty::format($totals['quantity']), $columns));
-        array_push($lines, ...self::turnoverLines($totals, $columns));
+        if ($withMoney) {
+            array_push($lines, ...self::turnoverLines($totals, $columns));
+        }
         $lines[] = ['type' => 'feed', 'lines' => 3];
         $lines[] = ['type' => 'cut'];
 

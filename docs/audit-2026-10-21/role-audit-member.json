@@ -1,0 +1,915 @@
+{
+  "findings": [],
+  "log": [
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "page",
+      "url": "/member",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member/export",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member/1/riwayat",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "PATCH /member/{id}/status",
+      "label": "Nonaktifkan",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Status member berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "POST /member",
+      "label": "Scan kartu lalu isi data",
+      "status": 200,
+      "final": "/member",
+      "error": "Kolom nama wajib diisi.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "form-skipped",
+      "url": "trigger member-card-trigger",
+      "detail": "no modal form",
+      "page": "/member"
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "trigger edit-member-trigger /member/{id}",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Data member MAUD1 berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "trigger adjustment-trigger /member/{id}/deposit-adjustment",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Koreksi deposit berhasil disimpan dalam audit trail.",
+      "dialogs": []
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "trigger topup-trigger /member/{id}/topup",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Deposit berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "page",
+      "url": "/member",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member/export",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member/1/riwayat",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "PATCH /member/{id}/status",
+      "label": "Aktifkan",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Status member berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "POST /member",
+      "label": "Scan kartu lalu isi data",
+      "status": 200,
+      "final": "/member",
+      "error": "Kolom nama wajib diisi.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form-skipped",
+      "url": "trigger member-card-trigger",
+      "detail": "no modal form",
+      "page": "/member"
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "trigger edit-member-trigger /member/{id}",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Data member MAUD1 berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "trigger topup-trigger /member/{id}/topup",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Deposit berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "trigger adjustment-trigger /member/{id}/deposit-adjustment",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Koreksi deposit berhasil disimpan dalam audit trail.",
+      "dialogs": []
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "page",
+      "url": "/member",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member/export",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member/1/riwayat",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "PATCH /member/{id}/status",
+      "label": "Nonaktifkan",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Status member berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "POST /member",
+      "label": "Scan kartu lalu isi data",
+      "status": 200,
+      "final": "/member",
+      "error": "Kolom nama wajib diisi.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form-skipped",
+      "url": "trigger member-card-trigger",
+      "detail": "no modal form",
+      "page": "/member"
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "trigger edit-member-trigger /member/{id}",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Data member MAUD1 berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "trigger adjustment-trigger /member/{id}/deposit-adjustment",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Koreksi deposit berhasil disimpan dalam audit trail.",
+      "dialogs": []
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "trigger topup-trigger /member/{id}/topup",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Deposit berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/member",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pembelian",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member/export",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member/1/riwayat",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "PATCH /member/{id}/status",
+      "label": "Aktifkan",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Status member berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "POST /member",
+      "label": "Scan kartu lalu isi data",
+      "status": 200,
+      "final": "/member",
+      "error": "Kolom nama wajib diisi.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form-skipped",
+      "url": "trigger member-card-trigger",
+      "detail": "no modal form",
+      "page": "/member"
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "trigger edit-member-trigger /member/{id}",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Data member MAUD1 berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "trigger topup-trigger /member/{id}/topup",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Deposit berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "trigger adjustment-trigger /member/{id}/deposit-adjustment",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Koreksi deposit berhasil disimpan dalam audit trail.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "page",
+      "url": "/member",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/dashboard",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pembelian",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member/export",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member/1/riwayat",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "PATCH /member/{id}/status",
+      "label": "Nonaktifkan",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Status member berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "POST /member",
+      "label": "Scan kartu lalu isi data",
+      "status": 200,
+      "final": "/member",
+      "error": "Kolom nama wajib diisi.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form-skipped",
+      "url": "trigger member-card-trigger",
+      "detail": "no modal form",
+      "page": "/member"
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "trigger edit-member-trigger /member/{id}",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Data member MAUD1 berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "trigger adjustment-trigger /member/{id}/deposit-adjustment",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Koreksi deposit berhasil disimpan dalam audit trail.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "trigger topup-trigger /member/{id}/topup",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Deposit berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/member",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/dashboard",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pembelian",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengaturan",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member/export",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member/1/riwayat",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "PATCH /member/{id}/status",
+      "label": "Aktifkan",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Status member berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "POST /member",
+      "label": "Scan kartu lalu isi data",
+      "status": 200,
+      "final": "/member",
+      "error": "Kolom nama wajib diisi.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form-skipped",
+      "url": "trigger member-card-trigger",
+      "detail": "no modal form",
+      "page": "/member"
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "trigger edit-member-trigger /member/{id}",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Data member MAUD1 berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "trigger topup-trigger /member/{id}/topup",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Deposit berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "trigger adjustment-trigger /member/{id}/deposit-adjustment",
+      "status": 200,
+      "final": "/member",
+      "error": null,
+      "success": "Koreksi deposit berhasil disimpan dalam audit trail.",
+      "dialogs": []
+    }
+  ]
+}

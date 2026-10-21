@@ -1,0 +1,23 @@
+*Update POS Warung – 21 Oktober 2026* 🙏
+
+Selamat siang Bapak/Ibu, berikut perbaikan sesuai laporan hari ini:
+
+*1. Stok datang bisa diedit langsung* ✏️
+• Di menu *Stok / Gudang → Stok bahan baku*, kolom *Stok datang* sekarang bisa diisi langsung di tabel, sama seperti Stok terpakai.
+• Yang diisi adalah *total stok datang hari ini*. Contoh: pagi datang 10, siang datang lagi 5 → ketik *15*.
+• Pembelian yang diterima dan penyesuaian stok masuk otomatis ikut terhitung di kolom ini.
+• Salah input bisa dikoreksi dengan mengetik angka yang benar; *Sisa stok* langsung dihitung ulang dan tidak bisa menjadi minus.
+• Setiap perubahan tercatat di *Riwayat edit stok*.
+
+*2. Error 422 ("Oops! An Error Occurred") sudah diperbaiki di semua modul* ✅
+• Sebelumnya, jika ada isian yang tidak memenuhi aturan (misalnya PIN saat *Tutup kasir*), muncul halaman error 422 tanpa penjelasan.
+• Sekarang sistem kembali ke halaman sebelumnya dan menampilkan *pesan yang jelas* (contoh: "Stok tidak boleh menjadi negatif."). Isian yang sudah diketik tetap tersimpan, kecuali PIN.
+• Berlaku untuk semua menu: Kasir, Tutup kasir, Reservasi, Transaksi, Produk, Stok, Pembelian, Pengeluaran, Member, dan Pengaturan.
+• *Tutup kasir tidak lagi meminta PIN Manager/SPV.* Kasir cukup mengisi modal kas awal dan kas fisik lalu klik Simpan. Tutup kasir yang sudah tersimpan hanya bisa diperbarui oleh Manager/SPV.
+
+*3. Kasir tidak lagi melihat omzet* 🔒
+• Di halaman *Tutup kasir*, kartu *Omzet hari ini* diganti *Transaksi hari ini* (jumlah transaksi) untuk akun tanpa akses Ringkasan/Laporan (pada setelan awal: Kasir, SPV, Outlet Manager, dan Ops Admin).
+• *Laporan produk terjual* untuk akun tersebut hanya menampilkan *qty* per produk, tanpa nilai penjualan dan omzet (di layar maupun cetakan printer).
+• Superadmin, Head of Ops, dan role lain yang memiliki akses Ringkasan/Laporan tetap melihat omzet seperti biasa.
+
+Terima kasih 🙏

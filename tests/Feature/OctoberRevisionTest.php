@@ -155,7 +155,7 @@ class OctoberRevisionTest extends TestCase
         $this->actingAs($cashier)->get('/kasir')->assertOk()->assertSee('"pending_id":'.$bill->id, false);
 
         // Selama masih terhubung ke open bill, reservasi tidak dapat dibatalkan.
-        $this->actingAs($cashier)->patch("/reservasi/{$reservation->id}/status", ['status' => 'cancelled', 'reason' => 'Batal'])->assertStatus(422);
+        $this->actingAs($cashier)->patch("/reservasi/{$reservation->id}/status", ['status' => 'cancelled', 'reason' => 'Batal'])->assertRedirect()->assertSessionHasErrors();
 
         $this->actingAs($cashier)->postJson('/kasir/checkout', $order + ['pending_transaction_id' => $bill->id, 'payments' => [['method' => 'cash', 'amount' => 10000]]])->assertOk();
         $this->assertSame('completed', $bill->fresh()->status);
@@ -232,9 +232,12 @@ class OctoberRevisionTest extends TestCase
         $this->checkout($cashier, ['items' => [['id' => $menu->id, 'qty' => 2]], 'payments' => [['method' => 'qris', 'provider' => 'QRIS BCA', 'amount' => 40000]]])->assertOk();
         $this->checkout($cashier, ['items' => [['id' => $menu->id, 'qty' => 1]], 'payments' => [['method' => 'cash', 'amount' => 50000]]])->assertOk();
 
-        // Omzet = seluruh nota selesai (tunai + non-tunai), bukan hanya kas laci.
-        $this->actingAs($cashier)->get('/kasir/tutup-harian')->assertOk()
+        // Omzet = seluruh nota selesai (tunai + non-tunai), bukan hanya kas laci; hanya untuk role yang boleh melihat omzet.
+        $this->actingAs($admin)->get('/kasir/tutup-harian')->assertOk()
             ->assertSee('Omzet hari ini')->assertSee('Rp 60.000')->assertSee('/laporan/produk-terjual/cetak?paper=58', false);
+        // Kasir tidak melihat omzet (revisi 21 Oktober 2026).
+        $this->actingAs($cashier)->get('/kasir/tutup-harian')->assertOk()
+            ->assertDontSee('Omzet')->assertDontSee('Rp 60.000')->assertSee('Transaksi hari ini')->assertSee('/laporan/produk-terjual/cetak?paper=58', false);
         // Cetakan rekap tutup kasir tidak menampilkan penjualan produk & omzet.
         $this->actingAs($cashier)->get('/kasir/tutup-harian/cetak?paper=a4')->assertOk()
             ->assertSee('Ringkasan transaksi')->assertDontSee('Omzet')->assertDontSee('Penjualan produk');
@@ -265,13 +268,13 @@ class OctoberRevisionTest extends TestCase
         ])->items()->create(['product_id' => $menu->id, 'product_name' => 'Ayam Bakar', 'quantity' => 45, 'price' => 20000, 'subtotal' => 900000, 'category_name' => 'Makanan']);
 
         // Default hari ini, POS 58: hanya transaksi selesai hari ini di cabang aktif.
-        $today = $this->actingAs($cashier)->get('/laporan/produk-terjual/cetak')->assertOk()
+        $today = $this->actingAs($admin)->get('/laporan/produk-terjual/cetak')->assertOk()
             ->assertSee('class="paper-58"', false)->assertSee('Laporan Produk Terjual')->assertSee('Ayam Bakar')->assertSee('Rp 40.000')
             ->assertDontSee('Rp 140.000')->assertDontSee('900.000');
         $this->assertEquals(2, $today->viewData('totals')['quantity']);
 
         $from = now()->subDays(2)->toDateString();
-        $range = $this->actingAs($cashier)->get('/laporan/produk-terjual/cetak?paper=a4&from='.$from.'&to='.today()->toDateString())->assertOk()
+        $range = $this->actingAs($admin)->get('/laporan/produk-terjual/cetak?paper=a4&from='.$from.'&to='.today()->toDateString())->assertOk()
             ->assertSee('class="paper-a4"', false)->assertSee('size:A4 portrait', false)->assertSee('Simpan sebagai PDF')
             ->assertSee('Makanan')->assertSee('Subtotal Makanan')->assertSee('Rp 60.000');
         $this->assertSame(['transactions' => 2, 'quantity' => 3.0, 'grossSales' => 60000.0, 'discount' => 0.0, 'serviceCharge' => 0.0, 'tax' => 0.0, 'turnover' => 60000.0], $range->viewData('totals'));
@@ -281,12 +284,22 @@ class OctoberRevisionTest extends TestCase
 
         // RawBT menerima laporan teks 32 kolom per kategori.
         $this->actingAs($admin)->post('/pengaturan/perangkat', ['name' => 'BT-58D', 'type' => 'receipt_printer', 'driver' => 'rawbt', 'store_id' => $cashier->store_id])->assertSessionHasNoErrors();
-        preg_match('/intent:base64,([^#]+)#/', $this->actingAs($cashier)->get('/laporan/produk-terjual/cetak?from='.$from)->viewData('rawbtUri'), $match);
+        preg_match('/intent:base64,([^#]+)#/', $this->actingAs($admin)->get('/laporan/produk-terjual/cetak?from='.$from)->viewData('rawbtUri'), $match);
         $bytes = base64_decode($match[1]);
         $this->assertStringContainsString('PRODUK TERJUAL', $bytes);
         $this->assertStringContainsString('MAKANAN', $bytes);
         $this->assertStringContainsString(str_pad('  3 pcs', 32 - strlen('60.000')).'60.000', $bytes);
         $this->assertStringContainsString(str_pad('OMZET', 32 - strlen('Rp 60.000')).'Rp 60.000', $bytes);
+
+        // Kasir hanya melihat qty: tanpa nilai penjualan dan omzet, di layar maupun cetakan RawBT.
+        $this->actingAs($cashier)->get('/laporan/produk-terjual/cetak?paper=a4&from='.$from)->assertOk()
+            ->assertSee('Ayam Bakar')->assertSee('Subtotal Makanan')->assertDontSee('Omzet')->assertDontSee('Penjualan')->assertDontSee('Rp 60.000');
+        $this->actingAs($cashier)->get('/laporan/produk-terjual/cetak?from='.$from)->assertOk()->assertDontSee('Omzet')->assertDontSee('60.000');
+        preg_match('/intent:base64,([^#]+)#/', $this->actingAs($cashier)->get('/laporan/produk-terjual/cetak?from='.$from)->viewData('rawbtUri'), $match);
+        $bytes = base64_decode($match[1]);
+        $this->assertStringContainsString('  3 pcs', $bytes);
+        $this->assertStringNotContainsString('OMZET', $bytes);
+        $this->assertStringNotContainsString('60.000', $bytes);
 
         // Laporan juga bisa dibuka dari halaman Laporan dengan periode yang sedang dipilih.
         $this->actingAs($admin)->get('/laporan?period=custom&from='.$from.'&to='.today()->toDateString())->assertOk()

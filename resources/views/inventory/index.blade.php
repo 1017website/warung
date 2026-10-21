@@ -25,7 +25,7 @@
 </div>
 
 <section class="card card-pad" style="margin-bottom:16px">
-    <div class="card-title"><div><h2>Stok bahan baku</h2><p>Stok terolah dihitung dari produksi; stok terpakai dan keterangan dapat di-live edit.</p></div><span class="badge gray">{{ $ingredientStocks->count() }} bahan</span></div>
+    <div class="card-title"><div><h2>Stok bahan baku</h2><p>Stok terolah dihitung dari produksi; stok datang, stok terpakai, dan keterangan dapat di-live edit.</p></div><span class="badge gray">{{ $ingredientStocks->count() }} bahan</span></div>
     <div class="inventory-note"><i class="bi bi-info-circle"></i><span>Stok awal otomatis mengambil sisa hari sebelumnya. Koreksi stok awal hanya tersedia bagi Admin Operasional dan jenjang di atasnya. Kolom <b>Rusak / tidak layak</b> diisi manual untuk bahan yang tidak bisa diproses ulang dan langsung mengurangi sisa stok. Stock opname mereset saldo sistem ke sisa fisik.</span></div>
     <div class="table-wrap inventory-table-wrap"><table class="inventory-live-table"><thead><tr><th>SKU / bahan baku</th><th>Kategori</th><th>Stok awal</th><th>Stok datang</th><th>Stok terpakai</th><th>Stok terolah</th><th>Rusak / tidak layak</th><th>Sisa stok</th><th>Keterangan</th><th>Status</th></tr></thead><tbody>
     @forelse($ingredientStocks as $stock)
@@ -36,7 +36,7 @@
             <td><div class="cell-main">{{ $stock->product->name }}</div><div class="cell-sub">{{ $stock->product->sku }} · {{ $stock->product->unit }}</div></td>
             <td>{{ $stock->product->category?->name ?? 'Bahan baku' }}</td>
             <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="opening_quantity" value="{{ (float)$stock->opening }}" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}" @disabled(!$canEditOpening) title="{{ $canEditOpening?'Edit stok awal':'Khusus Admin Operasional' }}"></td>
-            <td>{{ $qtyFmt($stock->incoming) }}</td>
+            <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="incoming_quantity" value="{{ (float)$stock->incoming }}" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}" title="Total stok datang hari ini"></td>
             <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="used_quantity" value="{{ (float)$stock->used }}" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}"></td>
             <td>{{ $qtyFmt($stock->processed) }}</td>
             <td><input class="inventory-live-input waste-input" type="number" min="0" step="0.001" name="waste_quantity" value="{{ (float)$stock->waste }}" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}" title="Total rusak / tidak layak hari ini"></td>

@@ -113,8 +113,8 @@ class RoleMasterTest extends TestCase
 
         $this->actingAs($superadmin)->put("/pengaturan/role/{$systemRole->id}", [
             'name' => 'Superadmin', 'modules' => ['pos'],
-        ])->assertStatus(422);
-        $this->actingAs($superadmin)->delete("/pengaturan/role/{$systemRole->id}")->assertStatus(422);
+        ])->assertRedirect()->assertSessionHasErrors();
+        $this->actingAs($superadmin)->delete("/pengaturan/role/{$systemRole->id}")->assertRedirect()->assertSessionHasErrors();
 
         $this->assertCount(count(Role::MODULES), $systemRole->fresh()->modules);
     }
@@ -128,7 +128,7 @@ class RoleMasterTest extends TestCase
             'role' => 'spv', 'is_active' => true, 'password' => 'password',
         ]);
 
-        $this->actingAs($superadmin)->delete("/pengaturan/role/{$spvRole->id}")->assertStatus(422);
+        $this->actingAs($superadmin)->delete("/pengaturan/role/{$spvRole->id}")->assertRedirect()->assertSessionHasErrors();
         $this->assertDatabaseHas('roles', ['id' => $spvRole->id, 'deleted_at' => null]);
     }
 

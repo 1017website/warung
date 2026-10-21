@@ -37,6 +37,10 @@ window.formatMoneyInput = (input) => {
 window.setMoneyInputValue = (input, value) => {
     if (!(input instanceof HTMLInputElement)) return;
 
+    // Nilai dari database bisa desimal (12.5 / "12500.00"); formatMoneyInput membuang titik
+    // sehingga tanpa pembulatan 12.5 menjadi 125.
+    if (typeof value === 'number' && Number.isFinite(value)) value = String(Math.round(value));
+    else if (typeof value === 'string' && /^-?\d+\.\d{1,2}$/.test(value.trim())) value = String(Math.round(Number(value)));
     input.value = value ?? '';
     window.formatMoneyInput(input);
 };
@@ -46,7 +50,8 @@ window.initializeMoneyInputs = (root = document) => {
         if (input.dataset.moneyBound === 'true') return;
 
         input.dataset.moneyBound = 'true';
-        input.addEventListener('input', () => window.formatMoneyInput(input));
+        // Input yang atribut data-money-input-nya dilepas (mis. Diskon % di kasir) tidak diformat ulang.
+        input.addEventListener('input', () => { if ('moneyInput' in input.dataset) window.formatMoneyInput(input); });
         window.formatMoneyInput(input);
     });
 };

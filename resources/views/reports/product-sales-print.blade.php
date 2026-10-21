@@ -134,20 +134,20 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:t
 
     @if($paper === 'a4')
         <table class="products">
-            <thead><tr><th>#</th><th>Produk</th><th class="num">Qty</th><th>Satuan</th><th class="num">Penjualan</th></tr></thead>
+            <thead><tr><th>#</th><th>Produk</th><th class="num">Qty</th><th>Satuan</th>@if($showRevenue)<th class="num">Penjualan</th>@endif</tr></thead>
             <tbody>
             @php($row = 0)
             @forelse($categories as $category => $items)
-                <tr class="category"><th colspan="5">{{ $category }}</th></tr>
+                <tr class="category"><th colspan="{{ $showRevenue ? 5 : 4 }}">{{ $category }}</th></tr>
                 @foreach($items as $item)
-                    <tr><td>{{ ++$row }}</td><td>{{ $item->product_name }}</td><td class="num">@qty($item->quantity)</td><td>{{ $item->unit }}</td><td class="num">{{ $rp($item->sales) }}</td></tr>
+                    <tr><td>{{ ++$row }}</td><td>{{ $item->product_name }}</td><td class="num">@qty($item->quantity)</td><td>{{ $item->unit }}</td>@if($showRevenue)<td class="num">{{ $rp($item->sales) }}</td>@endif</tr>
                 @endforeach
-                <tr class="subtotal"><td></td><td>Subtotal {{ $category }}</td><td class="num">@qty($items->sum('quantity'))</td><td></td><td class="num">{{ $rp($items->sum('sales')) }}</td></tr>
+                <tr class="subtotal"><td></td><td>Subtotal {{ $category }}</td><td class="num">@qty($items->sum('quantity'))</td><td></td>@if($showRevenue)<td class="num">{{ $rp($items->sum('sales')) }}</td>@endif</tr>
             @empty
-                <tr><td colspan="5">Belum ada produk terjual pada periode ini.</td></tr>
+                <tr><td colspan="{{ $showRevenue ? 5 : 4 }}">Belum ada produk terjual pada periode ini.</td></tr>
             @endforelse
             </tbody>
-            <tfoot><tr><td></td><td>Total produk terjual</td><td class="num">@qty($totals['quantity'])</td><td></td><td class="num">{{ $rp($totals['grossSales']) }}</td></tr></tfoot>
+            <tfoot><tr><td></td><td>Total produk terjual</td><td class="num">@qty($totals['quantity'])</td><td></td>@if($showRevenue)<td class="num">{{ $rp($totals['grossSales']) }}</td>@endif</tr></tfoot>
         </table>
     @else
         @forelse($categories as $category => $items)
@@ -156,10 +156,10 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:t
                 @foreach($items as $item)
                     <div class="item">
                         <div>{{ $item->product_name }}</div>
-                        <div class="kv"><span>@qty($item->quantity) {{ $item->unit }}</span><span>{{ number_format($item->sales, 0, ',', '.') }}</span></div>
+                        <div class="kv"><span>@qty($item->quantity) {{ $item->unit }}</span>@if($showRevenue)<span>{{ number_format($item->sales, 0, ',', '.') }}</span>@endif</div>
                     </div>
                 @endforeach
-                <div class="kv strong"><span>Subtotal @qty($items->sum('quantity'))</span><span>{{ number_format($items->sum('sales'), 0, ',', '.') }}</span></div>
+                <div class="kv strong"><span>Subtotal @qty($items->sum('quantity'))</span>@if($showRevenue)<span>{{ number_format($items->sum('sales'), 0, ',', '.') }}</span>@endif</div>
             </section>
         @empty
             <p class="empty">Belum ada produk terjual pada periode ini.</p>
@@ -170,11 +170,13 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:t
         <h2>Ringkasan</h2>
         <div class="kv"><span>Transaksi selesai</span><span>{{ $totals['transactions'] }}</span></div>
         <div class="kv"><span>Total qty</span><span>@qty($totals['quantity'])</span></div>
+        @if($showRevenue)
         <div class="kv"><span>Penjualan produk</span><span>{{ $rp($totals['grossSales']) }}</span></div>
         @if($totals['discount'] > 0)<div class="kv"><span>Diskon</span><span>{{ $rp(-$totals['discount']) }}</span></div>@endif
         @if($totals['serviceCharge'] > 0)<div class="kv"><span>Service</span><span>{{ $rp($totals['serviceCharge']) }}</span></div>@endif
         @if($totals['tax'] > 0)<div class="kv"><span>Pajak</span><span>{{ $rp($totals['tax']) }}</span></div>@endif
         <div class="kv strong"><span>Omzet</span><span>{{ $rp($totals['turnover']) }}</span></div>
+        @endif
     </section>
 </article>
 

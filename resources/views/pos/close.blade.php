@@ -11,7 +11,11 @@
     </div>
 </div>
 <div class="grid stats">
+    @if(auth()->user()->canSeeRevenue())
     <div class="card stat"><div class="stat-label">Omzet hari ini</div><div class="stat-value">Rp {{ number_format($summary['turnover'],0,',','.') }}</div><div class="stat-note">{{ $summary['transactions'] }} transaksi · produk Rp {{ number_format($summary['grossSales'],0,',','.') }}{{ $summary['discount'] > 0 ? ' · diskon −Rp '.number_format($summary['discount'],0,',','.') : '' }}{{ $summary['serviceCharge'] > 0 ? ' · service Rp '.number_format($summary['serviceCharge'],0,',','.') : '' }}{{ $summary['tax'] > 0 ? ' · pajak Rp '.number_format($summary['tax'],0,',','.') : '' }}</div></div>
+    @else
+    <div class="card stat"><div class="stat-label">Transaksi hari ini</div><div class="stat-value">{{ $summary['transactions'] }}</div><div class="stat-note">transaksi selesai</div></div>
+    @endif
     <div class="card stat"><div class="stat-label">Tunai penjualan (net)</div><div class="stat-value">Rp {{ number_format($summary['cashSales'],0,',','.') }}</div></div>
     <div class="card stat"><div class="stat-label">Top up tunai</div><div class="stat-value">Rp {{ number_format($summary['cashTopups'],0,',','.') }}</div></div>
     <div class="card stat"><div class="stat-label">DP reservasi tunai (net)</div><div class="stat-value">Rp {{ number_format($summary['cashReservationDp'],0,',','.') }}</div></div>
@@ -24,16 +28,13 @@
             @csrf
             <div class="field"><label>Modal kas awal</label><input type="text" name="opening_cash" data-money-input data-min="0" value="{{ number_format(old('opening_cash',$closing?->opening_cash ?? 0),0,',','.') }}" required></div>
             <div class="field"><label>Kas fisik saat ditutup</label><input type="text" name="actual_cash" data-money-input data-min="0" value="{{ number_format(old('actual_cash',$closing?->actual_cash ?? 0),0,',','.') }}" required></div>
-            @unless(auth()->user()->isSupervisor())
-                <div class="field full"><label>PIN Manager/SPV cabang aktif</label><input type="password" name="approval_pin" inputmode="numeric" maxlength="12" required></div>
-            @endunless
             <div class="field full"><label>Catatan selisih / serah terima</label><textarea name="notes" rows="3">{{ old('notes',$closing?->notes) }}</textarea></div>
             <div class="field full"><button class="btn btn-primary">{{ $closing ? 'Perbarui tutup kasir' : 'Simpan tutup kasir' }}</button></div>
         </form>
         @if($closing)
             <div class="alert {{ (float)$closing->difference === 0.0 ? 'alert-success' : 'alert-error' }}" style="margin-top:16px">
                 Kas seharusnya <b>Rp {{ number_format($closing->expected_cash,0,',','.') }}</b>, kas fisik <b>Rp {{ number_format($closing->actual_cash,0,',','.') }}</b>, selisih <b>Rp {{ number_format($closing->difference,0,',','.') }}</b>.<br>
-                Disimpan {{ $closing->closed_at->format('H:i') }} oleh {{ $closing->user?->name }} · otorisasi {{ $closing->authorizer?->name }}.
+                Disimpan {{ $closing->closed_at->format('H:i') }} oleh {{ $closing->user?->name }}{{ $closing->authorizer ? ' · otorisasi '.$closing->authorizer->name : '' }}.
             </div>
         @endif
     </section>

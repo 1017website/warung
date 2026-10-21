@@ -110,21 +110,12 @@ class OperationalFlowGapTest extends TestCase
         $this->assertDatabaseHas('daily_menu_stocks', ['product_id' => $menu->id, 'stock_date' => today()->subDay()->toDateString(), 'quantity' => 4]);
     }
 
-    public function test_cashier_closing_reconciles_cash_and_rejects_other_store_pin(): void
+    public function test_cashier_closing_reconciles_cash_without_supervisor_pin(): void
     {
         ['tenant' => $tenant, 'store' => $store, 'admin' => $admin] = $this->setupWarung();
         $cashier = User::create([
             'tenant_id' => $tenant->id, 'store_id' => $store->id, 'name' => 'Kasir', 'email' => 'cashier@flow.test',
             'role' => User::CASHIER, 'is_active' => true, 'password' => 'password',
-        ]);
-        $otherStore = Store::create(['tenant_id' => $tenant->id, 'name' => 'Cabang', 'code' => 'CBG', 'is_active' => true]);
-        User::create([
-            'tenant_id' => $tenant->id, 'store_id' => $otherStore->id, 'name' => 'SPV Lain', 'email' => 'other@flow.test',
-            'role' => User::SPV, 'is_active' => true, 'password' => 'password', 'authorization_pin' => Hash::make('2222'),
-        ]);
-        $localSpv = User::create([
-            'tenant_id' => $tenant->id, 'store_id' => $store->id, 'name' => 'SPV Lokal', 'email' => 'local@flow.test',
-            'role' => User::SPV, 'is_active' => true, 'password' => 'password', 'authorization_pin' => Hash::make('3333'),
         ]);
         $transaction = Transaction::create([
             'tenant_id' => $tenant->id, 'store_id' => $store->id, 'user_id' => $cashier->id,
@@ -144,12 +135,12 @@ class OperationalFlowGapTest extends TestCase
             'description' => 'Beli es', 'amount' => 2000, 'payment_method' => 'cash', 'expense_date' => today(), 'report_type' => 'real',
         ]);
 
-        $payload = ['opening_cash' => 5000, 'actual_cash' => 16000, 'approval_pin' => '2222'];
-        $this->actingAs($cashier)->withSession(['store_id' => $store->id])->post('/kasir/tutup-harian', $payload)->assertStatus(422);
-        $this->actingAs($cashier)->withSession(['store_id' => $store->id])->post('/kasir/tutup-harian', array_merge($payload, ['approval_pin' => '3333']))->assertRedirect();
+        // Tutup kasir tidak meminta PIN Manager/SPV (revisi 21 Oktober 2026).
+        $payload = ['opening_cash' => 5000, 'actual_cash' => 16000];
+        $this->actingAs($cashier)->withSession(['store_id' => $store->id])->post('/kasir/tutup-harian', $payload)->assertRedirect()->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('cashier_closings', [
-            'store_id' => $store->id, 'authorized_by' => $localSpv->id, 'opening_cash' => 5000,
+            'store_id' => $store->id, 'user_id' => $cashier->id, 'authorized_by' => null, 'opening_cash' => 5000,
             'cash_sales' => 10000, 'cash_topups' => 3000, 'cash_expenses' => 2000,
             'expected_cash' => 16000, 'actual_cash' => 16000, 'difference' => 0,
         ]);

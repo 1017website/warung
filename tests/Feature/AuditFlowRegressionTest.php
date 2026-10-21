@@ -61,7 +61,7 @@ class AuditFlowRegressionTest extends TestCase
             $this->actingAs($admin)->postJson('/kasir/'.$action, [
                 'items' => [['id' => $menu->id, 'qty' => 1]], 'service_type' => 'takeaway',
                 'member_id' => $member->id, 'payment_method' => 'deposit',
-            ])->assertNotFound();
+            ])->assertStatus(422)->assertJsonPath('message', fn ($message) => str_contains($message, 'sudah nonaktif'));
         }
         $this->assertSame('50000.00', $member->fresh()->deposit_balance);
         $this->assertDatabaseCount('transactions', 0);
@@ -117,7 +117,8 @@ class AuditFlowRegressionTest extends TestCase
     {
         ['admin' => $admin, 'menu' => $menu] = $this->setupWarung();
         $menu->update(['is_active' => false]);
-        $this->actingAs($admin)->postJson('/kasir/checkout', ['items' => [['id' => $menu->id, 'qty' => 1]], 'service_type' => 'takeaway', 'paid_amount' => 10000])->assertNotFound();
+        $this->actingAs($admin)->postJson('/kasir/checkout', ['items' => [['id' => $menu->id, 'qty' => 1]], 'service_type' => 'takeaway', 'paid_amount' => 10000])
+            ->assertStatus(422)->assertJsonPath('message', fn ($message) => str_contains($message, 'sudah tidak aktif'));
         $this->assertDatabaseCount('transactions', 0);
         $this->assertDatabaseHas('daily_menu_stocks', ['product_id' => $menu->id, 'quantity' => 20]);
     }

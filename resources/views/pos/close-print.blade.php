@@ -120,7 +120,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:t
             @if($closing)
                 <div class="kv"><span>Ditutup</span><span>{{ $closing->closed_at?->format('H:i') }}</span></div>
                 <div class="kv"><span>Kasir</span><span>{{ $closing->user?->name ?? '—' }}</span></div>
-                <div class="kv"><span>Otorisasi</span><span>{{ $closing->authorizer?->name ?? '—' }}</span></div>
+                @if($closing->authorizer)<div class="kv"><span>Otorisasi</span><span>{{ $closing->authorizer->name }}</span></div>@endif
             @endif
             <div class="kv"><span>Dicetak</span><span>{{ now()->format('d/m/Y H:i') }}</span></div>
         </div>

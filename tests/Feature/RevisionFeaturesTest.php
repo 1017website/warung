@@ -87,7 +87,7 @@ class RevisionFeaturesTest extends TestCase
         $transaction = Transaction::firstOrFail();
         $transaction->update(['transacted_at' => now()->subMinute()]);
 
-        $this->actingAs($user)->withSession(['store_id' => $store->id])->delete("/transaksi/{$transaction->id}", ['reason' => 'Salah input pesanan'])->assertStatus(422);
+        $this->actingAs($user)->withSession(['store_id' => $store->id])->delete("/transaksi/{$transaction->id}", ['reason' => 'Salah input pesanan'])->assertRedirect()->assertSessionHasErrors();
         $this->actingAs($user)->withSession(['store_id' => $store->id])->delete("/transaksi/{$transaction->id}", ['reason' => 'Salah input pesanan', 'approval_pin' => '4321'])->assertRedirect();
         $this->assertDatabaseHas('transactions', ['id' => $transaction->id, 'status' => 'voided', 'cancel_reason' => 'Salah input pesanan']);
         $this->assertDatabaseHas('daily_menu_stocks', ['product_id' => $menu->id, 'quantity' => 20]);

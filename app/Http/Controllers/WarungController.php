@@ -222,7 +222,8 @@ class WarungController extends Controller
             return (float) $this->activeStoreRecord()->non_real_percentage / 100;
         }
 
-        return Store::where('tenant_id', $this->tenantId())->where('is_active', true)
+        // Cabang nonaktif ikut di-pluck: transaksinya masih masuk laporan sehingga tetap butuh persentasenya.
+        return Store::where('tenant_id', $this->tenantId())
             ->pluck('non_real_percentage', 'id')
             ->map(fn ($percentage) => (float) $percentage / 100)
             ->all();
@@ -528,7 +529,8 @@ class WarungController extends Controller
             }
 
             $product = Product::with(['category', 'storePrices' => fn ($q) => $q->where('store_id', $storeId), 'prices'])
-                ->where('tenant_id', $this->tenantId())->where('product_type', 'menu')->where('is_active', true)->lockForUpdate()->findOrFail($line['id']);
+                ->where('tenant_id', $this->tenantId())->where('product_type', 'menu')->where('is_active', true)->lockForUpdate()->find($line['id']);
+            abort_unless($product, 422, 'Ada menu di keranjang yang sudah tidak aktif atau diarsipkan. Hapus menu tersebut dari keranjang lalu coba lagi.');
             abort_unless($product->isAvailableAt($storeId), 422, "Menu {$product->name} tidak dijual di cabang ini.");
             $stock = $this->menuStockForDate($product->id);
             // A normal refresh can read an older MySQL repeatable-read snapshot.
@@ -592,7 +594,9 @@ class WarungController extends Controller
         $payments = collect($data['payments'] ?? [
             ['method' => $data['payment_method'] ?? 'cash', 'provider' => null, 'amount' => ($data['payment_method'] ?? 'cash') === 'cash' ? ($data['paid_amount'] ?? 0) : $total],
         ])->filter(fn ($row) => (float) ($row['amount'] ?? 0) > 0)->map(fn ($row) => [
-            'method' => $row['method'], 'provider' => trim((string) ($row['provider'] ?? '')) ?: null, 'amount' => (float) $row['amount'],
+            'method' => $row['method'], 'amount' => (float) $row['amount'],
+            // Provider tersisa dari pilihan QRIS/transfer sebelumnya tidak ikut tercatat di pembayaran tunai/deposit.
+            'provider' => in_array($row['method'], ['transfer', 'qris', 'debit'], true) ? (trim((string) ($row['provider'] ?? '')) ?: null) : null,
         ])->values();
 
         foreach ($payments as $payment) {
@@ -636,7 +640,8 @@ class WarungController extends Controller
         $data = $this->validateOrder($request);
         $transaction = DB::transaction(function () use ($data) {
             $lines = $this->orderLines($data);
-            $member = ! empty($data['member_id']) ? Member::where('tenant_id', $this->tenantId())->where('is_active', true)->lockForUpdate()->findOrFail($data['member_id']) : null;
+            $member = ! empty($data['member_id']) ? Member::where('tenant_id', $this->tenantId())->where('is_active', true)->lockForUpdate()->find($data['member_id']) : null;
+            abort_if(! empty($data['member_id']) && ! $member, 422, 'Member pada transaksi ini sudah nonaktif. Pilih member lain atau kosongkan member.');
             $subtotal = (float) $lines->sum('subtotal');
             [$discountType, $discountValue, $discount] = $this->discountFor($data, $subtotal, $member);
             $transactionType = $data['transaction_type'] ?? 'sale';
@@ -740,7 +745,8 @@ class WarungController extends Controller
         $data = $this->validateOrder($request);
         $transaction = DB::transaction(function () use ($data) {
             $lines = $this->orderLines($data, false);
-            $member = ! empty($data['member_id']) ? Member::where('tenant_id', $this->tenantId())->where('is_active', true)->findOrFail($data['member_id']) : null;
+            $member = ! empty($data['member_id']) ? Member::where('tenant_id', $this->tenantId())->where('is_active', true)->find($data['member_id']) : null;
+            abort_if(! empty($data['member_id']) && ! $member, 422, 'Member pada bill ini sudah nonaktif. Pilih member lain atau kosongkan member.');
             $subtotal = (float) $lines->sum('subtotal');
             [$discountType, $discountValue, $discount] = $this->discountFor($data, $subtotal, $member);
             $trx = null;
@@ -974,13 +980,10 @@ class WarungController extends Controller
             'opening_cash' => 'required|numeric|min:0',
             'actual_cash' => 'required|numeric|min:0',
             'notes' => 'nullable|string|max:500',
-            'approval_pin' => 'nullable|string|min:4|max:12',
         ]);
-        $authorizer = auth()->user()->isSupervisor()
-            ? auth()->user()
-            : $this->supervisorByPin($data['approval_pin'] ?? null);
-        abort_unless($authorizer, 422, 'PIN Manager/SPV cabang aktif diperlukan untuk tutup kasir.');
 
+        // Tutup kasir tidak memakai PIN Manager/SPV (revisi 21 Oktober 2026); otorisasi
+        // hanya tercatat bila yang menyimpan sendiri Manager/SPV.
         $summary = $this->cashierSummary();
         $expected = (float) $data['opening_cash'] + $summary['cashSales'] + $summary['cashTopups'] + $summary['cashReservationDp'] - $summary['cashExpenses'];
         $existing = CashierClosing::where('tenant_id', $this->tenantId())
@@ -994,7 +997,7 @@ class WarungController extends Controller
             [
                 'tenant_id' => $this->tenantId(),
                 'user_id' => auth()->id(),
-                'authorized_by' => $authorizer->id,
+                'authorized_by' => auth()->user()->isSupervisor() ? auth()->id() : null,
                 'opening_cash' => $data['opening_cash'],
                 'cash_sales' => $summary['cashSales'],
                 'cash_topups' => $summary['cashTopups'],
@@ -1345,7 +1348,8 @@ class WarungController extends Controller
         $priceRecords = $this->sheetRecords($book->getSheetByName('Pilihan Harga'));
         $book->disconnectWorksheets();
         $count = 0;
-        DB::transaction(function () use ($records, $storeRecords, $priceRecords, $targets, &$count) {
+        $notes = [];
+        DB::transaction(function () use ($records, $storeRecords, $priceRecords, $targets, &$count, &$notes) {
             foreach ($records as $record) {
                 $sku = $this->sheetText($record->get('sku'));
                 $name = $this->sheetText($record->get('name'));
@@ -1354,15 +1358,28 @@ class WarungController extends Controller
                 }
                 $categoryId = null;
                 if ($category = $this->sheetText($record->get('category'))) {
-                    $categoryId = Category::firstOrCreate(['tenant_id' => $this->tenantId(), 'name' => $category], ['color' => '#78978a'])->id;
+                    // Kategori yang diarsipkan dipulihkan; membuat ulang akan bentrok dengan unique (tenant, nama).
+                    $categoryRow = Category::withTrashed()->firstOrNew(['tenant_id' => $this->tenantId(), 'name' => $category], ['color' => '#78978a']);
+                    if ($categoryRow->trashed()) {
+                        $categoryRow->restore();
+                    }
+                    $categoryRow->save();
+                    $categoryId = $categoryRow->id;
                 }
                 $icon = $this->sheetText($record->get('icon'));
                 $icon = $icon !== '' && Validator::make(['icon' => $icon], ['icon' => MenuIcon::rules()])->passes() ? $icon : null;
                 $sellingPrice = $this->sheetNumber($record->get('selling_price')) ?? 0;
-                $productType = $this->sheetText($record->get('product_type')) === 'ingredient' ? 'ingredient' : 'menu';
+                $productType = in_array(Str::lower($this->sheetText($record->get('product_type'))), ['ingredient', 'bahan baku', 'bahan'], true) ? 'ingredient' : 'menu';
+                $existing = Product::withTrashed()->where('tenant_id', $this->tenantId())->where('product_type', $productType)->where('sku', $sku)->first();
+                // Barcode unik per tenant: barcode milik produk lain tidak dipindahkan agar import tidak gagal total.
+                $barcode = $this->sheetText($record->get('barcode')) ?: null;
+                if ($barcode && ($owner = Product::withTrashed()->where('tenant_id', $this->tenantId())->where('barcode', $barcode)->where('id', '!=', $existing?->id ?? 0)->first())) {
+                    $notes[] = "barcode {$barcode} sudah dipakai {$owner->name}";
+                    $barcode = $existing?->barcode;
+                }
                 $product = Product::withTrashed()->updateOrCreate(
                     ['tenant_id' => $this->tenantId(), 'product_type' => $productType, 'sku' => $sku],
-                    ['name' => $name, 'barcode' => $this->sheetText($record->get('barcode')) ?: null, 'category_id' => $categoryId,
+                    ['name' => $name, 'barcode' => $barcode, 'category_id' => $categoryId,
                         'unit' => $this->sheetText($record->get('unit')) ?: 'pcs', 'purchase_price' => $this->sheetNumber($record->get('purchase_price')) ?? 0,
                         'selling_price' => $sellingPrice, 'online_selling_price' => $this->sheetNumber($record->get('online_selling_price')) ?: $sellingPrice,
                         'minimum_stock' => (int) ($this->sheetNumber($record->get('minimum_stock')) ?? 0), 'is_active' => true, 'deleted_at' => null]
@@ -1372,7 +1389,11 @@ class WarungController extends Controller
                 $initial = (float) ($this->sheetNumber($record->get('initial_stock')) ?? 0);
                 foreach ($targets as $store) {
                     if ($product->product_type === 'menu') {
-                        DailyMenuStock::firstOrCreate(['tenant_id' => $this->tenantId(), 'store_id' => $store->id, 'product_id' => $product->id, 'stock_date' => today()], ['quantity' => $initial]);
+                        // Menu yang sudah pernah punya stok di cabang ini membawa sisa kemarin; Stok awal hanya untuk stok baru.
+                        $hasHistory = DailyMenuStock::where('tenant_id', $this->tenantId())->where('store_id', $store->id)->where('product_id', $product->id)->exists();
+                        $hasHistory
+                            ? $this->menuStockForDate($product->id, null, $store->id)
+                            : DailyMenuStock::create(['tenant_id' => $this->tenantId(), 'store_id' => $store->id, 'product_id' => $product->id, 'stock_date' => today(), 'quantity' => $initial]);
                     } else {
                         ProductStock::firstOrCreate(['tenant_id' => $this->tenantId(), 'store_id' => $store->id, 'product_id' => $product->id], ['quantity' => $initial]);
                     }
@@ -1383,7 +1404,8 @@ class WarungController extends Controller
             $this->importProductPrices($storeRecords, $priceRecords);
         });
 
-        return back()->with('success', $count.' produk berhasil diimpor/diperbarui'.($targets->count() > 1 ? '; stok masuk ke '.$targets->pluck('name')->join(', ', ' dan ') : '').'.');
+        return back()->with('success', $count.' produk berhasil diimpor/diperbarui'.($targets->count() > 1 ? '; stok masuk ke '.$targets->pluck('name')->join(', ', ' dan ') : '').'.'
+            .($notes ? ' Catatan: '.implode('; ', array_unique($notes)).'.' : ''));
     }
 
     /** Sheet Harga Warung dan Pilihan Harga bersifat opsional; baris yang tidak dikenali dilewati. */
@@ -1435,7 +1457,7 @@ class WarungController extends Controller
                 $moves = $movementsToday->get($stock->product_id, collect());
                 $record = $this->inventoryRecordFor($stock->product, (float) $stock->quantity - (float) $moves->sum('quantity'));
                 $stock->opening = $record->opening_quantity;
-                $stock->incoming = $moves->filter(fn ($move) => $move->quantity > 0 && in_array($move->activity, ['purchase', 'adjustment'], true))->sum('quantity');
+                $stock->incoming = $this->incomingTotal($moves);
                 $stock->used = $record->used_quantity;
                 $stock->processed = abs($moves->where('activity', 'production')->where('quantity', '<', 0)->sum('quantity'));
                 $stock->waste = (float) $record->waste_quantity;
@@ -1502,6 +1524,7 @@ class WarungController extends Controller
         $data = $request->validate([
             'opening_quantity' => 'sometimes|numeric|min:0',
             'used_quantity' => 'sometimes|numeric|min:0',
+            'incoming_quantity' => 'sometimes|numeric|min:0',
             'waste_quantity' => 'sometimes|numeric|min:0',
             'produced_quantity' => 'sometimes|numeric|min:0',
             'consumption_quantity' => 'sometimes|numeric|min:0',
@@ -1517,6 +1540,9 @@ class WarungController extends Controller
         }
         if (array_key_exists('used_quantity', $data)) {
             abort_unless($product->product_type === 'ingredient', 422, 'Stok terpakai manual hanya berlaku untuk bahan baku.');
+        }
+        if (array_key_exists('incoming_quantity', $data)) {
+            abort_unless($product->product_type === 'ingredient', 422, 'Stok datang manual hanya berlaku untuk bahan baku.');
         }
 
         $result = $this->applyInventoryRowChanges($product, $data);
@@ -1603,6 +1629,23 @@ class WarungController extends Controller
             // gerakan stok dengan aktivitas yang sama sehingga tabel dan audit tetap sinkron.
             $todayMoves = DB::table('stock_movements')->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())
                 ->where('product_id', $product->id)->whereDate('created_at', today());
+
+            // Stok datang = pembelian + penyesuaian masuk + koreksi manual; yang diketik adalah total hari ini.
+            if (array_key_exists('incoming_quantity', $data)) {
+                $current = $this->incomingTotal((clone $todayMoves)->get());
+                $incomingDelta = (float) $data['incoming_quantity'] - $current;
+                $changes['incoming_quantity'] = [$current, (float) $data['incoming_quantity']];
+                abort_if($balance + $incomingDelta < -0.0005, 422, 'Koreksi stok datang membuat sisa stok negatif.');
+                $balance += $incomingDelta;
+                if (abs($incomingDelta) > 0.0005) {
+                    DB::table('stock_movements')->insert([
+                        'tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id,
+                        'user_id' => auth()->id(), 'type' => $incomingDelta > 0 ? 'adjustment_in' : 'adjustment_out',
+                        'activity' => 'incoming', 'quantity' => $incomingDelta, 'reference' => 'IN-EDIT-'.today()->format('Ymd'),
+                        'notes' => 'Live edit stok datang', 'created_at' => now(), 'updated_at' => now(),
+                    ]);
+                }
+            }
             foreach ([
                 'produced_quantity' => ['production', 1, 'PROD', 'Live edit tambahan olahan', 'Tambahan olahan'],
                 'consumption_quantity' => ['consumption', -1, 'CONS', 'Live edit konsumsi', 'Konsumsi'],
@@ -1677,6 +1720,15 @@ class WarungController extends Controller
                 'notes' => $record->notes,
             ];
         });
+    }
+
+    /** Total stok datang hari ini dari gerakan stok satu produk: barang masuk ditambah koreksi live edit. */
+    private function incomingTotal($moves): float
+    {
+        $moves = collect($moves);
+
+        return max(0, (float) $moves->filter(fn ($move) => $move->quantity > 0 && in_array($move->activity, ['purchase', 'adjustment'], true))->sum('quantity')
+            + (float) $moves->where('activity', 'incoming')->sum('quantity'));
     }
 
     public function reprocessStock(Request $request)
@@ -1929,7 +1981,8 @@ class WarungController extends Controller
         ]);
         $product = Product::where('tenant_id', $this->tenantId())->where('is_active', true)->findOrFail($data['product_id']);
         $total = $data['quantity'] * $data['unit_cost'];
-        abort_if(($data['dp_amount'] ?? 0) > $total, 422, 'DP tidak boleh melebihi total pembelian.');
+        // DP hanya diperiksa untuk status DP; field DP tersembunyi bisa masih berisi nilai lama.
+        abort_if($data['payment_status'] === 'dp' && ($data['dp_amount'] ?? 0) > $total, 422, 'DP tidak boleh melebihi total pembelian.');
         DB::transaction(function () use ($data, $product, $total) {
             $received = $data['status'] === 'received';
             $purchase = Purchase::create([
@@ -1959,7 +2012,8 @@ class WarungController extends Controller
         ]);
         $product = Product::where('tenant_id', $this->tenantId())->where('is_active', true)->findOrFail($data['product_id']);
         $total = (float) $data['quantity'] * (float) $data['unit_cost'];
-        abort_if(($data['dp_amount'] ?? 0) > $total, 422, 'DP tidak boleh melebihi total pembelian.');
+        // DP hanya diperiksa untuk status DP; field DP tersembunyi bisa masih berisi nilai lama.
+        abort_if($data['payment_status'] === 'dp' && ($data['dp_amount'] ?? 0) > $total, 422, 'DP tidak boleh melebihi total pembelian.');
 
         DB::transaction(function () use ($purchase, $product, $data, $total) {
             $locked = Purchase::where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())
@@ -2041,7 +2095,7 @@ class WarungController extends Controller
         abort_unless($purchase->tenant_id === $this->tenantId(), 404);
         $this->assertStoreAccess($purchase->store_id);
         $data = $request->validate(['status' => ['required', Rule::in(['received', 'not_received'])], 'payment_status' => ['required', Rule::in(['paid', 'dp', 'unpaid'])], 'dp_amount' => 'nullable|numeric|min:0']);
-        abort_if(($data['dp_amount'] ?? 0) > $purchase->total, 422, 'DP tidak boleh melebihi total pembelian.');
+        abort_if($data['payment_status'] === 'dp' && ($data['dp_amount'] ?? 0) > $purchase->total, 422, 'DP tidak boleh melebihi total pembelian.');
         DB::transaction(function () use ($purchase, $data) {
             $purchase = Purchase::whereKey($purchase->id)->lockForUpdate()->firstOrFail();
             if ($data['status'] === 'received' && ! $purchase->received_at) {
@@ -2410,15 +2464,16 @@ class WarungController extends Controller
             ->when($from, fn ($inner) => $inner->where($column === 'store_id' ? 'transacted_at' : 'deposit_transactions.created_at', '>=', $from))
             ->when($to, fn ($inner) => $inner->where($column === 'store_id' ? 'transacted_at' : 'deposit_transactions.created_at', '<=', $to));
 
-        $mutations = $scope(DB::table('deposit_transactions')
+        $allMutations = $scope(DB::table('deposit_transactions')
             ->leftJoin('stores', 'stores.id', '=', 'deposit_transactions.store_id')
             ->leftJoin('users', 'users.id', '=', 'deposit_transactions.user_id')
             ->leftJoin('transactions', 'transactions.id', '=', 'deposit_transactions.transaction_id')
             ->where('deposit_transactions.tenant_id', $this->tenantId())
-            ->where('deposit_transactions.member_id', $member->id)
-            ->when(in_array($request->get('type'), ['credit', 'debit'], true), fn ($query) => $query->where('deposit_transactions.type', $request->get('type'))), 'deposit_transactions.store_id')
+            ->where('deposit_transactions.member_id', $member->id), 'deposit_transactions.store_id')
             ->select('deposit_transactions.*', 'stores.name as store_name', 'users.name as user_name', 'transactions.invoice_no')
             ->orderByDesc('deposit_transactions.created_at')->orderByDesc('deposit_transactions.id');
+        // Filter Masuk/Keluar hanya untuk daftar mutasi; total top up & deposit terpakai tetap utuh.
+        $mutations = (clone $allMutations)->when(in_array($request->get('type'), ['credit', 'debit'], true), fn ($query) => $query->where('deposit_transactions.type', $request->get('type')));
         $transactions = $scope(Transaction::with(['store', 'user', 'payments', 'items'])
             ->where('tenant_id', $this->tenantId())->where('member_id', $member->id)->whereIn('status', ['completed', 'voided']), 'store_id')
             ->latest('transacted_at');
@@ -2427,8 +2482,8 @@ class WarungController extends Controller
             'spent' => (float) (clone $completed)->sum('total'),
             'visits' => (clone $completed)->count(),
             'last_visit' => (clone $completed)->max('transacted_at'),
-            'topups' => (float) (clone $mutations)->where('deposit_transactions.type', 'credit')->whereNull('deposit_transactions.transaction_id')->sum('deposit_transactions.amount'),
-            'deposit_used' => (float) (clone $mutations)->where('deposit_transactions.type', 'debit')->whereNotNull('deposit_transactions.transaction_id')->sum('deposit_transactions.amount'),
+            'topups' => (float) (clone $allMutations)->where('deposit_transactions.type', 'credit')->whereNull('deposit_transactions.transaction_id')->sum('deposit_transactions.amount'),
+            'deposit_used' => (float) (clone $allMutations)->where('deposit_transactions.type', 'debit')->whereNotNull('deposit_transactions.transaction_id')->sum('deposit_transactions.amount'),
         ];
 
         return compact('mutations', 'transactions', 'summary', 'from', 'to', 'allStores');
@@ -2608,7 +2663,9 @@ class WarungController extends Controller
         $store = $this->activeStoreRecord();
         $scopeLabel = $consolidated ? 'Semua warung' : $store->name;
         $data = $this->productSalesData($storeId, $from, $to, $factor);
-        $job = fn (int $columns) => EposReceipt::productSales($store->brandName(), $scopeLabel, $from, $to, $data, $columns, $type === 'non_real');
+        // Kasir dan role lain tanpa Ringkasan/Laporan hanya melihat qty, tanpa nilai penjualan & omzet.
+        $showRevenue = auth()->user()->canSeeRevenue();
+        $job = fn (int $columns) => EposReceipt::productSales($store->brandName(), $scopeLabel, $from, $to, $data, $columns, $type === 'non_real', $showRevenue);
         $rawbtPrinter = $this->rawbtPrinter();
         $eposPrinter = $this->eposPrinter();
 
@@ -2619,6 +2676,7 @@ class WarungController extends Controller
             'to' => $to,
             'store' => $store,
             'scopeLabel' => $scopeLabel,
+            'showRevenue' => $showRevenue,
             'backUrl' => auth()->user()->canAccess('reports') ? route('reports', ['type' => $type, 'period' => 'custom', 'from' => $from->toDateString(), 'to' => $to->toDateString()]) : route('pos.close'),
             'rawbtPrinter' => $rawbtPrinter,
             'rawbtUri' => $rawbtPrinter ? RawbtReceipt::uri([$job(32)]) : null,
@@ -2741,8 +2799,14 @@ class WarungController extends Controller
     {
         abort_unless(auth()->user()->canManageSystem(), 403);
         $key = $request->validate([
-            'key' => ['required', 'string', 'max:30', 'regex:/^[a-z][a-z0-9_]*$/', Rule::unique('roles')->where('tenant_id', $this->tenantId())],
-        ])['key'];
+            'key' => ['required', 'string', 'max:30', 'regex:/^[a-z][a-z0-9_]*$/', Rule::unique('roles')->where('tenant_id', $this->tenantId())->whereNull('deleted_at')],
+        ], ['key.unique' => 'Kode role sudah dipakai role aktif.'])['key'];
+        if ($trashed = Role::onlyTrashed()->where('tenant_id', $this->tenantId())->where('key', $key)->first()) {
+            $trashed->restore();
+            $trashed->update($this->roleData($request) + ['is_system' => false]);
+
+            return back()->with('success', 'Role berhasil dibuat.');
+        }
         Role::create($this->roleData($request) + [
             'tenant_id' => $this->tenantId(),
             'key' => $key,
@@ -2906,7 +2970,7 @@ class WarungController extends Controller
         abort_unless(auth()->user()->canManageSetting('devices'), 403);
         $data = $this->deviceData($request);
         if (! empty($data['store_id'])) {
-            abort_unless(Store::where('tenant_id', $this->tenantId())->where('is_active', true)->whereKey($data['store_id'])->exists(), 422);
+            abort_unless(Store::where('tenant_id', $this->tenantId())->where('is_active', true)->whereKey($data['store_id'])->exists(), 422, 'Cabang yang dipilih tidak aktif.');
             $this->assertStoreAccess((int) $data['store_id']);
         }
         $this->assertStoreAccess(isset($data['store_id']) ? (int) $data['store_id'] : null);
@@ -2967,7 +3031,7 @@ class WarungController extends Controller
         $this->assertStoreAccess($device->store_id);
         $data = $this->deviceData($request);
         if (! empty($data['store_id'])) {
-            abort_unless(Store::where('tenant_id', $this->tenantId())->where('is_active', true)->whereKey($data['store_id'])->exists(), 422);
+            abort_unless(Store::where('tenant_id', $this->tenantId())->where('is_active', true)->whereKey($data['store_id'])->exists(), 422, 'Cabang yang dipilih tidak aktif.');
         }
         $this->assertStoreAccess(isset($data['store_id']) ? (int) $data['store_id'] : null);
         $device->update($data);
@@ -3005,7 +3069,7 @@ class WarungController extends Controller
         // Role diambil dari master, kecuali role sistem yang tidak boleh ditugaskan ke akun baru.
         $assignable = Role::where('tenant_id', $this->tenantId())->where('is_system', false)->pluck('key')->all();
         $data = $request->validate(['name' => 'required|string|max:120', 'email' => 'required|email|unique:users,email', 'role' => ['required', Rule::in($assignable)], 'store_id' => 'required|integer', 'password' => 'required|string|min:8', 'authorization_pin' => 'nullable|digits_between:4,8']);
-        abort_unless(Store::where('tenant_id', $this->tenantId())->where('is_active', true)->whereKey($data['store_id'])->exists(), 422);
+        abort_unless(Store::where('tenant_id', $this->tenantId())->where('is_active', true)->whereKey($data['store_id'])->exists(), 422, 'Cabang yang dipilih tidak aktif.');
         if (! empty($data['authorization_pin'])) {
             $data['authorization_pin'] = Hash::make($data['authorization_pin']);
         }
@@ -3030,7 +3094,7 @@ class WarungController extends Controller
             'password' => 'nullable|string|min:8',
             'authorization_pin' => 'nullable|digits_between:4,8',
         ]);
-        abort_unless(Store::where('tenant_id', $this->tenantId())->where('is_active', true)->whereKey($data['store_id'])->exists(), 422);
+        abort_unless(Store::where('tenant_id', $this->tenantId())->where('is_active', true)->whereKey($data['store_id'])->exists(), 422, 'Cabang yang dipilih tidak aktif.');
         if (blank($data['password'] ?? null)) {
             unset($data['password']);
         }
@@ -3051,6 +3115,8 @@ class WarungController extends Controller
         abort_if($user->role === User::DEVELOPER && ! auth()->user()->isDeveloper(), 403);
         $isActive = (bool) $request->validate(['is_active' => 'required|boolean'])['is_active'];
         if ($isActive) {
+            abort_if(! $user->canAccessAllStores() && ! Store::where('tenant_id', $this->tenantId())->where('is_active', true)->whereKey($user->store_id)->exists(),
+                422, 'Cabang akun ini sedang nonaktif. Aktifkan cabangnya atau pindahkan akun ke cabang aktif terlebih dahulu.');
             $user->restore();
             $user->update(['is_active' => true]);
         } else {

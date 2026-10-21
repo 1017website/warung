@@ -65,7 +65,7 @@ h1{font-size:14px;margin:4px 0}.muted{font-size:10px}.line{border-top:1px dashed
 @endif
 <p>Untuk cetak browser: pilih kertas 58 mm, skala 100%, margin tidak ada, serta matikan header/footer. Jumlah salinan: 1. Isi struk mengikuti pilihan salinan di atas.</p>
 </details>
-<a href="{{ route('pos') }}">Kembali ke kasir</a>
+@if(! auth()->check() || auth()->user()->canAccess('pos'))<a href="{{ route('pos') }}">Kembali ke kasir</a>@else<a href="{{ url()->previous() }}">Kembali</a>@endif
 </div>
 @php
     $receiptGroups = $transaction->items->groupBy(fn ($item) => trim($item->category_name ?? '') ?: 'Umum')->sortKeys();

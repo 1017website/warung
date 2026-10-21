@@ -1,0 +1,6157 @@
+{
+  "findings": [
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "console-error",
+      "url": "http://127.0.0.1:8765/gudang",
+      "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Content)"
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "live-edit",
+      "url": "consumption_quantity",
+      "detail": "422 {\n    \"message\": \"Konsumsi membuat sisa stok negatif.\",\n    \"exception\": \"Symfony\\\\Component\\\\HttpKernel\\\\Exception\\\\HttpException\",\n    \"file\": \"D:\\\\Project\\\\1017website 2026\\\\warung\\\\vendor\\\\laravel Konsumsi membuat sisa stok negatif."
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "console-error",
+      "url": "http://127.0.0.1:8765/gudang",
+      "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Content)"
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "live-edit",
+      "url": "consumption_quantity",
+      "detail": "422 {\n    \"message\": \"Konsumsi membuat sisa stok negatif.\",\n    \"exception\": \"Symfony\\\\Component\\\\HttpKernel\\\\Exception\\\\HttpException\",\n    \"file\": \"D:\\\\Project\\\\1017website 2026\\\\warung\\\\vendor\\\\laravel Konsumsi membuat sisa stok negatif."
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "console-error",
+      "url": "http://127.0.0.1:8765/gudang",
+      "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Content)"
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "live-edit",
+      "url": "consumption_quantity",
+      "detail": "422 {\n    \"message\": \"Konsumsi membuat sisa stok negatif.\",\n    \"exception\": \"Symfony\\\\Component\\\\HttpKernel\\\\Exception\\\\HttpException\",\n    \"file\": \"D:\\\\Project\\\\1017website 2026\\\\warung\\\\vendor\\\\laravel Konsumsi membuat sisa stok negatif."
+    }
+  ],
+  "log": [
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "pos-checkout",
+      "status": 200,
+      "detail": ""
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "page",
+      "url": "/kasir",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "page",
+      "url": "/reservasi",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi?date=2026-10-20",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi?date=2026-10-22",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "POST /reservasi",
+      "label": "Reservasi baru",
+      "status": 200,
+      "final": "/reservasi?date=2026-10-21",
+      "error": null,
+      "success": "Reservasi RSV-261021-DSE7 a.n. Audit 366913 tersimpan.",
+      "dialogs": []
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "trigger edit-reservation /reservasi/{id}",
+      "status": 200,
+      "final": "/reservasi",
+      "error": null,
+      "success": "Reservasi RSV-261021-DSE7 diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "trigger cancel-reservation /reservasi/{id}/status",
+      "status": 200,
+      "final": "/reservasi",
+      "error": null,
+      "success": "Reservasi dibatalkan.",
+      "dialogs": []
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "page",
+      "url": "/transaksi",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi?status=pending",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi?status=voided",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi/1/print",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "form",
+      "page": "/transaksi",
+      "url": "trigger cancel-trigger /transaksi/{id}",
+      "status": 200,
+      "final": "/transaksi",
+      "error": null,
+      "success": "Transaksi dibatalkan, stok, deposit, dan DP reservasi terkait telah dipulihkan.",
+      "dialogs": []
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "page",
+      "url": "/gudang",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang/import/template",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "form-skipped",
+      "url": "POST /gudang/import",
+      "detail": "file-required",
+      "page": "/gudang"
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/production",
+      "label": "Catat produksi olahan",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Produksi tercatat; bahan baku dan stok olahan otomatis terhubung.",
+      "dialogs": []
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/reprocess",
+      "label": "Catat proses ulang",
+      "status": 200,
+      "final": "/gudang",
+      "error": "Kolom source product id dan target product id harus berbeda.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/rusak",
+      "label": "Catat bahan rusak / tidak layak",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stok rusak Ayam Kampung tercatat dan saldo stok berkurang.",
+      "dialogs": []
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/adjust",
+      "label": "Penyesuaian stok",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stok berhasil disesuaikan.",
+      "dialogs": []
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/count",
+      "label": "Stock opname akhir hari",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stock opname tersimpan dan saldo sistem direset ke stok fisik.",
+      "dialogs": []
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "page",
+      "url": "/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "POST /pengeluaran",
+      "label": "Catat pengeluaran",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran berhasil dicatat.",
+      "dialogs": []
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "trigger edit-expense /pengeluaran/{id}",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "page",
+      "url": "/member",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member/export",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "POST /member",
+      "label": "Scan kartu lalu isi data",
+      "status": 200,
+      "final": "/member",
+      "error": "Kolom nama wajib diisi.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "page",
+      "url": "/kasir/tutup-harian",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=a4&autoprint=1",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=58",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=a4&detail=1",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan/produk-terjual/cetak?paper=58",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "pos-checkout",
+      "status": 200,
+      "detail": "{\"ok\":true,\"invoice\":\"TRX-261021-170944-ZTW\",\"print_url\":\"http:\\/\\/127.0.0.1:8765\\/transaksi\\/2\\/print\"}"
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "page",
+      "url": "/kasir",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form",
+      "page": "/kasir",
+      "url": "POST /kasir/custom-amount",
+      "label": "Custom OFF",
+      "status": 200,
+      "final": "/kasir",
+      "error": null,
+      "success": "Custom amount diaktifkan.",
+      "dialogs": []
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "page",
+      "url": "/reservasi",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi?date=2026-10-20",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi?date=2026-10-22",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "POST /reservasi",
+      "label": "Reservasi baru",
+      "status": 200,
+      "final": "/reservasi?date=2026-10-21",
+      "error": null,
+      "success": "Reservasi RSV-261021-FNSQ a.n. Audit 402810 tersimpan.",
+      "dialogs": []
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "trigger edit-reservation /reservasi/{id}",
+      "status": 200,
+      "final": "/reservasi",
+      "error": null,
+      "success": "Reservasi RSV-261021-FNSQ diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "trigger cancel-reservation /reservasi/{id}/status",
+      "status": 200,
+      "final": "/reservasi",
+      "error": null,
+      "success": "Reservasi dibatalkan.",
+      "dialogs": []
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "page",
+      "url": "/transaksi",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi?status=pending",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi?status=voided",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi/2/print",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form",
+      "page": "/transaksi",
+      "url": "trigger cancel-trigger /transaksi/{id}",
+      "status": 200,
+      "final": "/transaksi",
+      "error": null,
+      "success": "Transaksi dibatalkan, stok, deposit, dan DP reservasi terkait telah dipulihkan.",
+      "dialogs": []
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "page",
+      "url": "/gudang",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang/import/template",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form-skipped",
+      "url": "POST /gudang/import",
+      "detail": "file-required",
+      "page": "/gudang"
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/production",
+      "label": "Catat produksi olahan",
+      "status": 200,
+      "final": "/gudang",
+      "error": "Stok bahan baku tidak mencukupi untuk produksi.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/reprocess",
+      "label": "Catat proses ulang",
+      "status": 200,
+      "final": "/gudang",
+      "error": "Kolom source product id dan target product id harus berbeda.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/rusak",
+      "label": "Catat bahan rusak / tidak layak",
+      "status": 200,
+      "final": "/gudang",
+      "error": "Jumlah rusak melebihi sisa stok.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/adjust",
+      "label": "Penyesuaian stok",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stok berhasil disesuaikan.",
+      "dialogs": []
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/count",
+      "label": "Stock opname akhir hari",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stock opname tersimpan dan saldo sistem direset ke stok fisik.",
+      "dialogs": []
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "page",
+      "url": "/inventaris",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris/export",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "POST /inventaris",
+      "label": "Tambah barang inventaris",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 413390 berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "trigger edit-asset /inventaris/{id}",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 414484 berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "page",
+      "url": "/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "DELETE /pengeluaran/{id}",
+      "label": "Hapus",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran dipindahkan ke arsip.",
+      "dialogs": [
+        "Hapus pengeluaran ini? Data tetap disimpan di arsip audit."
+      ]
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "POST /pengeluaran",
+      "label": "Catat pengeluaran",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran berhasil dicatat.",
+      "dialogs": []
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "trigger edit-expense /pengeluaran/{id}",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "page",
+      "url": "/member",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member/export",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "POST /member",
+      "label": "Scan kartu lalu isi data",
+      "status": 200,
+      "final": "/member",
+      "error": "Kolom nama wajib diisi.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "page",
+      "url": "/kasir/tutup-harian",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=a4&autoprint=1",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=58",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=a4&detail=1",
+      "status": 200
+    },
+    {
+      "role": "spv",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan/produk-terjual/cetak?paper=58",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "pos-checkout",
+      "status": 200,
+      "detail": ""
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "page",
+      "url": "/kasir",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form",
+      "page": "/kasir",
+      "url": "POST /kasir/custom-amount",
+      "label": "Custom ON",
+      "status": 200,
+      "final": "/kasir",
+      "error": null,
+      "success": "Custom amount dinonaktifkan.",
+      "dialogs": []
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "page",
+      "url": "/reservasi",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi?date=2026-10-20",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi?date=2026-10-22",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "POST /reservasi",
+      "label": "Reservasi baru",
+      "status": 200,
+      "final": "/reservasi?date=2026-10-21",
+      "error": null,
+      "success": "Reservasi RSV-261021-VREW a.n. Audit 442330 tersimpan.",
+      "dialogs": []
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "trigger edit-reservation /reservasi/{id}",
+      "status": 200,
+      "final": "/reservasi",
+      "error": null,
+      "success": "Reservasi RSV-261021-VREW diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "trigger cancel-reservation /reservasi/{id}/status",
+      "status": 200,
+      "final": "/reservasi",
+      "error": null,
+      "success": "Reservasi dibatalkan.",
+      "dialogs": []
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "page",
+      "url": "/transaksi",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi?status=pending",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi?status=voided",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi/3/print",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form",
+      "page": "/transaksi",
+      "url": "trigger cancel-trigger /transaksi/{id}",
+      "status": 200,
+      "final": "/transaksi",
+      "error": null,
+      "success": "Transaksi dibatalkan, stok, deposit, dan DP reservasi terkait telah dipulihkan.",
+      "dialogs": []
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "page",
+      "url": "/gudang",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang/import/template",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form-skipped",
+      "url": "POST /gudang/import",
+      "detail": "file-required",
+      "page": "/gudang"
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/production",
+      "label": "Catat produksi olahan",
+      "status": 200,
+      "final": "/gudang",
+      "error": "Stok bahan baku tidak mencukupi untuk produksi.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/reprocess",
+      "label": "Catat proses ulang",
+      "status": 200,
+      "final": "/gudang",
+      "error": "Kolom source product id dan target product id harus berbeda.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/rusak",
+      "label": "Catat bahan rusak / tidak layak",
+      "status": 200,
+      "final": "/gudang",
+      "error": "Jumlah rusak melebihi sisa stok.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/adjust",
+      "label": "Penyesuaian stok",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stok berhasil disesuaikan.",
+      "dialogs": []
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/count",
+      "label": "Stock opname akhir hari",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stock opname tersimpan dan saldo sistem direset ke stok fisik.",
+      "dialogs": []
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "page",
+      "url": "/inventaris",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris/export",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "DELETE /inventaris/{id}",
+      "label": "",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 414484 dipindahkan ke arsip.",
+      "dialogs": [
+        "Arsipkan barang ini?"
+      ]
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "POST /inventaris",
+      "label": "Tambah barang inventaris",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 453753 berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "trigger edit-asset /inventaris/{id}",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 454855 berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "page",
+      "url": "/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "DELETE /pengeluaran/{id}",
+      "label": "Hapus",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran dipindahkan ke arsip.",
+      "dialogs": [
+        "Hapus pengeluaran ini? Data tetap disimpan di arsip audit."
+      ]
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "POST /pengeluaran",
+      "label": "Catat pengeluaran",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran berhasil dicatat.",
+      "dialogs": []
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "trigger edit-expense /pengeluaran/{id}",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "page",
+      "url": "/member",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member/export",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "POST /member",
+      "label": "Scan kartu lalu isi data",
+      "status": 200,
+      "final": "/member",
+      "error": "Kolom nama wajib diisi.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "page",
+      "url": "/kasir/tutup-harian",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=a4&autoprint=1",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=58",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=a4&detail=1",
+      "status": 200
+    },
+    {
+      "role": "outlet_manager",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan/produk-terjual/cetak?paper=58",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "pos-checkout",
+      "status": 200,
+      "detail": "{\"ok\":true,\"invoice\":\"TRX-261021-171104-FNQ\",\"print_url\":\"http:\\/\\/127.0.0.1:8765\\/transaksi\\/4\\/print\"}"
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/kasir",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pembelian",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/reservasi",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi?date=2026-10-20",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi?date=2026-10-22",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "POST /reservasi",
+      "label": "Reservasi baru",
+      "status": 200,
+      "final": "/reservasi?date=2026-10-21",
+      "error": null,
+      "success": "Reservasi RSV-261021-OVG7 a.n. Audit 482234 tersimpan.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "trigger edit-reservation /reservasi/{id}",
+      "status": 200,
+      "final": "/reservasi",
+      "error": null,
+      "success": "Reservasi RSV-261021-OVG7 diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "trigger cancel-reservation /reservasi/{id}/status",
+      "status": 200,
+      "final": "/reservasi",
+      "error": null,
+      "success": "Reservasi dibatalkan.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/transaksi",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi?status=pending",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi?status=voided",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi/4/print",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/transaksi",
+      "url": "trigger cancel-trigger /transaksi/{id}",
+      "status": 200,
+      "final": "/transaksi",
+      "error": null,
+      "success": "Transaksi dibatalkan, stok, deposit, dan DP reservasi terkait telah dipulihkan.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/produk",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk/export",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk/import/template/outlet",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk/import/template/standard",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "DELETE /produk/{id}",
+      "label": "",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Produk dipindahkan ke arsip.",
+      "dialogs": [
+        "Arsipkan produk ini?"
+      ]
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "POST /produk/kategori",
+      "label": "Kelola kategori",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Kategori produk berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "PUT /produk/kategori/{id}",
+      "label": "Kelola kategori",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Kategori produk berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "DELETE /produk/kategori/{id}",
+      "label": "Kelola kategori",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Kategori dipindahkan ke arsip.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "POST /produk",
+      "label": "Tambah produk",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Produk berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form-skipped",
+      "url": "POST /produk/import",
+      "detail": "file-required",
+      "page": "/produk"
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "trigger edit-product /produk/{id}",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Produk berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "trigger edit-prices /produk/{id}/harga",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Harga Audit 493196 berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/gudang",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang/import/template",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form-skipped",
+      "url": "POST /gudang/import",
+      "detail": "file-required",
+      "page": "/gudang"
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/production",
+      "label": "Catat produksi olahan",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Produksi tercatat; bahan baku dan stok olahan otomatis terhubung.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/reprocess",
+      "label": "Catat proses ulang",
+      "status": 200,
+      "final": "/gudang",
+      "error": "Kolom source product id dan target product id harus berbeda.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/rusak",
+      "label": "Catat bahan rusak / tidak layak",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stok rusak Udang tercatat dan saldo stok berkurang.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/adjust",
+      "label": "Penyesuaian stok",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stok berhasil disesuaikan.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/count",
+      "label": "Stock opname akhir hari",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stock opname tersimpan dan saldo sistem direset ke stok fisik.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/inventaris",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris/export",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "DELETE /inventaris/{id}",
+      "label": "",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 454855 dipindahkan ke arsip.",
+      "dialogs": [
+        "Arsipkan barang ini?"
+      ]
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "POST /inventaris/{id}/restore",
+      "label": "Pulihkan",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 454855 berhasil dipulihkan.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "POST /inventaris",
+      "label": "Tambah barang inventaris",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 502344 berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "trigger edit-asset /inventaris/{id}",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 503486 berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/pembelian",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pembelian",
+      "url": "POST /pembelian",
+      "label": "Catat pembelian",
+      "status": 200,
+      "final": "/pembelian",
+      "error": null,
+      "success": "Pembelian berhasil dicatat.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pembelian",
+      "url": "trigger edit-purchase /pembelian/{id}",
+      "status": 200,
+      "final": "/pembelian",
+      "error": null,
+      "success": "Data pembelian dan dampak stok berhasil dikoreksi.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "DELETE /pengeluaran/{id}",
+      "label": "Hapus",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran dipindahkan ke arsip.",
+      "dialogs": [
+        "Hapus pengeluaran ini? Data tetap disimpan di arsip audit."
+      ]
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "POST /pengeluaran",
+      "label": "Catat pengeluaran",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran berhasil dicatat.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "trigger edit-expense /pengeluaran/{id}",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/member",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member/export",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "POST /member",
+      "label": "Scan kartu lalu isi data",
+      "status": 200,
+      "final": "/member",
+      "error": "Kolom nama wajib diisi.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/kasir/tutup-harian",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=a4&autoprint=1",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=58",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=a4&detail=1",
+      "status": 200
+    },
+    {
+      "role": "ops_admin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan/produk-terjual/cetak?paper=58",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "pos-checkout",
+      "status": 200,
+      "detail": ""
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "json-422",
+      "url": "PATCH http://127.0.0.1:8765/gudang/stock/6"
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "alert",
+      "url": "http://127.0.0.1:8765/gudang",
+      "detail": "Konsumsi membuat sisa stok negatif."
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "page",
+      "url": "/dashboard",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/dashboard",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pembelian",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "page",
+      "url": "/kasir",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/kasir",
+      "url": "POST /kasir/custom-amount",
+      "label": "Custom OFF",
+      "status": 200,
+      "final": "/kasir",
+      "error": null,
+      "success": "Custom amount diaktifkan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "page",
+      "url": "/reservasi",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi?date=2026-10-20",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi?date=2026-10-22",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "POST /reservasi",
+      "label": "Reservasi baru",
+      "status": 200,
+      "final": "/reservasi?date=2026-10-21",
+      "error": null,
+      "success": "Reservasi RSV-261021-BQIB a.n. Audit 534865 tersimpan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "trigger edit-reservation /reservasi/{id}",
+      "status": 200,
+      "final": "/reservasi",
+      "error": null,
+      "success": "Reservasi RSV-261021-BQIB diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "trigger cancel-reservation /reservasi/{id}/status",
+      "status": 200,
+      "final": "/reservasi",
+      "error": null,
+      "success": "Reservasi dibatalkan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "page",
+      "url": "/transaksi",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi?status=pending",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi?status=voided",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi/5/print",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/transaksi",
+      "url": "trigger cancel-trigger /transaksi/{id}",
+      "status": 200,
+      "final": "/transaksi",
+      "error": null,
+      "success": "Transaksi dibatalkan, stok, deposit, dan DP reservasi terkait telah dipulihkan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "page",
+      "url": "/produk",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk/export",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk/import/template/outlet",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk/import/template/standard",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "DELETE /produk/{id}",
+      "label": "",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Produk dipindahkan ke arsip.",
+      "dialogs": [
+        "Arsipkan produk ini?"
+      ]
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "POST /produk/{id}/restore",
+      "label": "Pulihkan",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Produk Audit 493196 berhasil dipulihkan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "POST /produk/kategori/{id}/restore",
+      "label": "Pulihkan",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Kategori Audit 490257 berhasil dipulihkan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "POST /produk/kategori",
+      "label": "Kelola kategori",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Kategori produk berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "PUT /produk/kategori/{id}",
+      "label": "Kelola kategori",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Kategori produk berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "DELETE /produk/kategori/{id}",
+      "label": "Kelola kategori",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Kategori dipindahkan ke arsip.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "POST /produk",
+      "label": "Tambah produk",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Produk berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form-skipped",
+      "url": "POST /produk/import",
+      "detail": "file-required",
+      "page": "/produk"
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "trigger edit-product /produk/{id}",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Produk berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "trigger edit-prices /produk/{id}/harga",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Harga Audit 547498 berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "page",
+      "url": "/gudang",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang/import/template",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form-skipped",
+      "url": "POST /gudang/import",
+      "detail": "file-required",
+      "page": "/gudang"
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/production",
+      "label": "Catat produksi olahan",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Produksi tercatat; bahan baku dan stok olahan otomatis terhubung.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/reprocess",
+      "label": "Catat proses ulang",
+      "status": 200,
+      "final": "/gudang",
+      "error": "Kolom source product id dan target product id harus berbeda.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/rusak",
+      "label": "Catat bahan rusak / tidak layak",
+      "status": 200,
+      "final": "/gudang",
+      "error": "Jumlah rusak melebihi sisa stok.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/adjust",
+      "label": "Penyesuaian stok",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stok berhasil disesuaikan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/count",
+      "label": "Stock opname akhir hari",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stock opname tersimpan dan saldo sistem direset ke stok fisik.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "page",
+      "url": "/inventaris",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris/export",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "DELETE /inventaris/{id}",
+      "label": "",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 502344 dipindahkan ke arsip.",
+      "dialogs": [
+        "Arsipkan barang ini?"
+      ]
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "POST /inventaris/{id}/restore",
+      "label": "Pulihkan",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 502344 berhasil dipulihkan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "POST /inventaris",
+      "label": "Tambah barang inventaris",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 556792 berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "trigger edit-asset /inventaris/{id}",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 557921 berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "page",
+      "url": "/pembelian",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pembelian",
+      "url": "PATCH /pembelian/{id}/status",
+      "label": "",
+      "status": 200,
+      "final": "/pembelian",
+      "error": null,
+      "success": "Status pembelian diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pembelian",
+      "url": "POST /pembelian",
+      "label": "Catat pembelian",
+      "status": 200,
+      "final": "/pembelian",
+      "error": null,
+      "success": "Pembelian berhasil dicatat.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pembelian",
+      "url": "trigger edit-purchase /pembelian/{id}",
+      "status": 200,
+      "final": "/pembelian",
+      "error": null,
+      "success": "Data pembelian dan dampak stok berhasil dikoreksi.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "page",
+      "url": "/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "DELETE /pengeluaran/{id}",
+      "label": "Hapus",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran dipindahkan ke arsip.",
+      "dialogs": [
+        "Hapus pengeluaran ini? Data tetap disimpan di arsip audit."
+      ]
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "POST /pengeluaran",
+      "label": "Catat pengeluaran",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran berhasil dicatat.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "trigger edit-expense /pengeluaran/{id}",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "page",
+      "url": "/member",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member/export",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "POST /member",
+      "label": "Scan kartu lalu isi data",
+      "status": 200,
+      "final": "/member",
+      "error": "Kolom nama wajib diisi.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "page",
+      "url": "/laporan",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan/export?type=real&period=month&from=2026-10-01&to=2026-10-31",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan/produk-terjual/cetak?paper=a4&type=real&from=2026-10-01&to=2026-10-31",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan?type=real&period=today",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan?type=real&period=week",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan?type=real&period=month",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan?type=real&period=year",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan/produk-terjual/cetak?paper=58&type=real&from=2026-10-01&to=2026-10-31",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "page",
+      "url": "/kasir/tutup-harian",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=a4&autoprint=1",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=58",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=a4&detail=1",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan/produk-terjual/cetak?paper=58",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/dashboard",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/dashboard",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pembelian",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/kasir",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/kasir",
+      "url": "POST /kasir/custom-amount",
+      "label": "Custom ON",
+      "status": 200,
+      "final": "/kasir",
+      "error": null,
+      "success": "Custom amount dinonaktifkan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/reservasi",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi?date=2026-10-20",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi?date=2026-10-22",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "POST /reservasi",
+      "label": "Reservasi baru",
+      "status": 200,
+      "final": "/reservasi?date=2026-10-21",
+      "error": null,
+      "success": "Reservasi RSV-261021-CYG1 a.n. Audit 573590 tersimpan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "trigger edit-reservation /reservasi/{id}",
+      "status": 200,
+      "final": "/reservasi",
+      "error": null,
+      "success": "Reservasi RSV-261021-CYG1 diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "trigger cancel-reservation /reservasi/{id}/status",
+      "status": 200,
+      "final": "/reservasi",
+      "error": null,
+      "success": "Reservasi dibatalkan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/transaksi",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi?status=pending",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi?status=voided",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/produk",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk/export",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk/import/template/outlet",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk/import/template/standard",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/produk",
+      "url": "DELETE /produk/{id}",
+      "label": "",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Produk dipindahkan ke arsip.",
+      "dialogs": [
+        "Arsipkan produk ini?"
+      ]
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/produk",
+      "url": "POST /produk/{id}/restore",
+      "label": "Pulihkan",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Produk Audit 547498 berhasil dipulihkan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/produk",
+      "url": "POST /produk/kategori/{id}/restore",
+      "label": "Pulihkan",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Kategori Audit 543623 berhasil dipulihkan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/produk",
+      "url": "POST /produk/kategori",
+      "label": "Kelola kategori",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Kategori produk berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/produk",
+      "url": "PUT /produk/kategori/{id}",
+      "label": "Kelola kategori",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Kategori produk berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/produk",
+      "url": "DELETE /produk/kategori/{id}",
+      "label": "Kelola kategori",
+      "status": 200,
+      "final": "/produk",
+      "error": "Kategori masih digunakan produk aktif. Pindahkan produknya terlebih dahulu.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/produk",
+      "url": "POST /produk",
+      "label": "Tambah produk",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Produk berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form-skipped",
+      "url": "POST /produk/import",
+      "detail": "file-required",
+      "page": "/produk"
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/produk",
+      "url": "trigger edit-product /produk/{id}",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Produk berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/produk",
+      "url": "trigger edit-prices /produk/{id}/harga",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Harga Audit 585048 berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/gudang",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang/import/template",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form-skipped",
+      "url": "POST /gudang/import",
+      "detail": "file-required",
+      "page": "/gudang"
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/production",
+      "label": "Catat produksi olahan",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Produksi tercatat; bahan baku dan stok olahan otomatis terhubung.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/reprocess",
+      "label": "Catat proses ulang",
+      "status": 200,
+      "final": "/gudang",
+      "error": "Kolom source product id dan target product id harus berbeda.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/rusak",
+      "label": "Catat bahan rusak / tidak layak",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stok rusak Udang tercatat dan saldo stok berkurang.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/adjust",
+      "label": "Penyesuaian stok",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stok berhasil disesuaikan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/count",
+      "label": "Stock opname akhir hari",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stock opname tersimpan dan saldo sistem direset ke stok fisik.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/inventaris",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris/export",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "DELETE /inventaris/{id}",
+      "label": "",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 503486 dipindahkan ke arsip.",
+      "dialogs": [
+        "Arsipkan barang ini?"
+      ]
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "POST /inventaris/{id}/restore",
+      "label": "Pulihkan",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 503486 berhasil dipulihkan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "POST /inventaris",
+      "label": "Tambah barang inventaris",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 594352 berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "trigger edit-asset /inventaris/{id}",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 595487 berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/pembelian",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pembelian",
+      "url": "PATCH /pembelian/{id}/status",
+      "label": "",
+      "status": 200,
+      "final": "/pembelian",
+      "error": null,
+      "success": "Status pembelian diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pembelian",
+      "url": "POST /pembelian",
+      "label": "Catat pembelian",
+      "status": 200,
+      "final": "/pembelian",
+      "error": null,
+      "success": "Pembelian berhasil dicatat.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pembelian",
+      "url": "trigger edit-purchase /pembelian/{id}",
+      "status": 200,
+      "final": "/pembelian",
+      "error": null,
+      "success": "Data pembelian dan dampak stok berhasil dikoreksi.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "DELETE /pengeluaran/{id}",
+      "label": "Hapus",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran dipindahkan ke arsip.",
+      "dialogs": [
+        "Hapus pengeluaran ini? Data tetap disimpan di arsip audit."
+      ]
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "POST /pengeluaran",
+      "label": "Catat pengeluaran",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran berhasil dicatat.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "trigger edit-expense /pengeluaran/{id}",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/member",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member/export",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/member",
+      "url": "POST /member",
+      "label": "Scan kartu lalu isi data",
+      "status": 200,
+      "final": "/member",
+      "error": "Kolom nama wajib diisi.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/laporan",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan/export?type=real&period=month&from=2026-10-01&to=2026-10-31",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan/produk-terjual/cetak?paper=a4&type=real&from=2026-10-01&to=2026-10-31",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan?type=real&period=today",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan?type=real&period=week",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan?type=real&period=month",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan?type=real&period=year",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan/produk-terjual/cetak?paper=58&type=real&from=2026-10-01&to=2026-10-31",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "json-422",
+      "url": "PATCH http://127.0.0.1:8765/gudang/stock/8"
+    },
+    {
+      "role": "head_ops",
+      "scope": "consolidated",
+      "kind": "alert",
+      "url": "http://127.0.0.1:8765/gudang",
+      "detail": "Konsumsi membuat sisa stok negatif."
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "pos-checkout",
+      "status": 200,
+      "detail": "{\"ok\":true,\"invoice\":\"TRX-261021-171338-MI1\",\"print_url\":\"http:\\/\\/127.0.0.1:8765\\/transaksi\\/6\\/print\"}"
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "page",
+      "url": "/kasir",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/dashboard",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pembelian",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "form",
+      "page": "/kasir",
+      "url": "POST /kasir/custom-amount",
+      "label": "Custom OFF",
+      "status": 200,
+      "final": "/kasir",
+      "error": null,
+      "success": "Custom amount diaktifkan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "page",
+      "url": "/gudang",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/dashboard",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pembelian",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang/import/template",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "form-skipped",
+      "url": "POST /gudang/import",
+      "detail": "file-required",
+      "page": "/gudang"
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/production",
+      "label": "Catat produksi olahan",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Produksi tercatat; bahan baku dan stok olahan otomatis terhubung.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/reprocess",
+      "label": "Catat proses ulang",
+      "status": 200,
+      "final": "/gudang",
+      "error": "Kolom source product id dan target product id harus berbeda.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/rusak",
+      "label": "Catat bahan rusak / tidak layak",
+      "status": 200,
+      "final": "/gudang",
+      "error": "Jumlah rusak melebihi sisa stok.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/adjust",
+      "label": "Penyesuaian stok",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stok berhasil disesuaikan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/count",
+      "label": "Stock opname akhir hari",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stock opname tersimpan dan saldo sistem direset ke stok fisik.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "page",
+      "url": "/transaksi",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/dashboard",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pembelian",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi?status=pending",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi?status=voided",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi/6/print",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "form",
+      "page": "/transaksi",
+      "url": "trigger cancel-trigger /transaksi/{id}",
+      "status": 200,
+      "final": "/transaksi",
+      "error": null,
+      "success": "Transaksi dibatalkan, stok, deposit, dan DP reservasi terkait telah dipulihkan.",
+      "dialogs": []
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "page",
+      "url": "/kasir/tutup-harian",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/dashboard",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pembelian",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=a4&autoprint=1",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=58",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=a4&detail=1",
+      "status": 200
+    },
+    {
+      "role": "head_ops",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan/produk-terjual/cetak?paper=58",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "pos-checkout",
+      "status": 200,
+      "detail": "{\"ok\":true,\"invoice\":\"TRX-261021-171403-OMW\",\"print_url\":\"http:\\/\\/127.0.0.1:8765\\/transaksi\\/7\\/print\"}"
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/dashboard",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/dashboard",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pembelian",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengaturan",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/kasir",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/kasir",
+      "url": "POST /kasir/custom-amount",
+      "label": "Custom ON",
+      "status": 200,
+      "final": "/kasir",
+      "error": null,
+      "success": "Custom amount dinonaktifkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/reservasi",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi?date=2026-10-20",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi?date=2026-10-22",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "POST /reservasi",
+      "label": "Reservasi baru",
+      "status": 200,
+      "final": "/reservasi?date=2026-10-21",
+      "error": null,
+      "success": "Reservasi RSV-261021-YCLY a.n. Audit 663120 tersimpan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "trigger edit-reservation /reservasi/{id}",
+      "status": 200,
+      "final": "/reservasi",
+      "error": null,
+      "success": "Reservasi RSV-261021-YCLY diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "trigger cancel-reservation /reservasi/{id}/status",
+      "status": 200,
+      "final": "/reservasi",
+      "error": null,
+      "success": "Reservasi dibatalkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/transaksi",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi?status=pending",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi?status=voided",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi/7/print",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/transaksi",
+      "url": "trigger cancel-trigger /transaksi/{id}",
+      "status": 200,
+      "final": "/transaksi",
+      "error": null,
+      "success": "Transaksi dibatalkan, stok, deposit, dan DP reservasi terkait telah dipulihkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/produk",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk/export",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk/import/template/outlet",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk/import/template/standard",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "DELETE /produk/{id}",
+      "label": "",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Produk dipindahkan ke arsip.",
+      "dialogs": [
+        "Arsipkan produk ini?"
+      ]
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "POST /produk/{id}/restore",
+      "label": "Pulihkan",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Produk Audit 585048 berhasil dipulihkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "POST /produk/kategori",
+      "label": "Kelola kategori",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Kategori produk berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "PUT /produk/kategori/{id}",
+      "label": "Kelola kategori",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Kategori produk berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "DELETE /produk/kategori/{id}",
+      "label": "Kelola kategori",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Kategori dipindahkan ke arsip.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "POST /produk",
+      "label": "Tambah produk",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Produk berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form-skipped",
+      "url": "POST /produk/import",
+      "detail": "file-required",
+      "page": "/produk"
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "trigger edit-product /produk/{id}",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Produk berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/produk",
+      "url": "trigger edit-prices /produk/{id}/harga",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Harga Audit 675062 berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/gudang",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang/import/template",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form-skipped",
+      "url": "POST /gudang/import",
+      "detail": "file-required",
+      "page": "/gudang"
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/production",
+      "label": "Catat produksi olahan",
+      "status": 200,
+      "final": "/gudang",
+      "error": "Stok bahan baku tidak mencukupi untuk produksi.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/reprocess",
+      "label": "Catat proses ulang",
+      "status": 200,
+      "final": "/gudang",
+      "error": "Kolom source product id dan target product id harus berbeda.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/rusak",
+      "label": "Catat bahan rusak / tidak layak",
+      "status": 200,
+      "final": "/gudang",
+      "error": "Jumlah rusak melebihi sisa stok.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/adjust",
+      "label": "Penyesuaian stok",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stok berhasil disesuaikan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/count",
+      "label": "Stock opname akhir hari",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stock opname tersimpan dan saldo sistem direset ke stok fisik.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/inventaris",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris/export",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "DELETE /inventaris/{id}",
+      "label": "",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 556792 dipindahkan ke arsip.",
+      "dialogs": [
+        "Arsipkan barang ini?"
+      ]
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "POST /inventaris/{id}/restore",
+      "label": "Pulihkan",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 556792 berhasil dipulihkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "POST /inventaris",
+      "label": "Tambah barang inventaris",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 684590 berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "trigger edit-asset /inventaris/{id}",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 685702 berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/pembelian",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pembelian",
+      "url": "PATCH /pembelian/{id}/status",
+      "label": "",
+      "status": 200,
+      "final": "/pembelian",
+      "error": null,
+      "success": "Status pembelian diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pembelian",
+      "url": "POST /pembelian",
+      "label": "Catat pembelian",
+      "status": 200,
+      "final": "/pembelian",
+      "error": null,
+      "success": "Pembelian berhasil dicatat.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pembelian",
+      "url": "trigger edit-purchase /pembelian/{id}",
+      "status": 200,
+      "final": "/pembelian",
+      "error": null,
+      "success": "Data pembelian dan dampak stok berhasil dikoreksi.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "DELETE /pengeluaran/{id}",
+      "label": "Hapus",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran dipindahkan ke arsip.",
+      "dialogs": [
+        "Hapus pengeluaran ini? Data tetap disimpan di arsip audit."
+      ]
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "POST /pengeluaran",
+      "label": "Catat pengeluaran",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran berhasil dicatat.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "trigger edit-expense /pengeluaran/{id}",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/member",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member/export",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/member",
+      "url": "POST /member",
+      "label": "Scan kartu lalu isi data",
+      "status": 200,
+      "final": "/member",
+      "error": "Kolom nama wajib diisi.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/laporan",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan?type=real&period=month&from=2026-10-01&to=2026-10-31",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan?type=non_real&period=month&from=2026-10-01&to=2026-10-31",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan/export?type=real&period=month&from=2026-10-01&to=2026-10-31",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan/produk-terjual/cetak?paper=a4&type=real&from=2026-10-01&to=2026-10-31",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan?type=real&period=today",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan?type=real&period=week",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan?type=real&period=month",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan?type=real&period=year",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan/produk-terjual/cetak?paper=58&type=real&from=2026-10-01&to=2026-10-31",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/pengaturan",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "POST /pengaturan/aturan-bisnis",
+      "label": "Simpan untuk Cabang Melati",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Aturan laporan dan membership Cabang Melati berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "POST /pengaturan/pajak-service",
+      "label": "Simpan untuk Cabang Melati",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Pajak, service & pembulatan Cabang Melati berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "POST /pengaturan/brand",
+      "label": "",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Identitas Cabang Melati berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "POST /pengaturan/receipt",
+      "label": "Simpan untuk Cabang Melati",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Tampilan struk Cabang Melati berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "POST /pengaturan/member-card",
+      "label": "Buat batch QR",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "10 kartu QR siap dicetak dan diaktivasi saat customer mendaftar.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "POST /pengaturan/role/{id}",
+      "label": "",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Hak akses Head of Ops berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "POST /pengaturan/perangkat",
+      "label": "Tambah perangkat",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Perangkat berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "POST /pengaturan/pengguna",
+      "label": "Tambah akun",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Pengguna baru berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form-skipped",
+      "url": "POST /pengaturan/role",
+      "detail": "invalid key:Please match the requested format.",
+      "page": "/pengaturan"
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "POST /pengaturan/cabang",
+      "label": "Tambah cabang",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Cabang baru berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "trigger edit-device /pengaturan/perangkat/{id}",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Perangkat Audit 705051 berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form-skipped",
+      "url": "trigger card-print-trigger",
+      "detail": "no modal form",
+      "page": "/pengaturan"
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "trigger pin-trigger /pengaturan/pengguna/{id}/pin",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "PIN otorisasi Audit 702053 berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "trigger edit-user-trigger /pengaturan/pengguna/{id}",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Akun pengguna berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "trigger edit-branch-trigger /pengaturan/cabang/{id}",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Data cabang berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "page",
+      "url": "/kasir/tutup-harian",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=a4&autoprint=1",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=58",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=a4&detail=1",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan/produk-terjual/cetak?paper=58",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/dashboard",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/dashboard",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pembelian",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengaturan",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/kasir",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/kasir",
+      "url": "POST /kasir/custom-amount",
+      "label": "Custom OFF",
+      "status": 200,
+      "final": "/kasir",
+      "error": null,
+      "success": "Custom amount diaktifkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/reservasi",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi?date=2026-10-20",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi?date=2026-10-22",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "POST /reservasi",
+      "label": "Reservasi baru",
+      "status": 200,
+      "final": "/reservasi?date=2026-10-21",
+      "error": null,
+      "success": "Reservasi RSV-261021-16U4 a.n. Audit 717202 tersimpan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "trigger edit-reservation /reservasi/{id}",
+      "status": 200,
+      "final": "/reservasi",
+      "error": null,
+      "success": "Reservasi RSV-261021-16U4 diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/reservasi",
+      "url": "trigger cancel-reservation /reservasi/{id}/status",
+      "status": 200,
+      "final": "/reservasi",
+      "error": null,
+      "success": "Reservasi dibatalkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/transaksi",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi?status=pending",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi?status=voided",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/produk",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk/export",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk/import/template/outlet",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk/import/template/standard",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/produk",
+      "url": "DELETE /produk/{id}",
+      "label": "",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Produk dipindahkan ke arsip.",
+      "dialogs": [
+        "Arsipkan produk ini?"
+      ]
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/produk",
+      "url": "POST /produk/{id}/restore",
+      "label": "Pulihkan",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Produk Audit 675062 berhasil dipulihkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/produk",
+      "url": "POST /produk/kategori/{id}/restore",
+      "label": "Pulihkan",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Kategori Audit 581166 berhasil dipulihkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/produk",
+      "url": "POST /produk/kategori",
+      "label": "Kelola kategori",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Kategori produk berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/produk",
+      "url": "PUT /produk/kategori/{id}",
+      "label": "Kelola kategori",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Kategori produk berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/produk",
+      "url": "DELETE /produk/kategori/{id}",
+      "label": "Kelola kategori",
+      "status": 200,
+      "final": "/produk",
+      "error": "Kategori masih digunakan produk aktif. Pindahkan produknya terlebih dahulu.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/produk",
+      "url": "POST /produk",
+      "label": "Tambah produk",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Produk berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form-skipped",
+      "url": "POST /produk/import",
+      "detail": "file-required",
+      "page": "/produk"
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/produk",
+      "url": "trigger edit-product /produk/{id}",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Produk berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/produk",
+      "url": "trigger edit-prices /produk/{id}/harga",
+      "status": 200,
+      "final": "/produk",
+      "error": null,
+      "success": "Harga Audit 728938 berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/gudang",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang/import/template",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form-skipped",
+      "url": "POST /gudang/import",
+      "detail": "file-required",
+      "page": "/gudang"
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/production",
+      "label": "Catat produksi olahan",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Produksi tercatat; bahan baku dan stok olahan otomatis terhubung.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/reprocess",
+      "label": "Catat proses ulang",
+      "status": 200,
+      "final": "/gudang",
+      "error": "Kolom source product id dan target product id harus berbeda.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/rusak",
+      "label": "Catat bahan rusak / tidak layak",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stok rusak Udang tercatat dan saldo stok berkurang.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/adjust",
+      "label": "Penyesuaian stok",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stok berhasil disesuaikan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/count",
+      "label": "Stock opname akhir hari",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stock opname tersimpan dan saldo sistem direset ke stok fisik.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/inventaris",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris/export",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "DELETE /inventaris/{id}",
+      "label": "",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 557921 dipindahkan ke arsip.",
+      "dialogs": [
+        "Arsipkan barang ini?"
+      ]
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "POST /inventaris/{id}/restore",
+      "label": "Pulihkan",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 557921 berhasil dipulihkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "POST /inventaris",
+      "label": "Tambah barang inventaris",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 738661 berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/inventaris",
+      "url": "trigger edit-asset /inventaris/{id}",
+      "status": 200,
+      "final": "/inventaris",
+      "error": null,
+      "success": "Inventaris Audit 739800 berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/pembelian",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pembelian",
+      "url": "PATCH /pembelian/{id}/status",
+      "label": "",
+      "status": 200,
+      "final": "/pembelian",
+      "error": null,
+      "success": "Status pembelian diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pembelian",
+      "url": "POST /pembelian",
+      "label": "Catat pembelian",
+      "status": 200,
+      "final": "/pembelian",
+      "error": null,
+      "success": "Pembelian berhasil dicatat.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pembelian",
+      "url": "trigger edit-purchase /pembelian/{id}",
+      "status": 200,
+      "final": "/pembelian",
+      "error": null,
+      "success": "Data pembelian dan dampak stok berhasil dikoreksi.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "DELETE /pengeluaran/{id}",
+      "label": "Hapus",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran dipindahkan ke arsip.",
+      "dialogs": [
+        "Hapus pengeluaran ini? Data tetap disimpan di arsip audit."
+      ]
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "POST /pengeluaran",
+      "label": "Catat pengeluaran",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran berhasil dicatat.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pengeluaran",
+      "url": "trigger edit-expense /pengeluaran/{id}",
+      "status": 200,
+      "final": "/pengeluaran",
+      "error": null,
+      "success": "Pengeluaran berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/member",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member/export",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/member",
+      "url": "POST /member",
+      "label": "Scan kartu lalu isi data",
+      "status": 200,
+      "final": "/member",
+      "error": "Kolom nama wajib diisi.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/laporan",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan?type=real&period=month&from=2026-10-01&to=2026-10-31",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan?type=non_real&period=month&from=2026-10-01&to=2026-10-31",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan/export?type=real&period=month&from=2026-10-01&to=2026-10-31",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan/produk-terjual/cetak?paper=a4&type=real&from=2026-10-01&to=2026-10-31",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan?type=real&period=today",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan?type=real&period=week",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan?type=real&period=month",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan?type=real&period=year",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan/produk-terjual/cetak?paper=58&type=real&from=2026-10-01&to=2026-10-31",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "page",
+      "url": "/pengaturan",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "POST /pengaturan/aturan-bisnis",
+      "label": "Simpan untuk Cabang Melati",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Aturan laporan dan membership Cabang Melati berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "POST /pengaturan/pajak-service",
+      "label": "Simpan untuk Cabang Melati",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Pajak, service & pembulatan Cabang Melati berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "POST /pengaturan/brand",
+      "label": "",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Identitas Cabang Melati berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "POST /pengaturan/receipt",
+      "label": "Simpan untuk Cabang Melati",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Tampilan struk Cabang Melati berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "POST /pengaturan/perangkat/{id}/test",
+      "label": "Cek konfigurasi",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Konfigurasi perangkat valid dan waktu pengecekan dicatat. Koneksi fisik tetap perlu diuji dari komputer kasir.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "DELETE /pengaturan/perangkat/{id}",
+      "label": "",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Perangkat dilepas.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "POST /pengaturan/member-card",
+      "label": "Buat batch QR",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "10 kartu QR siap dicetak dan diaktivasi saat customer mendaftar.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "POST /pengaturan/role/{id}",
+      "label": "",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Hak akses Head of Ops berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "POST /pengaturan/perangkat",
+      "label": "Tambah perangkat",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Perangkat berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "POST /pengaturan/pengguna",
+      "label": "Tambah akun",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Pengguna baru berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form-skipped",
+      "url": "POST /pengaturan/role",
+      "detail": "invalid key:Please match the requested format.",
+      "page": "/pengaturan"
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "POST /pengaturan/cabang",
+      "label": "Tambah cabang",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Cabang baru berhasil ditambahkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "trigger edit-device /pengaturan/perangkat/{id}",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Perangkat Audit 760862 berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form-skipped",
+      "url": "trigger card-print-trigger",
+      "detail": "no modal form",
+      "page": "/pengaturan"
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "trigger pin-trigger /pengaturan/pengguna/{id}/pin",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "PIN otorisasi Audit 708279 berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "trigger edit-user-trigger /pengaturan/pengguna/{id}",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Akun pengguna berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "form",
+      "page": "/pengaturan",
+      "url": "trigger edit-branch-trigger /pengaturan/cabang/{id}",
+      "status": 200,
+      "final": "/pengaturan",
+      "error": null,
+      "success": "Data cabang berhasil diperbarui.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "json-422",
+      "url": "PATCH http://127.0.0.1:8765/gudang/stock/9"
+    },
+    {
+      "role": "superadmin",
+      "scope": "consolidated",
+      "kind": "alert",
+      "url": "http://127.0.0.1:8765/gudang",
+      "detail": "Konsumsi membuat sisa stok negatif."
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "pos-checkout",
+      "status": 200,
+      "detail": "{\"ok\":true,\"invoice\":\"TRX-261021-171620-QXB\",\"print_url\":\"http:\\/\\/127.0.0.1:8765\\/transaksi\\/8\\/print\"}"
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "page",
+      "url": "/kasir",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/dashboard",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pembelian",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengaturan",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "form",
+      "page": "/kasir",
+      "url": "POST /kasir/custom-amount",
+      "label": "Custom ON",
+      "status": 200,
+      "final": "/kasir",
+      "error": null,
+      "success": "Custom amount dinonaktifkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "page",
+      "url": "/gudang",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/dashboard",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pembelian",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengaturan",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang/import/template",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "form-skipped",
+      "url": "POST /gudang/import",
+      "detail": "file-required",
+      "page": "/gudang"
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/production",
+      "label": "Catat produksi olahan",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Produksi tercatat; bahan baku dan stok olahan otomatis terhubung.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/reprocess",
+      "label": "Catat proses ulang",
+      "status": 200,
+      "final": "/gudang",
+      "error": "Kolom source product id dan target product id harus berbeda.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/rusak",
+      "label": "Catat bahan rusak / tidak layak",
+      "status": 200,
+      "final": "/gudang",
+      "error": "Jumlah rusak melebihi sisa stok.",
+      "success": null,
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/adjust",
+      "label": "Penyesuaian stok",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stok berhasil disesuaikan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "form",
+      "page": "/gudang",
+      "url": "POST /gudang/count",
+      "label": "Stock opname akhir hari",
+      "status": 200,
+      "final": "/gudang",
+      "error": null,
+      "success": "Stock opname tersimpan dan saldo sistem direset ke stok fisik.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "page",
+      "url": "/transaksi",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/dashboard",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pembelian",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengaturan",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi?status=pending",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi?status=voided",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi/8/print",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "form",
+      "page": "/transaksi",
+      "url": "trigger cancel-trigger /transaksi/{id}",
+      "status": 200,
+      "final": "/transaksi",
+      "error": null,
+      "success": "Transaksi dibatalkan, stok, deposit, dan DP reservasi terkait telah dipulihkan.",
+      "dialogs": []
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "page",
+      "url": "/kasir/tutup-harian",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/dashboard",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/reservasi",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/transaksi",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/produk",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/gudang",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/inventaris",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pembelian",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengeluaran",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/member",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/pengaturan",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=a4&autoprint=1",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=58",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/kasir/tutup-harian/cetak?paper=a4&detail=1",
+      "status": 200
+    },
+    {
+      "role": "superadmin",
+      "scope": "store-2",
+      "kind": "link",
+      "url": "http://127.0.0.1:8765/laporan/produk-terjual/cetak?paper=58",
+      "status": 200
+    }
+  ]
+}

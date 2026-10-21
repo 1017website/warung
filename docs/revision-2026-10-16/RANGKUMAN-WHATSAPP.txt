@@ -1,0 +1,24 @@
+*Update POS Warung – 16 Oktober 2026* 🙏
+
+Selamat siang Bapak/Ibu, berikut update sistem POS Warung sesuai permintaan akses edit stok olahan:
+
+*1. Kolom stok olahan bisa diedit langsung* ✏️
+• Di menu *Stok / Gudang → Stok olahan hari ini*, kolom *Tambahan olahan*, *Konsumsi*, dan *Diproses ulang* sekarang bisa diisi langsung di tabel.
+• Bisa diedit oleh *semua akun* yang membuka menu Stok / Gudang: Kasir, SPV, Outlet Manager, Ops Admin, Head of Ops, dan Superadmin.
+• Cara pakai: klik kolomnya, ketik angkanya, lalu tekan *Enter* / pindah kolom. Data tersimpan otomatis dan *Sisa sistem* langsung dihitung ulang.
+• Yang diisi adalah *total hari ini*, bukan tambahannya. Contoh: Tambahan olahan tadi 10, lalu ada produksi lagi 5 → ketik *15*.
+• Salah input bisa dikoreksi dengan mengetik angka yang benar; selisihnya otomatis dikembalikan ke stok.
+• Angka tidak bisa membuat sisa stok menjadi minus. Jika muncul peringatan, cek kembali jumlahnya.
+• Koreksi *Stok awal* tetap khusus Admin Operasional ke atas, seperti sebelumnya.
+
+*2. Riwayat edit stok (baru)* 🕒
+• Karena semua akun bisa mengedit, setiap perubahan tercatat di bagian *Riwayat edit stok* (di bawah tabel Stok olahan).
+• Isinya: *jam*, *nama pengguna & jabatannya*, *produk*, *kolom yang diubah*, serta nilai *sebelum → sesudah*.
+• Berlaku untuk semua kolom yang diedit langsung: Stok awal, Stok terpakai, Tambahan olahan, Konsumsi, Diproses ulang, Rusak / tidak layak (termasuk alasan dari tombol *Catat rusak*), dan Keterangan.
+• Pilih tanggal di pojok kanan bagian riwayat untuk melihat perubahan hari-hari sebelumnya. Riwayat mengikuti cabang yang sedang dipilih.
+• Riwayat mulai tercatat sejak update ini; perubahan sebelum hari ini tidak ada di daftar.
+
+*Mohon konfirmasi* 🙏
+Saat ini Riwayat edit stok bisa dilihat oleh semua akun yang membuka Stok / Gudang. Apakah sudah sesuai, atau riwayat sebaiknya hanya terlihat oleh atasan (misalnya Outlet Manager ke atas)?
+
+Terima kasih 🙏
