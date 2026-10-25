@@ -1445,6 +1445,29 @@ class WarungController extends Controller
     public function inventory(Request $request)
     {
         $request->validate(['riwayat_tanggal' => 'nullable|date|before_or_equal:today']);
+        [$ingredientStocks, $menuStocks] = $this->inventoryStockRows();
+        $inventoryProducts = Product::where('tenant_id', $this->tenantId())->where('is_active', true)->orderBy('product_type')->orderBy('name')->get();
+        $movements = DB::table('stock_movements')->join('products', 'products.id', '=', 'stock_movements.product_id')
+            ->where('stock_movements.tenant_id', $this->tenantId())->where('stock_movements.store_id', $this->storeId())
+            ->select('stock_movements.*', 'products.name as product_name')->latest('stock_movements.created_at')->take(12)->get();
+        $productions = StockProduction::with(['ingredient', 'menu'])->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->latest()->take(10)->get();
+        $canEditOpening = auth()->user()->canManageOpeningStock();
+        $priceStores = $this->stores();
+        $historyDate = Carbon::parse($request->input('riwayat_tanggal', today()))->startOfDay();
+        $editLogs = InventoryEditLog::with(['product', 'user'])->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())
+            ->whereDate('created_at', $historyDate)->latest()->latest('id')->get();
+
+        return $this->view('inventory.index', compact('ingredientStocks', 'menuStocks', 'inventoryProducts', 'movements', 'productions', 'canEditOpening', 'priceStores', 'historyDate', 'editLogs'));
+    }
+
+    /**
+     * Baris tabel Stok / Gudang untuk cabang aktif hari ini: bahan baku dan olahan
+     * beserta kolom hitungannya. Dipakai halaman gudang dan ekspor Excel.
+     *
+     * @return array{0: Collection, 1: Collection}
+     */
+    private function inventoryStockRows(): array
+    {
         Product::where('tenant_id', $this->tenantId())->where('is_active', true)->each(function ($product) {
             $product->product_type === 'menu'
                 ? $this->menuStockForDate($product->id)
@@ -1481,18 +1504,59 @@ class WarungController extends Controller
 
                 return $stock;
             });
-        $inventoryProducts = Product::where('tenant_id', $this->tenantId())->where('is_active', true)->orderBy('product_type')->orderBy('name')->get();
-        $movements = DB::table('stock_movements')->join('products', 'products.id', '=', 'stock_movements.product_id')
-            ->where('stock_movements.tenant_id', $this->tenantId())->where('stock_movements.store_id', $this->storeId())
-            ->select('stock_movements.*', 'products.name as product_name')->latest('stock_movements.created_at')->take(12)->get();
-        $productions = StockProduction::with(['ingredient', 'menu'])->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->latest()->take(10)->get();
-        $canEditOpening = auth()->user()->canManageOpeningStock();
-        $priceStores = $this->stores();
-        $historyDate = Carbon::parse($request->input('riwayat_tanggal', today()))->startOfDay();
-        $editLogs = InventoryEditLog::with(['product', 'user'])->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())
-            ->whereDate('created_at', $historyDate)->latest()->latest('id')->get();
 
-        return $this->view('inventory.index', compact('ingredientStocks', 'menuStocks', 'inventoryProducts', 'movements', 'productions', 'canEditOpening', 'priceStores', 'historyDate', 'editLogs'));
+        return [$ingredientStocks, $menuStocks];
+    }
+
+    public function exportInventory()
+    {
+        [$ingredientStocks, $menuStocks] = $this->inventoryStockRows();
+        $store = $this->activeStoreRecord();
+        $spreadsheet = new Spreadsheet;
+
+        $sheet = $spreadsheet->getActiveSheet()->setTitle('Bahan Baku');
+        $sheet->fromArray(['SKU', 'Bahan baku', 'Kategori', 'Satuan', 'Stok awal', 'Stok datang', 'Stok terpakai', 'Stok terolah', 'Rusak / tidak layak', 'Sisa stok', 'Batas minimum', 'Status', 'Keterangan'], null, 'A1');
+        $row = 2;
+        foreach ($ingredientStocks->sortBy(fn ($stock) => Str::lower($stock->product->name))->values() as $stock) {
+            $min = (float) $stock->product->minimum_stock;
+            $quantity = (float) $stock->quantity;
+            $status = $quantity <= 0 ? 'KOSONG' : ($quantity <= max(1, $min / 2) ? 'Tidak aman' : ($quantity <= $min ? 'Perlu perhatian' : 'Aman'));
+            $sheet->setCellValueExplicit('A'.$row, (string) $stock->product->sku, DataType::TYPE_STRING);
+            $sheet->fromArray([[
+                $stock->product->name, $stock->product->category?->name ?? 'Bahan baku', $stock->product->unit,
+                (float) $stock->opening, (float) $stock->incoming, (float) $stock->used, (float) $stock->processed, (float) $stock->waste,
+                $quantity, $min, $status, $stock->inventory_notes,
+            ]], null, 'B'.$row++, true);
+        }
+
+        $menuSheet = $spreadsheet->createSheet()->setTitle('Olahan');
+        $menuSheet->fromArray(['SKU', 'Olahan', 'Kategori', 'Satuan', 'Stok awal', 'Tambahan olahan', 'Terjual', 'Konsumsi', 'Diproses ulang', 'Rusak / tidak layak', 'Sisa sistem', 'Sisa fisik', 'Selisih SO', 'Status', 'Keterangan'], null, 'A1');
+        $menuRow = 2;
+        foreach ($menuStocks->sortBy(fn ($stock) => Str::lower($stock->product->name))->values() as $stock) {
+            $actual = $stock->count?->actual_quantity;
+            $difference = $actual === null ? null : (float) $stock->count->expected_quantity - (float) $actual;
+            $status = $difference === null ? 'Belum opname' : (abs($difference) < 0.001 ? 'Balance' : 'Tidak balance');
+            $menuSheet->setCellValueExplicit('A'.$menuRow, (string) $stock->product->sku, DataType::TYPE_STRING);
+            $menuSheet->fromArray([[
+                $stock->product->name, $stock->product->category?->name ?? 'Menu', $stock->product->unit,
+                (float) $stock->opening, (float) $stock->produced, (float) $stock->sold, (float) $stock->consumption, (float) $stock->reprocessed,
+                (float) $stock->waste, (float) $stock->quantity, $actual === null ? null : (float) $actual, $difference,
+                $status, $stock->inventory_notes,
+            ]], null, 'B'.$menuRow++, true);
+        }
+
+        foreach ([[$sheet, 'M', $row], [$menuSheet, 'O', $menuRow]] as [$target, $lastColumn, $nextRow]) {
+            $target->getStyle('A1:'.$lastColumn.'1')->getFont()->setBold(true);
+            $target->freezePane('C2');
+            $target->setAutoFilter('A1:'.$lastColumn.max(1, $nextRow - 1));
+            foreach (range('A', $lastColumn) as $column) {
+                $target->getColumnDimension($column)->setAutoSize(true);
+            }
+        }
+        $spreadsheet->getProperties()->setTitle('Stok '.$store->name.' '.today()->format('Y-m-d'));
+        $spreadsheet->setActiveSheetIndex(0);
+
+        return SpreadsheetDownload::response($spreadsheet, 'stok-gudang-'.Str::slug($store->name).'-'.now()->format('Ymd').'.xlsx');
     }
 
     public function adjustStock(Request $request)

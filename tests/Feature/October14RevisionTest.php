@@ -147,6 +147,31 @@ class October14RevisionTest extends TestCase
         $this->assertSame(['NA-1', 'Nasi Ayam', 'Olahan', 'porsi', '20', null], $rows[1]);
     }
 
+    public function test_stock_export_lists_ingredient_and_menu_tables(): void
+    {
+        ['tenant' => $tenant, 'admin' => $admin, 'wts' => $wts] = $this->setupWarung();
+        $ingredient = Product::create([
+            'tenant_id' => $tenant->id, 'name' => 'Jahe', 'product_type' => 'ingredient', 'sku' => '007',
+            'unit' => 'kg', 'purchase_price' => 1000, 'selling_price' => 0, 'minimum_stock' => 1, 'is_active' => true,
+        ]);
+        ProductStock::create(['tenant_id' => $tenant->id, 'store_id' => $wts->id, 'product_id' => $ingredient->id, 'quantity' => 0]);
+        $this->actingAs($admin)->withSession(['store_id' => $wts->id])->get('/gudang')->assertOk()
+            ->assertSee('Ekspor Excel')->assertSee(route('inventory.export'), false);
+
+        $response = $this->actingAs($admin)->withSession(['store_id' => $wts->id])->get('/gudang/export')->assertOk();
+        $this->assertStringContainsString('stok-gudang-wts-', $response->headers->get('content-disposition'));
+        $path = tempnam(sys_get_temp_dir(), 'exp').'.xlsx';
+        file_put_contents($path, $response->streamedContent());
+        $book = \PhpOffice\PhpSpreadsheet\IOFactory::load($path);
+        $raw = $book->getSheetByName('Bahan Baku')->toArray();
+        $this->assertSame(['SKU', 'Bahan baku', 'Kategori', 'Satuan', 'Stok awal', 'Stok datang', 'Stok terpakai', 'Stok terolah', 'Rusak / tidak layak', 'Sisa stok', 'Batas minimum', 'Status', 'Keterangan'], $raw[0]);
+        $this->assertSame(['007', 'Jahe', 'Bahan baku', 'kg', '0', '0', '0', '0', '0', '0', '1', 'KOSONG', null], $raw[1]);
+        $menu = $book->getSheetByName('Olahan')->toArray();
+        $this->assertSame('Sisa sistem', $menu[0][10]);
+        $this->assertSame(['NA-1', 'Nasi Ayam', 'Menu', 'porsi'], array_slice($menu[1], 0, 4));
+        $this->assertSame(['20', null, null, 'Belum opname'], array_slice($menu[1], 10, 4));
+    }
+
     public function test_stock_import_sets_or_adds_stock_in_selected_stores(): void
     {
         ['tenant' => $tenant, 'admin' => $admin, 'wts' => $wts, 'psl' => $psl, 'wka' => $wka, 'menu' => $menu] = $this->setupWarung();

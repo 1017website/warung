@@ -10,6 +10,7 @@
     </div>
     <div class="actions">
         <button class="btn btn-soft" onclick="openModal('stock-import-modal')"><i class="bi bi-file-earmark-arrow-up"></i> Import Excel</button>
+        <a class="btn btn-soft" href="{{ route('inventory.export') }}"><i class="bi bi-file-earmark-arrow-down"></i> Ekspor Excel</a>
         <button class="btn btn-soft" onclick="openModal('count-modal')"><i class="bi bi-clipboard-check"></i> Stock opname</button>
         <button class="btn btn-soft" onclick="openModal('adjust-modal')"><i class="bi bi-sliders2"></i> Penyesuaian</button>
         <button class="btn btn-soft" onclick="openModal('reprocess-modal')"><i class="bi bi-recycle"></i> Proses ulang</button>
