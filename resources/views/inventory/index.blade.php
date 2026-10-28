@@ -23,7 +23,7 @@
 <div class="card card-pad inventory-search-bar">
     <div class="search"><input id="inventory-search" type="search" placeholder="Cari bahan baku / olahan: nama, SKU, kategori…" autocomplete="off" aria-label="Cari stok"></div>
     <select id="inventory-status-filter" aria-label="Filter status"><option value="">Semua status</option><option value="alert">Perlu perhatian / tidak aman / kosong</option><option value="unbalanced">Olahan tidak balance</option></select>
-    <form method="GET" action="{{ route('inventory') }}" class="actions"><label class="hint" for="inventory-stock-date">Tanggal stok</label><input id="inventory-stock-date" type="date" name="tanggal" value="{{ $stockDate->toDateString() }}" max="{{ today()->toDateString() }}" onchange="this.form.submit()">@if($readOnly)<a class="btn btn-soft" href="{{ route('inventory') }}">Hari ini</a>@endif</form>
+    <form method="GET" action="{{ route('inventory') }}" class="inventory-date-filter"><label class="hint" for="inventory-stock-date">Tanggal stok</label><input id="inventory-stock-date" type="date" name="tanggal" value="{{ $stockDate->toDateString() }}" max="{{ today()->toDateString() }}" onchange="this.form.submit()">@if($readOnly)<a class="btn btn-soft" href="{{ route('inventory') }}">Hari ini</a>@endif</form>
     <span class="hint" id="inventory-search-count" aria-live="polite"></span>
 </div>
 @if($readOnly)<div class="inventory-note" style="margin-bottom:16px"><i class="bi bi-clock-history"></i><span>Menampilkan stok tanggal <b>{{ $stockDate->translatedFormat('d F Y') }}</b> (hanya baca). Pencatatan dan live edit tetap untuk hari ini.</span></div>@endif
