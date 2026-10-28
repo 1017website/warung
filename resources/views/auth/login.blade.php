@@ -28,7 +28,7 @@
             @if($errors->any())<div class="alert alert-error">{{ $errors->first() }}</div>@endif
             <div class="field"><label>Email</label><input id="login-email" type="email" name="email" value="{{ old('email') }}" autocomplete="email" required autofocus></div>
             <div class="field"><label>Kata sandi</label><input type="password" name="password" autocomplete="current-password" required></div>
-            <label style="display:flex;align-items:center;gap:8px;font-weight:600"><input style="width:16px;min-height:16px" type="checkbox" name="remember"> Ingat saya</label>
+            <label style="display:flex;align-items:center;gap:8px;font-weight:600"><input style="width:16px;min-height:16px" type="checkbox" name="remember" checked> Ingat saya</label>
             <button class="btn btn-primary"><i class="bi bi-arrow-right-circle"></i> Masuk ke POS Warung</button>
         </form>
     </section>

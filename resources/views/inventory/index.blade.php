@@ -2,6 +2,7 @@
 @section('title', 'Stok / Gudang')
 @section('content')
 @php($qtyFmt=fn($value)=>rtrim(rtrim(number_format((float)$value,3,',','.'),'0'),','))
+@php($readOnly=!$stockDate->isToday())
 @if(session('import_notes'))<div class="alert alert-error"><b>Catatan impor:</b><ul style="margin:6px 0 0 18px">@foreach(session('import_notes') as $note)<li>{{ $note }}</li>@endforeach</ul></div>@endif
 <div class="page-head">
     <div>
@@ -10,7 +11,7 @@
     </div>
     <div class="actions">
         <button class="btn btn-soft" onclick="openModal('stock-import-modal')"><i class="bi bi-file-earmark-arrow-up"></i> Import Excel</button>
-        <a class="btn btn-soft" href="{{ route('inventory.export') }}"><i class="bi bi-file-earmark-arrow-down"></i> Ekspor Excel</a>
+        <a class="btn btn-soft" href="{{ route('inventory.export', ['tanggal' => $stockDate->toDateString()]) }}" title="Ekspor stok tanggal {{ $stockDate->translatedFormat('d F Y') }}"><i class="bi bi-file-earmark-arrow-down"></i> Ekspor Excel</a>
         <button class="btn btn-soft" onclick="openModal('count-modal')"><i class="bi bi-clipboard-check"></i> Stock opname</button>
         <button class="btn btn-soft" onclick="openModal('adjust-modal')"><i class="bi bi-sliders2"></i> Penyesuaian</button>
         <button class="btn btn-soft" onclick="openModal('reprocess-modal')"><i class="bi bi-recycle"></i> Proses ulang</button>
@@ -22,11 +23,13 @@
 <div class="card card-pad inventory-search-bar">
     <div class="search"><input id="inventory-search" type="search" placeholder="Cari bahan baku / olahan: nama, SKU, kategori…" autocomplete="off" aria-label="Cari stok"></div>
     <select id="inventory-status-filter" aria-label="Filter status"><option value="">Semua status</option><option value="alert">Perlu perhatian / tidak aman / kosong</option><option value="unbalanced">Olahan tidak balance</option></select>
+    <form method="GET" action="{{ route('inventory') }}" class="actions"><label class="hint" for="inventory-stock-date">Tanggal stok</label><input id="inventory-stock-date" type="date" name="tanggal" value="{{ $stockDate->toDateString() }}" max="{{ today()->toDateString() }}" onchange="this.form.submit()">@if($readOnly)<a class="btn btn-soft" href="{{ route('inventory') }}">Hari ini</a>@endif</form>
     <span class="hint" id="inventory-search-count" aria-live="polite"></span>
 </div>
+@if($readOnly)<div class="inventory-note" style="margin-bottom:16px"><i class="bi bi-clock-history"></i><span>Menampilkan stok tanggal <b>{{ $stockDate->translatedFormat('d F Y') }}</b> (hanya baca). Pencatatan dan live edit tetap untuk hari ini.</span></div>@endif
 
 <section class="card card-pad" style="margin-bottom:16px">
-    <div class="card-title"><div><h2>Stok bahan baku</h2><p>Stok terolah dihitung dari produksi; stok datang, stok terpakai, dan keterangan dapat di-live edit.</p></div><span class="badge gray">{{ $ingredientStocks->count() }} bahan</span></div>
+    <div class="card-title"><div><h2>Stok bahan baku</h2><p>Stok terolah dihitung dari produksi; stok datang, stok terpakai, dan keterangan dapat di-live edit.</p></div><div class="actions"><span class="badge">{{ $stockDate->translatedFormat('d F Y') }}</span><span class="badge gray">{{ $ingredientStocks->count() }} bahan</span></div></div>
     <div class="inventory-note"><i class="bi bi-info-circle"></i><span>Stok awal otomatis mengambil sisa hari sebelumnya. Koreksi stok awal hanya tersedia bagi Admin Operasional dan jenjang di atasnya. Kolom <b>Rusak / tidak layak</b> diisi manual untuk bahan yang tidak bisa diproses ulang dan langsung mengurangi sisa stok. Stock opname mereset saldo sistem ke sisa fisik.</span></div>
     <div class="table-wrap inventory-table-wrap"><table class="inventory-live-table"><thead><tr><th>SKU / bahan baku</th><th>Kategori</th><th>Stok awal</th><th>Stok datang</th><th>Stok terpakai</th><th>Stok terolah</th><th>Rusak / tidak layak</th><th>Sisa stok</th><th>Keterangan</th><th>Status</th></tr></thead><tbody>
     @forelse($ingredientStocks as $stock)
@@ -36,13 +39,13 @@
         <tr data-stock-row data-search="{{ \Illuminate\Support\Str::lower($stock->product->name.' '.$stock->product->sku.' '.$stock->product->ingredient_sku.' '.($stock->product->category?->name ?? 'Bahan baku')) }}" data-alert="{{ $status==='Aman'?0:1 }}">
             <td><div class="cell-main">{{ $stock->product->name }}</div><div class="cell-sub">{{ $stock->product->sku }} · {{ $stock->product->unit }}</div></td>
             <td>{{ $stock->product->category?->name ?? 'Bahan baku' }}</td>
-            <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="opening_quantity" value="{{ (float)$stock->opening }}" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}" @disabled(!$canEditOpening) title="{{ $canEditOpening?'Edit stok awal':'Khusus Admin Operasional' }}"></td>
-            <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="incoming_quantity" value="{{ (float)$stock->incoming }}" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}" title="Total stok datang hari ini"></td>
-            <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="used_quantity" value="{{ (float)$stock->used }}" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}"></td>
+            <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="opening_quantity" value="{{ (float)$stock->opening }}" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}" @disabled($readOnly || !$canEditOpening) title="{{ $canEditOpening?'Edit stok awal':'Khusus Admin Operasional' }}"></td>
+            <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="incoming_quantity" value="{{ (float)$stock->incoming }}" data-live-stock @disabled($readOnly) data-url="{{ route('inventory.row.update',$stock->product) }}" title="Total stok datang hari ini"></td>
+            <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="used_quantity" value="{{ (float)$stock->used }}" data-live-stock @disabled($readOnly) data-url="{{ route('inventory.row.update',$stock->product) }}"></td>
             <td>{{ $qtyFmt($stock->processed) }}</td>
-            <td><input class="inventory-live-input waste-input" type="number" min="0" step="0.001" name="waste_quantity" value="{{ (float)$stock->waste }}" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}" title="Total rusak / tidak layak hari ini"></td>
+            <td><input class="inventory-live-input waste-input" type="number" min="0" step="0.001" name="waste_quantity" value="{{ (float)$stock->waste }}" data-live-stock @disabled($readOnly) data-url="{{ route('inventory.row.update',$stock->product) }}" title="Total rusak / tidak layak hari ini"></td>
             <td class="money"><span data-stock-balance="{{ $stock->product_id }}">{{ $qtyFmt($stock->quantity) }}</span> {{ $stock->product->unit }}</td>
-            <td><input class="inventory-live-notes" name="notes" value="{{ $stock->inventory_notes }}" maxlength="500" placeholder="Tambah keterangan" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}"></td>
+            <td><input class="inventory-live-notes" name="notes" value="{{ $stock->inventory_notes }}" maxlength="500" placeholder="Tambah keterangan" data-live-stock @disabled($readOnly) data-url="{{ route('inventory.row.update',$stock->product) }}"></td>
             <td><span class="badge {{ $class }}">{{ $status }}</span><div class="cell-sub">Batas min. {{ $qtyFmt($min) }} {{ $stock->product->unit }}</div></td>
         </tr>
     @empty
@@ -53,7 +56,7 @@
 </section>
 
 <section class="card card-pad">
-    <div class="card-title"><div><h2>Stok olahan hari ini</h2><p>Rumus: stok awal + tambahan/hasil proses ulang − terjual − konsumsi − diproses ulang − rusak / tidak layak.</p></div><span class="badge">{{ today()->translatedFormat('d F Y') }}</span></div>
+    <div class="card-title"><div><h2>Stok olahan {{ $readOnly ? $stockDate->translatedFormat('d F Y') : 'hari ini' }}</h2><p>Rumus: stok awal + tambahan/hasil proses ulang − terjual − konsumsi − diproses ulang − rusak / tidak layak.</p></div><span class="badge">{{ $stockDate->translatedFormat('d F Y') }}</span></div>
     <div class="table-wrap inventory-table-wrap"><table class="inventory-live-table"><thead><tr><th>SKU / olahan</th><th>Kategori</th><th>Stok awal</th><th>Tambahan olahan</th><th>Terjual</th><th>Konsumsi</th><th>Diproses ulang</th><th>Rusak / tidak layak</th><th>Sisa sistem</th><th>Sisa fisik</th><th>Selisih SO</th><th>Keterangan</th><th>Status</th></tr></thead><tbody>
     @forelse($menuStocks as $stock)
         @php($actual=$stock->count?->actual_quantity)
@@ -62,16 +65,16 @@
         <tr data-stock-row data-search="{{ \Illuminate\Support\Str::lower($stock->product->name.' '.$stock->product->sku.' '.$stock->product->ingredient_sku.' '.($stock->product->category?->name ?? 'Menu')) }}" data-alert="{{ (float)$stock->quantity<=(float)$stock->product->minimum_stock?1:0 }}" data-unbalanced="{{ $difference!==null&&!$balanced?1:0 }}">
             <td><div class="cell-main">{{ $stock->product->name }}</div><div class="cell-sub">{{ $stock->product->sku }} · {{ $stock->product->unit }}</div></td>
             <td>{{ $stock->product->category?->name ?? 'Menu' }}</td>
-            <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="opening_quantity" value="{{ (float)$stock->opening }}" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}" @disabled(!$canEditOpening) title="{{ $canEditOpening?'Edit stok awal':'Khusus Admin Operasional' }}"></td>
-            <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="produced_quantity" value="{{ (float)$stock->produced }}" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}" title="Total tambahan olahan hari ini"></td>
+            <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="opening_quantity" value="{{ (float)$stock->opening }}" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}" @disabled($readOnly || !$canEditOpening) title="{{ $canEditOpening?'Edit stok awal':'Khusus Admin Operasional' }}"></td>
+            <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="produced_quantity" value="{{ (float)$stock->produced }}" data-live-stock @disabled($readOnly) data-url="{{ route('inventory.row.update',$stock->product) }}" title="Total tambahan olahan hari ini"></td>
             <td>{{ $qtyFmt($stock->sold) }}</td>
-            <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="consumption_quantity" value="{{ (float)$stock->consumption }}" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}" title="Total konsumsi owner/karyawan hari ini"></td>
-            <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="reprocessed_quantity" value="{{ (float)$stock->reprocessed }}" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}" title="Total diproses ulang hari ini"></td>
-            <td><input class="inventory-live-input waste-input" type="number" min="0" step="0.001" name="waste_quantity" value="{{ (float)$stock->waste }}" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}" title="Total rusak / tidak layak hari ini"></td>
+            <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="consumption_quantity" value="{{ (float)$stock->consumption }}" data-live-stock @disabled($readOnly) data-url="{{ route('inventory.row.update',$stock->product) }}" title="Total konsumsi owner/karyawan hari ini"></td>
+            <td><input class="inventory-live-input" type="number" min="0" step="0.001" name="reprocessed_quantity" value="{{ (float)$stock->reprocessed }}" data-live-stock @disabled($readOnly) data-url="{{ route('inventory.row.update',$stock->product) }}" title="Total diproses ulang hari ini"></td>
+            <td><input class="inventory-live-input waste-input" type="number" min="0" step="0.001" name="waste_quantity" value="{{ (float)$stock->waste }}" data-live-stock @disabled($readOnly) data-url="{{ route('inventory.row.update',$stock->product) }}" title="Total rusak / tidak layak hari ini"></td>
             <td class="money"><span data-stock-balance="{{ $stock->product_id }}">{{ $qtyFmt($stock->quantity) }}</span> {{ $stock->product->unit }}</td>
             <td class="money">{{ $actual===null?'—':$qtyFmt($actual).' '.$stock->product->unit }}</td>
             <td class="money">{{ $difference===null?'—':$qtyFmt($difference) }}</td>
-            <td><input class="inventory-live-notes" name="notes" value="{{ $stock->inventory_notes }}" maxlength="500" placeholder="Tambah keterangan" data-live-stock data-url="{{ route('inventory.row.update',$stock->product) }}"></td>
+            <td><input class="inventory-live-notes" name="notes" value="{{ $stock->inventory_notes }}" maxlength="500" placeholder="Tambah keterangan" data-live-stock @disabled($readOnly) data-url="{{ route('inventory.row.update',$stock->product) }}"></td>
             <td><span class="badge {{ $difference===null?'gray':($balanced?'':'red') }}">{{ $difference===null?'Belum opname':($balanced?'Balance':'Tidak balance') }}</span>@if($stock->count?->notes)<div class="cell-sub">{{ $stock->count->notes }}</div>@endif</td>
         </tr>
     @empty
@@ -83,7 +86,7 @@
 
 <section class="card card-pad" id="riwayat-edit" style="margin-top:16px">
     <div class="card-title"><div><h2>Riwayat edit stok</h2><p>Setiap perubahan kolom yang diedit langsung di tabel: siapa, kapan, dan nilai sebelum → sesudah.</p></div>
-        <form method="GET" action="{{ route('inventory') }}#riwayat-edit" class="actions"><input type="date" name="riwayat_tanggal" value="{{ $historyDate->toDateString() }}" max="{{ today()->toDateString() }}" onchange="this.form.submit()" aria-label="Tanggal riwayat"><span class="badge gray">{{ $editLogs->count() }} perubahan</span></form>
+        <form method="GET" action="{{ route('inventory') }}#riwayat-edit" class="actions">@if($readOnly)<input type="hidden" name="tanggal" value="{{ $stockDate->toDateString() }}">@endif<input type="date" name="riwayat_tanggal" value="{{ $historyDate->toDateString() }}" max="{{ today()->toDateString() }}" onchange="this.form.submit()" aria-label="Tanggal riwayat"><span class="badge gray">{{ $editLogs->count() }} perubahan</span></form>
     </div>
     <div class="table-wrap"><table><thead><tr><th>Waktu</th><th>Pengguna</th><th>Produk</th><th>Kolom</th><th>Sebelum</th><th>Sesudah</th></tr></thead><tbody>
     @forelse($editLogs as $log)

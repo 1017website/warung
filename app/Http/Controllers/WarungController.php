@@ -1444,8 +1444,9 @@ class WarungController extends Controller
 
     public function inventory(Request $request)
     {
-        $request->validate(['riwayat_tanggal' => 'nullable|date|before_or_equal:today']);
-        [$ingredientStocks, $menuStocks] = $this->inventoryStockRows();
+        $request->validate(['tanggal' => 'nullable|date|before_or_equal:today', 'riwayat_tanggal' => 'nullable|date|before_or_equal:today']);
+        $stockDate = Carbon::parse($request->input('tanggal', today()))->startOfDay();
+        [$ingredientStocks, $menuStocks] = $this->inventoryStockRows($stockDate);
         $inventoryProducts = Product::where('tenant_id', $this->tenantId())->where('is_active', true)->orderBy('product_type')->orderBy('name')->get();
         $movements = DB::table('stock_movements')->join('products', 'products.id', '=', 'stock_movements.product_id')
             ->where('stock_movements.tenant_id', $this->tenantId())->where('stock_movements.store_id', $this->storeId())
@@ -1457,60 +1458,95 @@ class WarungController extends Controller
         $editLogs = InventoryEditLog::with(['product', 'user'])->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())
             ->whereDate('created_at', $historyDate)->latest()->latest('id')->get();
 
-        return $this->view('inventory.index', compact('ingredientStocks', 'menuStocks', 'inventoryProducts', 'movements', 'productions', 'canEditOpening', 'priceStores', 'historyDate', 'editLogs'));
+        return $this->view('inventory.index', compact('ingredientStocks', 'menuStocks', 'inventoryProducts', 'movements', 'productions', 'canEditOpening', 'priceStores', 'stockDate', 'historyDate', 'editLogs'));
     }
 
     /**
-     * Baris tabel Stok / Gudang untuk cabang aktif hari ini: bahan baku dan olahan
-     * beserta kolom hitungannya. Dipakai halaman gudang dan ekspor Excel.
+     * Baris tabel Stok / Gudang untuk cabang aktif pada satu tanggal: bahan baku dan
+     * olahan beserta kolom hitungannya. Dipakai halaman gudang dan ekspor Excel.
+     * Tanggal lampau hanya dibaca (tidak membuat baris stok / catatan harian baru):
+     * saldo bahan baku = saldo sekarang dikurangi gerakan setelah tanggal itu.
      *
      * @return array{0: Collection, 1: Collection}
      */
-    private function inventoryStockRows(): array
+    private function inventoryStockRows(?Carbon $date = null): array
     {
-        Product::where('tenant_id', $this->tenantId())->where('is_active', true)->each(function ($product) {
-            $product->product_type === 'menu'
-                ? $this->menuStockForDate($product->id)
-                : ProductStock::firstOrCreate(['tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id], ['quantity' => 0]);
-        });
-        $movementsToday = DB::table('stock_movements')->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->whereDate('created_at', today())->get()->groupBy('product_id');
-        $counts = StockCount::where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->whereDate('count_date', today())->get()->keyBy('product_id');
+        $date = ($date ?? today())->copy()->startOfDay();
+        $isToday = $date->isToday();
+        $endOfDay = $date->copy()->endOfDay();
+        if ($isToday) {
+            Product::where('tenant_id', $this->tenantId())->where('is_active', true)->each(function ($product) {
+                $product->product_type === 'menu'
+                    ? $this->menuStockForDate($product->id)
+                    : ProductStock::firstOrCreate(['tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id], ['quantity' => 0]);
+            });
+        }
+        $movementsOfDay = DB::table('stock_movements')->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->whereDate('created_at', $date)->get()->groupBy('product_id');
+        $counts = StockCount::where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->whereDate('count_date', $date)->get()->keyBy('product_id');
+        $records = $isToday ? collect() : InventoryDailyRecord::where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->whereDate('record_date', $date)->get()->keyBy('product_id');
+        $recordFor = fn (Product $product, float $opening) => $isToday
+            ? $this->inventoryRecordFor($product, $opening)
+            : ($records->get($product->id) ?? new InventoryDailyRecord(['opening_quantity' => $opening, 'used_quantity' => 0, 'waste_quantity' => 0]));
+        $existedThen = fn ($stock) => $isToday || ! $stock->product->created_at || $stock->product->created_at->lte($endOfDay);
+
         $ingredientStocks = ProductStock::with('product.category')->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())
-            ->whereHas('product', fn ($q) => $q->where('product_type', 'ingredient'))->orderBy('quantity')->get()->map(function ($stock) use ($movementsToday) {
-                $moves = $movementsToday->get($stock->product_id, collect());
-                $record = $this->inventoryRecordFor($stock->product, (float) $stock->quantity - (float) $moves->sum('quantity'));
-                $stock->opening = $record->opening_quantity;
-                $stock->incoming = $this->incomingTotal($moves);
-                $stock->used = $record->used_quantity;
-                $stock->processed = abs($moves->where('activity', 'production')->where('quantity', '<', 0)->sum('quantity'));
-                $stock->waste = (float) $record->waste_quantity;
-                $stock->inventory_notes = $record->notes;
+            ->whereHas('product', fn ($q) => $q->where('product_type', 'ingredient'))->orderBy('quantity')->get()->filter($existedThen);
+        if (! $isToday) {
+            $movedAfter = DB::table('stock_movements')->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->where('created_at', '>', $endOfDay)
+                ->groupBy('product_id')->selectRaw('product_id, SUM(quantity) as total')->pluck('total', 'product_id');
+            $ingredientStocks = $ingredientStocks->each(fn ($stock) => $stock->quantity = (float) $stock->quantity - (float) $movedAfter->get($stock->product_id, 0))
+                ->sortBy(fn ($stock) => (float) $stock->quantity);
+        }
+        $ingredientStocks = $ingredientStocks->values()->map(function ($stock) use ($movementsOfDay, $recordFor) {
+            $moves = $movementsOfDay->get($stock->product_id, collect());
+            $record = $recordFor($stock->product, (float) $stock->quantity - (float) $moves->sum('quantity'));
+            $stock->opening = $record->opening_quantity;
+            $stock->incoming = $this->incomingTotal($moves);
+            $stock->used = $record->used_quantity;
+            $stock->processed = abs($moves->where('activity', 'production')->where('quantity', '<', 0)->sum('quantity'));
+            $stock->waste = (float) $record->waste_quantity;
+            $stock->inventory_notes = $record->notes;
 
-                return $stock;
-            });
-        $menuStocks = DailyMenuStock::with('product.category')->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->whereDate('stock_date', today())
-            ->whereHas('product', fn ($q) => $q->where('product_type', 'menu'))->orderBy('quantity')->get()->map(function ($stock) use ($movementsToday, $counts) {
-                $moves = $movementsToday->get($stock->product_id, collect());
-                $record = $this->inventoryRecordFor($stock->product, (float) $stock->quantity - (float) $moves->sum('quantity'));
-                $stock->opening = $record->opening_quantity;
-                // Total bersih per aktivitas, supaya koreksi live edit (gerakan berlawanan arah) ikut terhitung.
-                $stock->produced = max(0, (float) $moves->where('activity', 'production')->sum('quantity'));
-                $stock->sold = abs($moves->where('activity', 'sale')->sum('quantity'));
-                $stock->consumption = max(0, -(float) $moves->where('activity', 'consumption')->sum('quantity'));
-                $stock->reprocessed = max(0, -(float) $moves->where('activity', 'reprocess_out')->sum('quantity'));
-                $stock->waste = (float) $record->waste_quantity;
-                $stock->inventory_notes = $record->notes;
-                $stock->count = $counts->get($stock->product_id);
+            return $stock;
+        });
 
-                return $stock;
-            });
+        $menuStocks = DailyMenuStock::with('product.category')->where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->whereDate('stock_date', $date)
+            ->whereHas('product', fn ($q) => $q->where('product_type', 'menu'))->orderBy('quantity')->get();
+        if (! $isToday) {
+            // Olahan tanpa baris pada tanggal itu tidak bergerak; saldonya dibawa dari hari terakhir sebelumnya.
+            Product::with('category')->where('tenant_id', $this->tenantId())->where('product_type', 'menu')->where('is_active', true)
+                ->where('created_at', '<=', $endOfDay)->whereNotIn('id', $menuStocks->pluck('product_id'))->get()
+                ->each(fn ($product) => $menuStocks->push((new DailyMenuStock([
+                    'tenant_id' => $this->tenantId(), 'store_id' => $this->storeId(), 'product_id' => $product->id, 'stock_date' => $date->toDateString(),
+                    'quantity' => (float) (DailyMenuStock::where('tenant_id', $this->tenantId())->where('store_id', $this->storeId())->where('product_id', $product->id)
+                        ->whereDate('stock_date', '<', $date)->latest('stock_date')->value('quantity') ?? 0),
+                ]))->setRelation('product', $product)));
+            $menuStocks = $menuStocks->sortBy(fn ($stock) => (float) $stock->quantity)->values();
+        }
+        $menuStocks = $menuStocks->map(function ($stock) use ($movementsOfDay, $counts, $recordFor) {
+            $moves = $movementsOfDay->get($stock->product_id, collect());
+            $record = $recordFor($stock->product, (float) $stock->quantity - (float) $moves->sum('quantity'));
+            $stock->opening = $record->opening_quantity;
+            // Total bersih per aktivitas, supaya koreksi live edit (gerakan berlawanan arah) ikut terhitung.
+            $stock->produced = max(0, (float) $moves->where('activity', 'production')->sum('quantity'));
+            $stock->sold = abs($moves->where('activity', 'sale')->sum('quantity'));
+            $stock->consumption = max(0, -(float) $moves->where('activity', 'consumption')->sum('quantity'));
+            $stock->reprocessed = max(0, -(float) $moves->where('activity', 'reprocess_out')->sum('quantity'));
+            $stock->waste = (float) $record->waste_quantity;
+            $stock->inventory_notes = $record->notes;
+            $stock->count = $counts->get($stock->product_id);
+
+            return $stock;
+        });
 
         return [$ingredientStocks, $menuStocks];
     }
 
-    public function exportInventory()
+    public function exportInventory(Request $request)
     {
-        [$ingredientStocks, $menuStocks] = $this->inventoryStockRows();
+        $request->validate(['tanggal' => 'nullable|date|before_or_equal:today']);
+        $stockDate = Carbon::parse($request->input('tanggal', today()))->startOfDay();
+        [$ingredientStocks, $menuStocks] = $this->inventoryStockRows($stockDate);
         $store = $this->activeStoreRecord();
         $spreadsheet = new Spreadsheet;
 
@@ -1553,10 +1589,10 @@ class WarungController extends Controller
                 $target->getColumnDimension($column)->setAutoSize(true);
             }
         }
-        $spreadsheet->getProperties()->setTitle('Stok '.$store->name.' '.today()->format('Y-m-d'));
+        $spreadsheet->getProperties()->setTitle('Stok '.$store->name.' '.$stockDate->format('Y-m-d'));
         $spreadsheet->setActiveSheetIndex(0);
 
-        return SpreadsheetDownload::response($spreadsheet, 'stok-gudang-'.Str::slug($store->name).'-'.now()->format('Ymd').'.xlsx');
+        return SpreadsheetDownload::response($spreadsheet, 'stok-gudang-'.Str::slug($store->name).'-'.$stockDate->format('Ymd').'.xlsx');
     }
 
     public function adjustStock(Request $request)
